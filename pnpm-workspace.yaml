@@ -1,0 +1,8 @@
+packages:
+  - 'clips/manager'
+  - 'clips/provider'
+  - 'docs'
+  - 'census/website'
+  - 'census/api'
+  - 'infrastructure/pulumi'
+  - 'shared/*'

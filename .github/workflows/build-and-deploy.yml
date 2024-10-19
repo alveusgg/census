@@ -1,0 +1,156 @@
+on:
+  push:
+    branches:
+      - main
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build_census_api:
+    name: build api
+    runs-on: ubuntu-22.04
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: |
+            suffix=-${{ github.run_id }}-census-api
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          file: census/api/Dockerfile
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  build_census_ui:
+    name: build ui
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          version: 9
+          run_install: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm i
+
+      - name: Build ui
+        run: |
+          pnpm --filter=@alveusgg/census-website build
+          pnpm --filter=@alveusgg/census-website deploy app
+
+      - name: Publish build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-build
+          path: app/dist
+
+  deploy:
+    name: deploy to production
+    runs-on: ubuntu-22.04
+    needs:
+      - build_census_ui
+      - build_census_api
+
+    permissions:
+      id-token: write
+
+    environment: production
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ui-build
+          path: ui
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          version: 9
+          run_install: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm i
+
+      - uses: pulumi/auth-actions@v1
+        with:
+          organization: alveusgg
+          requested-token-type: urn:pulumi:token-type:access_token:personal
+          scope: user:changesbyjames
+
+      - name: Azure CLI Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - uses: pulumi/actions@v5
+        id: pulumi
+        with:
+          command: up
+          stack-name: alveusgg/prod
+          work-dir: infrastructure/pulumi
+          config-map: |
+            {
+              "api-image": { value: "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main-${{ github.run_id }}-census-api", secret: false },
+            }
+        env:
+          ARM_USE_OIDC: true
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+
+      - name: az cli copy
+        uses: azure/CLI@v2
+        with:
+          azcliversion: 2.53.0
+          inlineScript: |
+            az config set extension.use_dynamic_install=yes_without_prompt
+            az storage azcopy blob upload --container \$web --source "./ui/*" --account-name ${{ steps.pulumi.outputs.accountName }} --recursive
+            az cdn endpoint purge --resource-group ${{ steps.pulumi.outputs.resourceGroupName }} --name ${{ steps.pulumi.outputs.endpointName }} --profile-name ${{ steps.pulumi.outputs.profileName }} --content-paths "/*"
