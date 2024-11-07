@@ -1,5 +1,6 @@
 import { relations } from 'drizzle-orm';
-import { index, integer, json, pgEnum, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
+import { boolean, index, integer, json, numeric, pgEnum, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
+import { z } from 'zod';
 
 export const feedStatusEnum = pgEnum('status', ['offline', 'unhealthy', 'healthy']);
 
@@ -20,54 +21,74 @@ export const feedsRelations = relations(feeds, ({ one }) => ({
 
 export const roleEnum = pgEnum('role', ['capturer', 'member', 'expert', 'moderator', 'researcher', 'admin']);
 
-export const roles = pgTable('roles', {
+export const users = pgTable('users', {
   username: text('username').primaryKey(),
-  role: roleEnum('role').notNull()
+  role: roleEnum('role').notNull(),
+
+  points: integer('points').default(0).notNull()
 });
 
-export const captureStatusEnum = pgEnum('capture_status', ['pending', 'processing', 'complete', 'archived']);
+export const captureStatusEnum = pgEnum('capture_status', ['draft', 'pending', 'processing', 'complete', 'archived']);
 
-export const captures = pgTable('captures', {
-  id: serial('id').primaryKey(),
-  capturedAt: timestamp('captured_at').notNull(),
-  capturedBy: text('captured_by').notNull(),
+export const captures = pgTable(
+  'captures',
+  {
+    id: serial('id').primaryKey(),
+    capturedAt: timestamp('captured_at').notNull(),
+    capturedBy: text('captured_by').notNull(),
 
-  status: captureStatusEnum('status').default('pending').notNull(),
-  feedId: text('feed_id')
-    .notNull()
-    .references(() => feeds.id),
-  startCaptureAt: timestamp('start_capture_at').notNull(),
-  endCaptureAt: timestamp('end_capture_at').notNull(),
+    status: captureStatusEnum('status').default('pending').notNull(),
+    feedId: text('feed_id')
+      .notNull()
+      .references(() => feeds.id),
+    startCaptureAt: timestamp('start_capture_at').notNull(),
+    endCaptureAt: timestamp('end_capture_at').notNull(),
 
-  videoUrl: text('video_url'),
-  clipUrl: text('clip_url').unique('clip_url_unique_idx', { nulls: 'not distinct' })
-});
+    videoUrl: text('video_url'),
+    clipId: text('clip_id').unique().notNull(),
+    clipMetadata: json('clip_metadata').$type<{ views: number; thumbnail: string }>().notNull()
+  },
+  table => ({
+    clipIdIdx: index('clip_id_idx').on(table.clipId)
+  })
+);
 
-export const capturesRelations = relations(captures, ({ one }) => ({
+export type Capture = typeof captures.$inferSelect;
+
+export const capturesRelations = relations(captures, ({ one, many }) => ({
   feed: one(feeds, {
     fields: [captures.feedId],
     references: [feeds.id]
   }),
-  capturer: one(roles, {
+  capturer: one(users, {
     fields: [captures.capturedBy],
-    references: [roles.username]
-  })
+    references: [users.username]
+  }),
+  observations: many(observations)
 }));
 
 export const observations = pgTable('observations', {
   id: serial('id').primaryKey(),
-  nickname: text('nickname').notNull(),
+  nickname: text('nickname'),
   captureId: integer('capture_id')
     .references(() => captures.id)
     .notNull(),
-  discordThreadId: text('discord_thread_id').unique('discord_thread_id_unique_idx', { nulls: 'not distinct' })
+  observedAt: timestamp('observed_at').notNull(),
+  observedBy: text('observed_by')
+    .notNull()
+    .references(() => users.username),
+
+  removed: boolean('removed').default(false).notNull(),
+  moderated: json('moderated').$type<{ username: string; type: string; message: string }[]>().default([]).notNull(),
+  discordThreadId: text('discord_thread_id')
 });
 
-export const observationsRelations = relations(observations, ({ one }) => ({
+export const observationsRelations = relations(observations, ({ one, many }) => ({
   capture: one(captures, {
     fields: [observations.captureId],
     references: [captures.id]
-  })
+  }),
+  images: many(images)
 }));
 
 export const identifications = pgTable(
@@ -83,9 +104,10 @@ export const identifications = pgTable(
       .notNull(),
     suggestedBy: text('suggested_by')
       .notNull()
-      .references(() => roles.username),
-    confirmedBy: text('confirmed_by').references(() => roles.username),
-    alternateFor: integer('alternate_for'),
+      .references(() => users.username),
+    confirmedBy: text('confirmed_by').references(() => users.username),
+    alternateForId: integer('alternate_for'),
+    accessoryForId: integer('accessory_for'),
 
     upvotes: json('upvotes').$type<string[]>().default([]).notNull(),
     downvotes: json('downvotes').$type<string[]>().default([]).notNull()
@@ -130,36 +152,45 @@ export const identificationsRelations = relations(identifications, ({ one, many 
     fields: [identifications.observationId],
     references: [observations.id]
   }),
-  confirmer: one(roles, {
+  confirmer: one(users, {
     fields: [identifications.confirmedBy],
-    references: [roles.username]
+    references: [users.username]
   }),
-  suggester: one(roles, {
+  suggester: one(users, {
     fields: [identifications.suggestedBy],
-    references: [roles.username]
+    references: [users.username]
   }),
   alternateFor: one(identifications, {
-    fields: [identifications.alternateFor],
+    fields: [identifications.alternateForId],
     references: [identifications.id]
   }),
+  accessoryFor: one(identifications, {
+    fields: [identifications.accessoryForId],
+    references: [identifications.id]
+  }),
+  accessoryIdentifications: many(identifications),
   tags: many(tagAssignments)
 }));
 
-export interface BoundingBox {
-  id: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
+export const BoundingBox = z.object({
+  id: z.string(),
+  x: z.number(),
+  y: z.number(),
+  width: z.number(),
+  height: z.number()
+});
+
+export type BoundingBox = z.infer<typeof BoundingBox>;
 
 export const images = pgTable('images', {
   id: serial('id').primaryKey(),
   url: text('url').notNull(),
-  frame: integer('frame').notNull(),
+  timestamp: numeric('timestamp').notNull(),
+  width: integer('width').notNull(),
+  height: integer('height').notNull(),
   observationId: integer('observation_id').notNull(),
   identificationId: integer('identification_id'),
-  boundingBoxes: json('bounding_boxes').$type<BoundingBox[]>().default([]).notNull()
+  boundingBox: json('bounding_box').$type<BoundingBox>().notNull()
 });
 
 export const imagesRelations = relations(images, ({ one }) => ({
@@ -172,3 +203,78 @@ export const imagesRelations = relations(images, ({ one }) => ({
     references: [identifications.id]
   })
 }));
+
+export const achievements = pgTable(
+  'achievements',
+  {
+    id: serial('id').primaryKey(),
+    username: text('username')
+      .notNull()
+      .references(() => users.username),
+    type: text('type').notNull(),
+    identificationId: integer('identification_id').references(() => identifications.id),
+    observationId: integer('observation_id').references(() => observations.id),
+
+    points: integer('points').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    redeemed: boolean('redeemed').default(false).notNull(),
+    revoked: boolean('revoked').default(false).notNull()
+  },
+  table => {
+    return {
+      usernameIdx: index('username_achievements_idx').on(table.username),
+      typeIdx: index('type_achievements_idx').on(table.type),
+      pointsIdx: index('points_achievements_idx').on(table.points)
+    };
+  }
+);
+
+export const achievementsRelations = relations(achievements, ({ one }) => ({
+  identification: one(identifications, {
+    fields: [achievements.identificationId],
+    references: [identifications.id]
+  }),
+  observation: one(observations, {
+    fields: [achievements.observationId],
+    references: [observations.id]
+  })
+}));
+
+export const events = pgTable(
+  'events',
+  {
+    id: serial('id').primaryKey(),
+    username: text('username')
+      .notNull()
+      .references(() => users.username),
+    type: text('type').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    payload: json('payload').notNull()
+  },
+  table => {
+    return {
+      usernameIdx: index('username_events_idx').on(table.username),
+      typeIdx: index('type_events_idx').on(table.type)
+    };
+  }
+);
+
+export const notifications = pgTable(
+  'notifications',
+  {
+    id: serial('id').primaryKey(),
+    username: text('username')
+      .notNull()
+      .references(() => users.username),
+    type: text('type').notNull(),
+    read: boolean('read').default(false).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+
+    payload: json('payload').notNull()
+  },
+  table => {
+    return {
+      usernameIdx: index('username_notifications_idx').on(table.username)
+    };
+  }
+);

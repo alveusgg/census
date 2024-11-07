@@ -1,4 +1,4 @@
-import { Link } from '@/components/button/paper';
+import { Link } from '@/components/controls/button/paper';
 import { MenuItem } from '@/components/menu/Menu';
 import { Clipboard } from '@/layouts/Clipboard';
 import { useAPI } from '@/services/query/hooks';

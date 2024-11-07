@@ -1,8 +1,8 @@
 import z from 'zod';
 import { subscribeToChanges } from '../db/listen.js';
-import { completeCaptureRequest, getCapture } from '../services/snapshot/index.js';
-import { getCreateOnlySasURL } from '../services/snapshot/storage.js';
+import { completeCaptureRequest, getCapture } from '../services/capture/index.js';
 import { integrationProcedure, router } from '../trpc/trpc.js';
+import { getCreateOnlySasURL } from '../utils/storage.js';
 
 export default router({
   subscribeToRequestsForFeed: integrationProcedure

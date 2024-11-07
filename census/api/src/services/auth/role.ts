@@ -1,10 +1,10 @@
 import { eq } from 'drizzle-orm';
-import { roles } from '../../db/schema/index.js';
+import { users } from '../../db/schema/index.js';
 import { useEnvironment } from '../../utils/env/env.js';
 
 export const getPermissions = async (userId: string) => {
   const env = useEnvironment();
-  const [role] = await env.db.select().from(roles).where(eq(roles.username, userId));
+  const [user] = await env.db.select().from(users).where(eq(users.username, userId));
 
   const permissions = {
     editor: false,
@@ -12,9 +12,9 @@ export const getPermissions = async (userId: string) => {
     administrate: false
   };
 
-  if (!role) return permissions;
+  if (!user) return permissions;
 
-  if (role.role === 'admin') {
+  if (user.role === 'admin') {
     permissions.editor = true;
     permissions.moderator = true;
     permissions.administrate = true;
@@ -22,13 +22,13 @@ export const getPermissions = async (userId: string) => {
     return permissions;
   }
 
-  if (role.role === 'moderator') {
+  if (user.role === 'moderator') {
     permissions.editor = true;
     permissions.moderator = true;
     return permissions;
   }
 
-  if (role.role === 'capturer') {
+  if (user.role === 'capturer') {
     permissions.editor = true;
     return permissions;
   }

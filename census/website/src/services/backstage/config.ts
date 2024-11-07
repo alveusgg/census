@@ -3,7 +3,7 @@ import { BackstageConfig } from '@alveusgg/backstage';
 export interface Config extends BackstageConfig {
   variables: {
     apiBaseUrl: string;
-    imageResizeCDNUrl: string;
+    ipxBaseUrl: string;
     appInsightsConnectionString: string;
 
     docsUrl: string;

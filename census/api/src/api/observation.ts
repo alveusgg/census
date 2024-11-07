@@ -1,15 +1,11 @@
 import { z } from 'zod';
-import { getTaxaFromPartialSearch } from '../services/inat/index.js';
+import { createObservationsFromCapture, ObservationPayload } from '../services/observations/observations.js';
 import { editorProcedure, router } from '../trpc/trpc.js';
 
 export default router({
-  search: editorProcedure
-    .input(
-      z.object({
-        search: z.string()
-      })
-    )
-    .query(async ({ input }) => {
-      return await getTaxaFromPartialSearch(input.search);
+  createObservationsFromCapture: editorProcedure
+    .input(z.object({ captureId: z.number(), observations: z.array(ObservationPayload) }))
+    .mutation(async ({ input }) => {
+      return await createObservationsFromCapture(input.captureId, input.observations);
     })
 });

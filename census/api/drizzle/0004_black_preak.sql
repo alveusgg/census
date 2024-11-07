@@ -1,0 +1,1 @@
+ALTER TABLE "observations" DROP CONSTRAINT "discord_thread_id_unique_idx";

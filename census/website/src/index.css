@@ -1,5 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;&display=swap');
-
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700;&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -9,13 +9,13 @@ html {
 }
 
 :root {
-  --accent-color-50: 254 251 236;
-  --accent-color-100: 253 242 200;
-  --accent-color-200: 250 229 141;
-  --accent-color-300: 247 207 70;
-  --accent-color-400: 245 191 42;
-  --accent-color-500: 239 158 17;
-  --accent-color-600: 212 121 11;
+  --accent-color-50: 255 254 245;
+  --accent-color-100: 253 251 237;
+  --accent-color-200: 249 242 215;
+  --accent-color-300: 247 229 188;
+  --accent-color-400: 247 207 70;
+  --accent-color-500: 245 191 42;
+  --accent-color-600: 239 158 17;
   --accent-color-700: 176 85 13;
   --accent-color-800: 143 66 17;
   --accent-color-900: 120 55 12;

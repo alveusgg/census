@@ -14,27 +14,27 @@ const TwitchRedirectResponse = z.object({
 const SignInRequest = z.object({
   from: z.string().optional()
 });
+const cache = new Map<string, string>();
 
 export default async function register(router: FastifyInstance) {
   router.get('/auth/signin', async (request, reply) => {
-    const { redis } = useEnvironment();
     const key = crypto.randomUUID();
     const state: { key: string; from?: string } = { key };
 
     const { from } = SignInRequest.parse(request.query);
     if (from) state.from = from;
 
-    redis.set(key, JSON.stringify(state), 'EX', 10 * 60);
+    cache.set(key, JSON.stringify(state));
 
     const url = createSignInRequest('/auth/redirect', key);
     return reply.redirect(url);
   });
 
   router.get('/auth/redirect', async (request, reply) => {
-    const { redis, variables } = useEnvironment();
+    const { variables } = useEnvironment();
     const query = TwitchRedirectResponse.parse(request.query);
 
-    const state = await redis.get(query.state);
+    const state = cache.get(query.state);
     if (!state) throw new Error('Login expired or invalid.');
 
     const token = await exchangeCodeForToken('/auth/redirect', query.code);
@@ -55,7 +55,7 @@ export default async function register(router: FastifyInstance) {
     params.set('token', jwt);
 
     if (from) params.set('from', from);
-    redis.del(query.state);
+    cache.delete(query.state);
 
     return reply.redirect(`${variables.UI_URL}/auth/redirect?${params.toString()}`);
   });

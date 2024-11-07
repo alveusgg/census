@@ -1,7 +1,6 @@
-import { useSuspenseQuery } from '@tanstack/react-query';
 import { createContext, FC, PropsWithChildren, useRef } from 'react';
 import { createStore, StoreApi } from 'zustand';
-import { key, useAPI } from '../query/hooks';
+import { usePermissions } from '../api/me';
 
 interface Permissions {
   editor: boolean;
@@ -16,12 +15,7 @@ export interface PermissionsStore {
 export const PermissionsContext = createContext<StoreApi<PermissionsStore> | null>(null);
 
 export const PermissionsProvider: FC<PropsWithChildren> = ({ children }) => {
-  const api = useAPI();
-
-  const permissions = useSuspenseQuery({
-    queryKey: key('permissions'),
-    queryFn: () => api.me.permissions.query()
-  });
+  const permissions = usePermissions();
 
   const store = useRef(
     createStore<PermissionsStore>(() => ({

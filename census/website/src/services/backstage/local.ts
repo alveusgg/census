@@ -5,8 +5,8 @@ export const url = 'https://ccprodweb832aa1fe.z5.web.core.windows.net/backstage.
 
 export const config: DeepPartial<Config> = {
   variables: {
-    apiBaseUrl: 'http://localhost:35523'
-    // imageResizeCDNUrl: 'https://crittercapture.club/cdn-cgi/image',
+    apiBaseUrl: 'http://localhost:35523',
+    ipxBaseUrl: 'http://localhost:2209'
   },
   flags: {
     crop: false

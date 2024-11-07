@@ -1,16 +1,21 @@
 import { CreateFastifyContextOptions } from '@trpc/server/adapters/fastify';
-import { useEnvironment } from '../utils/env/env.js';
 
 export function createContext({ req, res, info }: CreateFastifyContextOptions) {
-  const env = useEnvironment();
   const headers = req.headers;
-  const authorization = headers.authorization ?? info.connectionParams?.Authorization;
+  const authorization = headers.authorization ?? info.connectionParams?.authorization;
 
+  const points = (number: number) => {
+    res.header('x-census-points', number.toString());
+  };
+  const achievements = () => {
+    res.header('x-census-achievements', new Date().toISOString());
+  };
   return {
-    ...env,
     authorization,
     req,
-    res
+    res,
+    points,
+    achievements
   };
 }
 export type Context = Awaited<ReturnType<typeof createContext>>;

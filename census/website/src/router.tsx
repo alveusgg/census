@@ -7,6 +7,7 @@ import { SignIn } from './pages/authentication/SignIn';
 import { SignOut } from './pages/authentication/SignOut';
 import { SignOutRedirect } from './pages/authentication/SignOutRedirect';
 import { Capture } from './pages/captures/Capture';
+import { Home } from './pages/home/Home';
 
 const auth: RouteObject = {
   path: 'auth',
@@ -37,6 +38,10 @@ export const router = createBrowserRouter([
       {
         element: <Main />,
         children: [
+          {
+            path: '/',
+            element: <Home />
+          },
           {
             path: '/status',
             element: <Status />

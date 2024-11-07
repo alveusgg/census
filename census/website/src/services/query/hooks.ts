@@ -17,7 +17,10 @@ export const useLiveQuery = <T>(queryKey: string[]) => {
         if (!data) return;
         queryClient.setQueryData(queryKey, data);
       },
-      onComplete: () => console.log('complete')
+      onError: (error: Error) => {
+        console.error(error);
+      },
+      onComplete: () => {}
     }),
     [queryClient, queryKey]
   );

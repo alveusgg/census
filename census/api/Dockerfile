@@ -8,7 +8,7 @@ COPY . .
 
 FROM base AS build
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
-RUN pnpm --filter=@critter/api --prod deploy /prod/api
+RUN pnpm --filter=@alveusgg/census-api --prod deploy /prod/api
 
 FROM base
 COPY --from=build /prod/api /prod/api

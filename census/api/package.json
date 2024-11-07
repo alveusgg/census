@@ -6,24 +6,31 @@
   "main": "src/index.ts",
   "types": "src/index.ts",
   "dependencies": {
-    "@azure/storage-blob": "^12.24.0",
+    "@alveusgg/census-levels": "workspace:*",
     "@alveusgg/node": "workspace:*",
+    "@azure/storage-blob": "^12.24.0",
     "@fastify/cors": "^9.0.1",
     "@inquirer/prompts": "^5.5.0",
     "@trpc/client": "11.0.0-rc.490",
     "@trpc/server": "11.0.0-rc.490",
+    "@twurple/api": "^7.2.0",
     "@twurple/auth": "^7.1.0",
     "@twurple/chat": "^7.1.0",
+    "@types/yauzl": "^2.10.3",
     "date-fns": "^3.6.0",
     "debug": "^4.3.6",
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.33.0",
+    "env-paths": "^3.0.0",
+    "extract-zip": "^2.0.1",
     "fastify": "^4.28.1",
+    "fluent-ffmpeg": "^2.1.3",
     "ioredis": "^5.4.1",
     "npm": "^10.8.3",
     "oslo": "^1.2.1",
     "postgres": "^3.4.4",
     "tsx": "^4.19.0",
+    "yauzl": "^3.1.3",
     "zod": "^3.23.8"
   },
   "scripts": {
@@ -38,6 +45,7 @@
   "license": "ISC",
   "devDependencies": {
     "@types/debug": "^4.1.12",
+    "@types/fluent-ffmpeg": "^2.1.27",
     "@types/node": "^22.5.1",
     "drizzle-kit": "^0.24.2"
   }

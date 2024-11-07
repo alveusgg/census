@@ -1,21 +1,16 @@
 import { ContainerClient, StorageSharedKeyCredential } from '@azure/storage-blob';
-import { Redis, RedisOptions } from 'ioredis';
+import { ApiClient } from '@twurple/api';
+import { AppTokenAuthProvider } from '@twurple/auth';
 import z from 'zod';
 import { initialise } from '../../db/db.js';
 
 export const config = z.object({
   TWITCH_CLIENT_ID: z.string(),
   TWITCH_CLIENT_SECRET: z.string(),
-  TWITCH_USERNAME: z.string(),
 
   NODE_ENV: z.enum(['development', 'production']).default('development'),
   HOST: z.string(),
   PORT: z.coerce.number(),
-
-  REDIS_HOST: z.string(),
-  REDIS_PORT: z.string(),
-  REDIS_PASSWORD: z.string().optional(),
-  REDIS_SSL: z.coerce.boolean().default(false),
 
   POSTGRES_HOST: z.string(),
   POSTGRES_USER: z.string(),
@@ -30,22 +25,13 @@ export const config = z.object({
   STORAGE_ACCOUNT_KEY: z.string(),
   CONTAINER_NAME: z.string(),
 
-  CHANNELS_TO_LISTEN_TO: z.string().transform(value => value.split(',')),
+  ASSETS_PATH: z.string().default('./assets'),
+  ASSETS_PASSWORD: z.string().optional(),
 
-  COMMAND_PREFIX: z.string().default('!'),
   JWT_SECRET: z.string().transform(value => Buffer.from(value, 'hex'))
 });
 
 export const services = async (variables: z.infer<typeof config>) => {
-  const options: RedisOptions = {};
-  if (variables.REDIS_PASSWORD) {
-    options.password = variables.REDIS_PASSWORD;
-  }
-  if (variables.REDIS_SSL) {
-    options.tls = { rejectUnauthorized: false };
-  }
-
-  const redis = new Redis(Number(variables.REDIS_PORT), variables.REDIS_HOST, options);
   const database = await initialise(
     variables.POSTGRES_HOST,
     variables.POSTGRES_USER,
@@ -59,10 +45,14 @@ export const services = async (variables: z.infer<typeof config>) => {
     new StorageSharedKeyCredential(variables.STORAGE_ACCOUNT_NAME, variables.STORAGE_ACCOUNT_KEY)
   );
 
+  const twitch = new ApiClient({
+    authProvider: new AppTokenAuthProvider(variables.TWITCH_CLIENT_ID, variables.TWITCH_CLIENT_SECRET)
+  });
+
   return {
-    redis,
     db: database.db,
     postgres: database.client,
-    storage
+    storage,
+    twitch
   };
 };

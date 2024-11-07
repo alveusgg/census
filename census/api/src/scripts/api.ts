@@ -2,7 +2,7 @@ import { config } from 'dotenv';
 config();
 
 import { input } from '@inquirer/prompts';
-import { roles } from '../db/schema/index.js';
+import { users } from '../db/schema/index.js';
 import { createEnvironment } from '../utils/env/env.js';
 
 const seed = async () => {
@@ -11,7 +11,7 @@ const seed = async () => {
     message: 'What is your twitch username?'
   });
 
-  await environment.db.insert(roles).values({
+  await environment.db.insert(users).values({
     role: 'admin',
     username
   });

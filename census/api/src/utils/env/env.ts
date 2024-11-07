@@ -9,7 +9,7 @@ export const createEnvironment = async () => {
   };
 };
 
-import { createStore } from '@critter/node';
+import { createStore } from '@alveusgg/node';
 const EnvironmentStore = createStore<Env>('environment');
 export const [withEnvironment, useEnvironment] = EnvironmentStore;
 

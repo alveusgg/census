@@ -7,7 +7,23 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Nunito', ...theme.fontFamily.sans]
+        sans: ['Nunito', ...theme.fontFamily.sans],
+        mono: ['Fira Code', ...theme.fontFamily.mono]
+      },
+
+      cursor: {
+        ['editor-#5383E3']: `url('/editor-cursor-5383E3.svg') 8 6, pointer`,
+        ['editor-#CB5DE7']: `url('/editor-cursor-CB5DE7.svg') 8 6, pointer`,
+        ['editor-#E15D5D']: `url('/editor-cursor-E15D5D.svg') 8 6, pointer`,
+        ['editor-#E79446']: `url('/editor-cursor-E79446.svg') 8 6, pointer`,
+        ['editor-#9FB035']: `url('/editor-cursor-9FB035.svg') 8 6, pointer`,
+        ['editor-#37AD6D']: `url('/editor-cursor-37AD6D.svg') 8 6, pointer`,
+        ['editor-#39A0B6']: `url('/editor-cursor-39A0B6.svg') 8 6, pointer`
+      },
+      borderColor: {
+        accent: {
+          DEFAULT: '#D4C0AC'
+        }
       },
       colors: {
         accent: {
@@ -24,6 +40,14 @@ export default {
           950: 'rgba(var(--accent-color-950) / <alpha-value>)',
           DEFAULT: 'hsl(var(--accent))',
           foreground: 'hsl(var(--accent-foreground))'
+        },
+        custom: {
+          DEFAULT: 'var(--custom-color)',
+          darker: 'color-mix(in srgb, var(--custom-color) 85%, black)'
+        },
+        alveus: {
+          DEFAULT: '#646A61',
+          darker: '#535C4E'
         },
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
