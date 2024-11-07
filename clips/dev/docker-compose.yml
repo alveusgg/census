@@ -1,8 +1,0 @@
-services:
-  mediamtx:
-    image: bluenviron/mediamtx
-    network_mode: host
-    volumes:
-      - ./mediamtx.yml:/mediamtx.yml
-    restart: 'no' # Ensures container is not restarted automatically
-
