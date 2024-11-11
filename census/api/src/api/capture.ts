@@ -1,8 +1,15 @@
 import { z } from 'zod';
 import { subscribeToChanges } from '../db/listen.js';
-import { completeCaptureRequest, createFromClip, getCapture } from '../services/capture/index.js';
+import {
+  completeCaptureRequest,
+  createFromClip,
+  getCapture,
+  getCaptureCount,
+  getCaptures
+} from '../services/capture/index.js';
 import { downloadClip } from '../services/twitch/clips.js';
 import { procedure, router } from '../trpc/trpc.js';
+import { Pagination } from './observation.js';
 
 export default router({
   capture: procedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
@@ -21,6 +28,15 @@ export default router({
     })
   },
 
+  captures: procedure.input(z.object({ meta: Pagination })).query(async ({ input }) => {
+    const data = await getCaptures(input.meta);
+    const count = await getCaptureCount();
+    return {
+      meta: { ...input.meta, total: count },
+      data
+    };
+  }),
+
   createFromClip: procedure
     .input(z.object({ id: z.string(), userIsVerySureItIsNeeded: z.boolean().optional() }))
     .mutation(async ({ input }) => {
@@ -32,14 +48,5 @@ export default router({
         });
       }
       return clip;
-    }),
-
-  addPoints: procedure.input(z.object({ points: z.number() })).mutation(async ({ input, ctx }) => {
-    points += input.points;
-    ctx.points(points);
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return { hello: 'world' };
-  })
+    })
 });
-
-let points = 0;

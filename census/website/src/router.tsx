@@ -7,7 +7,9 @@ import { SignIn } from './pages/authentication/SignIn';
 import { SignOut } from './pages/authentication/SignOut';
 import { SignOutRedirect } from './pages/authentication/SignOutRedirect';
 import { Capture } from './pages/captures/Capture';
+import { Captures } from './pages/captures/Captures';
 import { Home } from './pages/home/Home';
+import { Observations } from './pages/observations/Observations';
 
 const auth: RouteObject = {
   path: 'auth',
@@ -49,6 +51,14 @@ export const router = createBrowserRouter([
           {
             path: '/captures/:id',
             element: <Capture />
+          },
+          {
+            path: '/observations',
+            element: <Observations />
+          },
+          {
+            path: '/captures',
+            element: <Captures />
           }
         ]
       }

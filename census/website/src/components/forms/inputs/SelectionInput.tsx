@@ -1,10 +1,10 @@
+import SiTrash from '@/components/icons/SiTrash';
 import type { BoundingBox, Selection } from '@/services/video/CaptureEditorProvider';
 import { getColorForId } from '@/services/video/utils';
 import { cn } from '@/utils/cn';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ComponentProps, FC, forwardRef, HTMLAttributes, useEffect, useRef } from 'react';
-import { Corner } from '../assets/icons/Corner';
-import { Trash } from '../assets/icons/Trash';
+import { Corner } from '../../assets/icons/Corner';
 
 interface SelectionInputProps {
   currentSubjectId: number;
@@ -174,7 +174,7 @@ export const SelectionInput: FC<
                 e.preventDefault();
               }}
             >
-              <Trash />
+              <SiTrash />
             </motion.button>
           </BoundingBox>
         ))}

@@ -56,7 +56,9 @@ export const CaptureEditorProvider: FC<PropsWithChildren<CaptureEditorProviderPr
           const existing = get().subjects.map(s => s.nickname);
           const nickname = generatePlaceholderNickname(existing);
           set(draft => {
-            draft.subjects.push({ id: draft.subjects.length, nickname });
+            const id = draft.subjects.length;
+            draft.subjects.push({ id, nickname });
+            draft.selectedSubjectId = id;
           });
         },
         selectSubject: subjectId => {

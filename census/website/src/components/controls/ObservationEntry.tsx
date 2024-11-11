@@ -3,8 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { FC, PropsWithChildren, SVGAttributes, useState } from 'react';
 
 interface ObservationEntryProps {
-  id: string;
-  iNatId: number;
+  iNatId: string;
 }
 
 interface ObservationEntryActions {
@@ -12,13 +11,12 @@ interface ObservationEntryActions {
 }
 
 export const ObservationEntry: FC<PropsWithChildren<ObservationEntryProps & ObservationEntryActions>> = ({
-  id,
   iNatId,
   children,
   remove
 }) => {
   return (
-    <div key={id} className="px-3 flex flex-row-reverse gap-2 items-center w-full">
+    <div className="px-3 flex flex-row-reverse gap-2 items-center w-full">
       <div className="peer group text-xs w-full flex justify-end gap-2">
         <p className={cn(remove && 'group-hover:hidden')}>self-reported</p>
         {remove && (
@@ -43,13 +41,12 @@ export const ObservationEntry: FC<PropsWithChildren<ObservationEntryProps & Obse
 };
 
 export const ObservationEntryVote: FC<PropsWithChildren<ObservationEntryProps & ObservationEntryActions>> = ({
-  id,
   iNatId,
   children
 }) => {
   const [vote, setVote] = useState<'agree' | 'disagree' | undefined>();
   return (
-    <div key={id} className="px-3 flex flex-row-reverse gap-2 items-center">
+    <div className="px-3 flex flex-row-reverse gap-2 items-center">
       <div className="peer group text-xs w-full flex justify-end gap-2">
         <div className={cn('flex justify-end cursor-pointer')}>
           <AnimatePresence mode="popLayout">

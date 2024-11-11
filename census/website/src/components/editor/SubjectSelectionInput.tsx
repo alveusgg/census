@@ -1,6 +1,6 @@
 import { useEditor } from '@/services/video/hooks';
 import * as Media from '@react-av/core';
-import { SelectionInput } from '../inputs/SelectionInput';
+import { SelectionInput } from '../forms/inputs/SelectionInput';
 
 export const SubjectSelectionInput = () => {
   const [time] = Media.useMediaCurrentTimeFine();

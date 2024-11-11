@@ -54,6 +54,7 @@ export const CreateFromClipModal: FC<ModalProps> = props => {
             />
             <Button
               type="submit"
+              variant="alveus"
               loading={createClip.isPending}
               className="p-1 rounded-md hover:bg-white/20 transition-colors"
             >

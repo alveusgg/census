@@ -1,22 +1,25 @@
 import { cn } from '@/utils/cn';
-import { ButtonHTMLAttributes, FC, PropsWithChildren } from 'react';
+import { ButtonHTMLAttributes, FC, forwardRef, PropsWithChildren } from 'react';
 import { LinkProps, Link as RouterLink } from 'react-router-dom';
 import { Loader } from '../../../loaders/Loader';
-import { ButtonProps, variants } from '../button';
+import { ButtonProps } from '../button';
+
+export const variants = {
+  primary: 'bg-accent-200 hover:bg-accent-300 text-accent-900',
+  custom: 'bg-custom hover:bg-custom-darker text-white',
+  danger: 'bg-red-500 hover:bg-red-600 text-white',
+  alveus: 'bg-alveus hover:bg-alveus-darker text-white'
+};
 
 export type PaperButtonProps = ButtonProps & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'disabled'> & {};
 
-export const Button: FC<PropsWithChildren<PaperButtonProps>> = ({
-  children,
-  className,
-  variant = 'alveus',
-  type = 'button',
-  disabled,
-  loading,
-  ...props
-}) => {
+export const Button = forwardRef<
+  HTMLButtonElement,
+  PropsWithChildren<ButtonProps & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'disabled'> & {}>
+>(({ children, className, variant = 'primary', type = 'button', disabled, loading, ...props }, ref) => {
   return (
     <button
+      ref={ref}
       className={cn(
         `flex disabled:opacity-60 items-center justify-start text-left gap-2 rounded-lg relative px-3 py-2 overflow-clip font-medium antialiased`,
         variant && variants[variant],
@@ -40,13 +43,13 @@ export const Button: FC<PropsWithChildren<PaperButtonProps>> = ({
       {children}
     </button>
   );
-};
+});
 
 export const Link: FC<PropsWithChildren<ButtonProps & LinkProps & {}>> = ({
   children,
   className,
   disabled,
-  variant = 'alveus',
+  variant = 'primary',
   ...props
 }) => {
   return (

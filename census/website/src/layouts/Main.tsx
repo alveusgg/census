@@ -13,10 +13,10 @@ export const Main = () => {
       <LayoutProvider>
         <div className="w-screen h-svh flex pt-2 pb-2 pr-2 pl-0.5 bg-accent-200 overflow-clip">
           <Menu />
-          <main className="flex-1 flex flex-col rounded-md bg-accent-100 border border-accent border-opacity-50 px-8">
+          <main className="flex-1 flex flex-col rounded-md bg-accent-100">
             <Header />
             <Suspense>
-              <div className="flex-1 flex flex-col overflow-y-scroll py-6">
+              <div className="flex-1 flex flex-col overflow-y-scroll py-6 px-8">
                 <Outlet />
               </div>
             </Suspense>

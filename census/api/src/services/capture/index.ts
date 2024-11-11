@@ -1,4 +1,5 @@
-import { and, eq, gte, lte, or } from 'drizzle-orm';
+import { and, count, desc, eq, gte, lte, or } from 'drizzle-orm';
+import { Pagination } from '../../api/observation.js';
 import { Capture, captures } from '../../db/schema/index.js';
 import { useDB } from '../../db/transaction.js';
 import { useUser } from '../../utils/env/env.js';
@@ -150,6 +151,21 @@ export const getCapture = async (id: number) => {
   });
   if (!capture) throw new Error('Capture not found');
   return capture;
+};
+
+export const getCaptureCount = async () => {
+  const db = useDB();
+  const [result] = await db.select({ count: count() }).from(captures);
+  return result.count;
+};
+
+export const getCaptures = async (pagination: Pagination) => {
+  const db = useDB();
+  return await db.query.captures.findMany({
+    limit: pagination.size,
+    offset: (pagination.page - 1) * pagination.size,
+    orderBy: [desc(captures.capturedAt)]
+  });
 };
 
 export const getCaptureByClipId = async (id: string) => {

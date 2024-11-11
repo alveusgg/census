@@ -12,10 +12,16 @@ const registry = {
 
 export type Achievements = keyof typeof registry;
 
-export const recordAchievement = async (action: Achievements, username: string) => {
+export const recordAchievement = async (action: Achievements, username: string, immediate = false) => {
   const details = registry[action];
   if (!details) throw new Error(`Invalid action: ${action}`);
-  await addAchievement(action, username, details.points);
+  const db = useDB();
+  return await db.transaction(async tx =>
+    withTransaction(tx, async () => {
+      await addAchievement(action, username, details.points, immediate);
+      if (immediate) return await addPoints(username, details.points);
+    })
+  );
 };
 
 export const redeemAchievementAndAwardPoints = async (username: string, id: number) => {
@@ -66,9 +72,9 @@ export const revokeAchievement = async (id: number) => {
   );
 };
 
-const addAchievement = async (action: Achievements, username: string, points: number) => {
+const addAchievement = async (action: Achievements, username: string, points: number, immediate = false) => {
   const db = useDB();
-  await db.insert(achievements).values({ type: action, username, points });
+  await db.insert(achievements).values({ type: action, username, points, redeemed: immediate });
 };
 
 const redeemAchievement = async (username: string, id: number) => {

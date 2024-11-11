@@ -1,5 +1,5 @@
 import type { ObservationPayload } from '@alveusgg/census-api/src/services/observations/observations';
-import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
 import { key, useAPI, useLiveQuery } from '../query/hooks';
 
@@ -26,19 +26,16 @@ export const useCapture = (id: number) => {
   return result;
 };
 
-export const useClipDetails = (id: string) => {
+export const useCaptures = () => {
   const trpc = useAPI();
-  return useSuspenseQuery({
-    queryKey: key('twitch', 'clip', id),
-    queryFn: () => trpc.twitch.clip.query({ id })
-  });
-};
-
-export const useVODInfo = (id: string) => {
-  const trpc = useAPI();
-  return useSuspenseQuery({
-    queryKey: key('twitch', 'vod', id),
-    queryFn: () => trpc.twitch.vod.query({ id })
+  return useSuspenseInfiniteQuery({
+    queryKey: key('captures'),
+    queryFn: ({ pageParam }) => trpc.capture.captures.query({ meta: { page: pageParam, size: 30 } }),
+    initialPageParam: 1,
+    getNextPageParam: lastPage => {
+      if (lastPage.meta.page * lastPage.meta.size >= lastPage.meta.total) return undefined;
+      return lastPage.meta.page + 1;
+    }
   });
 };
 
@@ -73,12 +70,5 @@ export const useCreateObservationsFromCapture = () => {
       await queryClient.invalidateQueries({ queryKey: key('capture', captureId.toString()) });
       return result;
     }
-  });
-};
-
-export const useAddPoints = () => {
-  const trpc = useAPI();
-  return useMutation({
-    mutationFn: (points: number) => trpc.capture.addPoints.mutate({ points })
   });
 };

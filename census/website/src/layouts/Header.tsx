@@ -8,7 +8,7 @@ export const Header = () => {
   const createFromClipModalProps = useModal();
 
   return (
-    <header className="border-b border-dashed border-alveus border-opacity-50 h-[4rem] pr-4 pt-2 flex items-center justify-between text-alveus-darker font-semibold">
+    <header className="h-[4rem] pr-12 pl-8 pt-2 flex items-center justify-between text-alveus-darker font-semibold relative">
       <CreateFromClipModal {...createFromClipModalProps} />
       <div className="flex items-center divide-x divide-alveus divide-opacity-50 space-x-4">
         <MenuTrigger />
@@ -20,6 +20,7 @@ export const Header = () => {
           <span>submit new clip</span>
         </Button>
       </div>
+      <div className="absolute border-b border-dashed border-alveus border-opacity-50 inset-y-0 left-8 right-12 pointer-events-none" />
     </header>
   );
 };

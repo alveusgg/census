@@ -37,3 +37,10 @@ export const getTaxaFromPartialSearch = async (search: string) => {
   const data = await response.json();
   return SearchResults.parse(data);
 };
+
+export const getTaxaInfo = async (iNatId: number) => {
+  const response = await fetch(`https://api.inaturalist.org/v1/taxa/${iNatId}`);
+  const data = await response.json();
+  const { results } = SearchResults.parse(data);
+  return results[0];
+};

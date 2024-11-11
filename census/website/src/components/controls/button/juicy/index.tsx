@@ -1,7 +1,14 @@
 import { cn } from '@/utils/cn';
 import { ButtonHTMLAttributes, forwardRef, PropsWithChildren, useEffect } from 'react';
 import { Loader } from '../../../loaders/Loader';
-import { ButtonProps, variants } from '../button';
+import { ButtonProps } from '../button';
+
+export const variants = {
+  primary: 'bg-accent-400 hover:bg-accent-500 text-accent-950',
+  custom: 'bg-custom hover:bg-custom-darker text-white',
+  danger: 'bg-red-500 hover:bg-red-600 text-white',
+  alveus: 'bg-alveus hover:bg-alveus-darker text-white'
+};
 
 export const Button = forwardRef<
   HTMLButtonElement,

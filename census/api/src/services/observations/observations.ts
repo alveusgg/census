@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { count, desc, eq } from 'drizzle-orm';
 import { ReadableStream } from 'node:stream/web';
 import { Readable } from 'stream';
 import { BoundingBox, images, observations } from '../../db/schema';
@@ -79,6 +79,25 @@ const createObservations = async (captureId: number, selections: Selection[], ni
   return await getObservation(observation.id);
 };
 
+export const getObservationCount = async () => {
+  const db = useDB();
+  const [result] = await db.select({ count: count() }).from(observations);
+  return result.count;
+};
+
+export const getObservations = (pagination: Pagination) => {
+  const db = useDB();
+  return db.query.observations.findMany({
+    with: { images: true, capture: true, identifications: true },
+    orderBy: desc(observations.observedAt),
+    columns: {
+      moderated: false
+    },
+    limit: pagination.size,
+    offset: (pagination.page - 1) * pagination.size
+  });
+};
+
 const scaleBoundingBox = (boundingBox: BoundingBox, width: number, height: number) => {
   return {
     ...boundingBox,
@@ -88,9 +107,6 @@ const scaleBoundingBox = (boundingBox: BoundingBox, width: number, height: numbe
     height: Math.round(boundingBox.height * height)
   };
 };
-/*
-`ffmpeg -accurate_seek -ss {frame * 60} -i input.mp4 -frames:v 1 frame.png`
-*/
 
 export const getFrameFromVideo = async (video: TemporaryFile, stats: ffmpeg.FfprobeStream, timestamp: number) => {
   const { storage } = useEnvironment();
@@ -119,6 +135,7 @@ import { randomUUID } from 'crypto';
 import ffmpeg from 'fluent-ffmpeg';
 import { writeFile } from 'fs/promises';
 import { z } from 'zod';
+import { Pagination } from '../../api/observation';
 import { useEnvironment, useUser } from '../../utils/env/env';
 
 export const extractFrameFromVideo = async (video: TemporaryFile, timestamp: number, stats: ffmpeg.FfprobeStream) => {

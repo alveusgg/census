@@ -13,10 +13,13 @@ import { Selection } from '@alveusgg/census-api/src/services/observations/observ
 import * as Media from '@react-av/core';
 import { AnimatePresence } from 'framer-motion';
 import { FC } from 'react';
+import { useNavigate } from 'react-router';
 import { CaptureProps } from './Capture';
 
 export const Editor: FC<CaptureProps> = ({ id }) => {
   const capture = useCapture(id);
+  const navigate = useNavigate();
+
   const createObservationsFromCapture = useCreateObservationsFromCapture();
   const { selectedSubjectId, selections } = useEditor(state => state);
 
@@ -36,6 +39,7 @@ export const Editor: FC<CaptureProps> = ({ id }) => {
 
     const payloads = Array.from(subjects.values());
     await createObservationsFromCapture.mutateAsync({ captureId: id, observations: payloads });
+    navigate(`/observations`);
   };
 
   return (
@@ -62,7 +66,7 @@ export const Editor: FC<CaptureProps> = ({ id }) => {
             <SelectedSubjectHighlight />
           </VideoContainer>
           <div className="w-full">
-            <div className="flex justify-between">
+            <div className="flex justify-between items-center">
               <SubjectToggle />
               <Button loading={createObservationsFromCapture.isPending} onClick={onSubmit} shortcut="S">
                 <Save />

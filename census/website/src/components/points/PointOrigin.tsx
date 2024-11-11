@@ -1,6 +1,6 @@
 import { cn } from '@/utils/cn';
 import { motion } from 'framer-motion';
-import { FC, PropsWithChildren, RefObject } from 'react';
+import { ComponentProps, FC, PropsWithChildren, RefObject } from 'react';
 
 export interface PointOriginProps {
   id: string;
@@ -8,9 +8,16 @@ export interface PointOriginProps {
   textRef: RefObject<HTMLSpanElement>;
 }
 
-export const PointOrigin: FC<PropsWithChildren<PointOriginProps>> = ({ children, id, bubbleRef, textRef }) => {
+export const PointOrigin: FC<PropsWithChildren<PointOriginProps & ComponentProps<'div'>>> = ({
+  children,
+  id,
+  bubbleRef,
+  textRef,
+  className,
+  ...props
+}) => {
   return (
-    <div className="relative w-fit">
+    <div className={cn('relative w-fit', className)} {...props}>
       {children}
       <div className="w-full absolute inset-0 pointer-events-none">
         <motion.div

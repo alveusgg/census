@@ -1,8 +1,8 @@
 import { cn } from '@/utils/cn';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FC, forwardRef, HTMLAttributes, MouseEventHandler, useCallback, useEffect, useRef } from 'react';
-import { Corner } from '../assets/icons/Corner';
-import { Trash } from '../assets/icons/Trash';
+import { Corner } from '../../assets/icons/Corner';
+import { Trash } from '../../assets/icons/Trash';
 
 export interface InputProps<T> {
   onChange: (value: T | ((value: T) => T)) => void;

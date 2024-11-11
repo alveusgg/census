@@ -88,6 +88,7 @@ export const observationsRelations = relations(observations, ({ one, many }) => 
     fields: [observations.captureId],
     references: [captures.id]
   }),
+  identifications: many(identifications),
   images: many(images)
 }));
 
