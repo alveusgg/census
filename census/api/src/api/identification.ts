@@ -14,7 +14,7 @@ export default router({
         comment: z.string().optional()
       })
     )
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ ctx }) => {
       const user = useUser();
       const points = await recordAchievement('vote', user.id);
       if (points) ctx.points(points);

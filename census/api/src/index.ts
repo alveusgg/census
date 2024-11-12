@@ -11,7 +11,6 @@ import { createContext } from './trpc/context.js';
 // NOT the router itself.
 export type AppRouter = typeof router;
 
-import { getEncodedTimestamp } from './services/twitch/index.js';
 import { createEnvironment, withEnvironment } from './utils/env/env.js';
 
 (async () => {
@@ -33,10 +32,6 @@ import { createEnvironment, withEnvironment } from './utils/env/env.js';
         } satisfies FastifyTRPCPluginOptions<AppRouter>['trpcOptions']
       });
       server.listen({ port: Number(process.env.PORT), host: process.env.HOST }, async (err, address) => {
-        const pixels = await getEncodedTimestamp(
-          'https://static-cdn.jtvnw.net/twitch-clips-thumbnails-prod/OilyClumsyLorisLitFam-UhVlgBoVRPDlk1X1/0339a75a-4829-4242-8e36-dcd08f2f4793/preview.jpg'
-        );
-        console.log(pixels);
         if (err) {
           console.error(err);
           process.exit(1);

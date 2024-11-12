@@ -16,7 +16,7 @@ import { useSuggestIdentification } from '@/services/api/identifications';
 import { useObservations } from '@/services/api/observations';
 import { Slot } from '@radix-ui/react-slot';
 import { format } from 'date-fns';
-import { ComponentProps, FC, PropsWithChildren, useCallback } from 'react';
+import { ComponentProps, FC, PropsWithChildren, useCallback, useEffect, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { GalleryProvider, Slide } from './gallery/GalleryProvider';
 import { useGallery } from './gallery/hooks';
@@ -105,13 +105,28 @@ export const Observations = () => {
             <Polaroid>
               <Preloader>
                 {observation.images.map(image => (
-                  <Square key={image.id} src={image.url} options={{ extract: image.boundingBox }} />
+                  <Square
+                    key={image.id}
+                    src={image.url}
+                    options={{ extract: image.boundingBox, width: 50, height: 50 }}
+                  />
                 ))}
               </Preloader>
               {observation.images.map(image => (
                 <Slide key={image.id} id={image.id.toString()}>
-                  <img src={image.url} className="hidden" />
-                  <Square className="w-full h-full" src={image.url} options={{ extract: image.boundingBox }} />
+                  <div className="w-full h-full overflow-clip relative">
+                    <Square
+                      loading="lazy"
+                      className="absolute inset-0 w-full h-full z-10"
+                      src={image.url}
+                      options={{ extract: image.boundingBox }}
+                    />
+                    <Square
+                      className="absolute inset-0 w-full h-full blur-2xl"
+                      src={image.url}
+                      options={{ extract: image.boundingBox, width: 50, height: 50 }}
+                    />
+                  </div>
                 </Slide>
               ))}
             </Polaroid>
@@ -206,9 +221,16 @@ export const Observations = () => {
 
 export const Preloader: FC<PropsWithChildren> = ({ children }) => {
   const [ref, inView] = useInView();
+  const [hasLoaded, setHasLoaded] = useState(false);
+
+  useEffect(() => {
+    if (hasLoaded) return;
+    if (inView) setHasLoaded(true);
+  }, [inView, hasLoaded]);
+
   return (
     <div ref={ref} className="w-0 h-0">
-      {inView && children}
+      {hasLoaded && children}
     </div>
   );
 };
