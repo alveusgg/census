@@ -5,10 +5,7 @@ import { useEnvironment } from '../../utils/env/env.js';
 const scopes: string[] = [];
 export const createSignInRequest = (path: string, state: string) => {
   const env = useEnvironment();
-  let origin = `http://${env.variables.HOST}:${env.variables.PORT}`;
-  if (env.variables.API_URL) {
-    origin = env.variables.API_URL;
-  }
+  const origin = getHost();
 
   const url = new URL('https://id.twitch.tv/oauth2/authorize');
   url.searchParams.set('client_id', env.variables.TWITCH_CLIENT_ID);
