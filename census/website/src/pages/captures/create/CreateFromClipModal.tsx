@@ -132,7 +132,7 @@ export const ClipCreationProgress: FC<ClipCreationProgressProps> = ({ id, onComp
 
   return (
     <div className="flex justify-between items-center gap-3 bg-alveus p-4 rounded-md w-full">
-      <p>We're upgrading this clip to 4K, please wait!</p>
+      <p>We&apos;re upgrading this clip to 4K, please wait!</p>
       <Loader />
     </div>
   );

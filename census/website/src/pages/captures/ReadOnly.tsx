@@ -16,9 +16,10 @@ export const ReadOnly: FC<CaptureProps> = ({ id }) => {
       </Breadcrumbs>
       <h1 className="text-2xl font-bold">Saved!</h1>
       {capture.data.observations.map(observation => (
-        <div className="flex gap-2">
+        <div key={observation.id} className="flex gap-2">
           {observation.images.map(image => (
             <Square
+              key={image.id}
               className="w-64 h-64"
               src={image.url}
               options={{

@@ -1,10 +1,10 @@
 import type { ObservationPayload } from '@alveusgg/census-api/src/services/observations/observations';
 import { useMutation, useQueryClient, useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { key, useAPI, useLiveQuery } from '../query/hooks';
 
 export const useCapture = (id: number) => {
-  const snapshotQueryKey = useMemo(() => key('capture', id.toString()), [id]);
+  const snapshotQueryKey = key('capture', id.toString());
   const trpc = useAPI();
   const callback = useLiveQuery(snapshotQueryKey);
 

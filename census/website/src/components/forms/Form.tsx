@@ -3,9 +3,9 @@ import { FC, PropsWithChildren, useCallback } from 'react';
 import { FieldValues, FormProvider, Path, PathValue, SubmitHandler, UseFormReturn } from 'react-hook-form';
 
 export interface FormProps extends Omit<React.HTMLAttributes<HTMLFormElement>, 'onSubmit'> {
-  methods: UseFormReturn<any>;
-  onSubmit: SubmitHandler<any>;
-  onError?: (error: any) => void;
+  methods: UseFormReturn;
+  onSubmit: SubmitHandler<FieldValues>;
+  onError?: (error: unknown) => void;
 }
 
 export const Form: FC<PropsWithChildren<FormProps>> = ({

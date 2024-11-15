@@ -1,22 +1,22 @@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/feedback/Tooltip';
-import { format } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
-import { FC } from 'react';
+import { FC, PropsWithChildren } from 'react';
 
 interface TimestampProps {
   date: Date;
 }
 
-export const Timestamp: FC<TimestampProps> = ({ date }) => {
+export const Timestamp: FC<PropsWithChildren<TimestampProps>> = ({ children, date }) => {
+  const currentTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   return (
     <TooltipProvider>
       <Tooltip>
-        <TooltipTrigger type="button">
-          <span>{formatInTimeZone(date, 'America/Chicago', 'PP p')}</span>
-        </TooltipTrigger>
+        <TooltipTrigger type="button">{children}</TooltipTrigger>
         <TooltipContent>
           <span className="flex gap-2 items-center">
-            <span>Your time: {format(date, 'PP p')}</span>
+            <span>
+              {currentTimezone}: {formatInTimeZone(date, currentTimezone, 'dd/MM/yyyy HH:mm')}
+            </span>
           </span>
         </TooltipContent>
       </Tooltip>

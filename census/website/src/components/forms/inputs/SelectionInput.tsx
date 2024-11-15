@@ -85,11 +85,12 @@ export const SelectionInput: FC<
             state: 'drawing'
           };
         } finally {
-          if (!pending.current || !pendingBoxRef.current) return;
-          pendingBoxRef.current!.style.opacity = '1';
-          applyBoundingBoxToElement(pendingBoxRef.current, pending.current.boundingBox);
-          e.stopPropagation();
-          e.preventDefault();
+          if (pending.current && pendingBoxRef.current) {
+            pendingBoxRef.current!.style.opacity = '1';
+            applyBoundingBoxToElement(pendingBoxRef.current, pending.current.boundingBox);
+            e.stopPropagation();
+            e.preventDefault();
+          }
         }
       },
       { signal: abortController.signal }
@@ -117,8 +118,9 @@ export const SelectionInput: FC<
           // Otherwise, we are in resize mode.
           pending.current = updateBoxSizeFromMousePosition(box, point.x, point.y);
         } finally {
-          if (!pending.current || !pendingBoxRef.current) return;
-          applyBoundingBoxToElement(pendingBoxRef.current, pending.current.boundingBox);
+          if (pending.current && pendingBoxRef.current) {
+            applyBoundingBoxToElement(pendingBoxRef.current, pending.current.boundingBox);
+          }
         }
       },
       { signal: abortController.signal }
@@ -136,14 +138,17 @@ export const SelectionInput: FC<
           if (!value) return [pending.current!];
           onChange([...value.filter(box => box.boundingBox.id !== pending.current?.boundingBox.id), pending.current]);
         } finally {
-          if (!pending.current || !pendingBoxRef.current) return;
-          const clickedBoxElement = node.querySelector<HTMLDivElement>(`[data-id="${pending.current.boundingBox.id}"]`);
-          if (clickedBoxElement) {
-            clickedBoxElement.style.opacity = '1';
+          if (pending.current && pendingBoxRef.current) {
+            const clickedBoxElement = node.querySelector<HTMLDivElement>(
+              `[data-id="${pending.current.boundingBox.id}"]`
+            );
+            if (clickedBoxElement) {
+              clickedBoxElement.style.opacity = '1';
+            }
+            pendingBoxRef.current!.style.opacity = '0';
+            pending.current = null;
+            applyBoundingBoxToElement(pendingBoxRef.current);
           }
-          pendingBoxRef.current!.style.opacity = '0';
-          pending.current = null;
-          applyBoundingBoxToElement(pendingBoxRef.current);
         }
       },
       { signal: abortController.signal }

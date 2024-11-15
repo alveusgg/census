@@ -1,4 +1,4 @@
-import { addHours, addSeconds, differenceInSeconds, isAfter, setMinutes, setSeconds, subMinutes } from 'date-fns';
+import { addHours, addSeconds, differenceInSeconds, isBefore, setMinutes, setSeconds, subMinutes } from 'date-fns';
 import sharp from 'sharp';
 import { useEnvironment } from '../../utils/env/env';
 import { ClipNotFoundResult, ClipNotProcessedResult, VODNotFoundResult } from '../capture';
@@ -20,16 +20,19 @@ export const getClip = async (id: string): Promise<ClipResult> => {
   const { twitch } = useEnvironment();
   const clip = await twitch.clips.getClipById(id);
   if (!clip || !clip.id || !clip.creationDate) return { result: 'error', type: 'clip_not_found' };
-  if (!clip.videoId || !clip.vodOffset) {
-    if (isAfter(clip.creationDate, subMinutes(new Date(), 15))) return { result: 'error', type: 'clip_not_processed' };
+  if ((!clip.videoId || !clip.vodOffset) && isBefore(clip.creationDate, subMinutes(new Date(), 10))) {
     return { result: 'error', type: 'vod_not_found' };
   }
-  const vod = await getVOD(clip.videoId);
 
-  const vodStartDate = new Date(vod.publishedAt);
-  const twitchStartDate = addSeconds(vodStartDate, clip.vodOffset);
+  const estimatedStartDate = await (async () => {
+    if (!clip.videoId || !clip.vodOffset) return clip.creationDate;
+    const vod = await getVOD(clip.videoId);
+    const vodStartDate = new Date(vod.publishedAt);
+    return addSeconds(vodStartDate, clip.vodOffset);
+  })();
+
   const encodedTimestamp = await getEncodedTimestamp(getThumbnailUrl(clip.thumbnailUrl));
-  const startDate = estimateStartDateFromTwitchTimestampAndEncodedTimestamp(twitchStartDate, encodedTimestamp);
+  const startDate = estimateStartDateFromTwitchTimestampAndEncodedTimestamp(estimatedStartDate, encodedTimestamp);
   const endDate = addSeconds(startDate, clip.duration);
 
   const result = {

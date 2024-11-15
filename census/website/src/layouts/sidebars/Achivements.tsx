@@ -57,7 +57,7 @@ export const Achievements = () => {
             </Counter>
           </div>
         </div>
-        <div className="flex flex-col gap-2.5 font-sans text-left overflow-y-scroll p-4">
+        <div className="flex flex-col gap-2.5 font-sans text-left overflow-y-scroll p-4 flex-1">
           {pending.data.length > 0 && (
             <div className="flex justify-between items-center text-white">
               <p className="font-semibold text-sm">achievements</p>
@@ -80,12 +80,12 @@ export const Achievements = () => {
                   points={achievement.points}
                 >
                   <div className="flex justify-between">
-                    <p className="font-semibold">{'Red Paper Wasp'}</p>
+                    <p className="font-semibold text-left">{achievement.identification?.nickname}</p>
                     <span className="font-bold text-sm">{achievement.points} pts</span>
                   </div>
                   <p className="mt-1 text-left text-sm">
-                    <span className="italic font-semibold">{achievement.observation?.observedBy}</span> has confirmed
-                    your id.
+                    <span className="italic font-semibold">{achievement.identification?.confirmedBy}</span> has
+                    confirmed your id.
                   </p>
                 </Achievement>
               ))

@@ -1,14 +1,17 @@
 import { SimpleAlveus } from '@/components/assets/logos/SimpleAlveus';
 import { Wordmark } from '@/components/assets/logos/Wordmark';
 import { Button } from '@/components/controls/button/juicy';
+import SiBinoculars from '@/components/icons/SiBinoculars';
 import SiHome from '@/components/icons/SiHome';
 import SiLogOut from '@/components/icons/SiLogOut';
 import SiMenu from '@/components/icons/SiMenu';
+import SiPhoto from '@/components/icons/SiPhoto';
 import SiUser from '@/components/icons/SiUser';
 import { useSidebar } from '@/components/layout/LayoutProvider';
 import { cn } from '@/utils/cn';
 import { AnimatePresence, HTMLMotionProps, motion } from 'framer-motion';
-import { ComponentProps, FC } from 'react';
+import { ComponentPropsWithoutRef, ElementType, FC, PropsWithChildren, useRef } from 'react';
+import { Link } from 'react-router-dom';
 
 export const MenuTrigger = () => {
   const [, setOpen] = useSidebar();
@@ -51,9 +54,17 @@ export const Menu = () => {
             </AnimatePresence>
           </div>
           <div className="flex flex-col gap-2 py-2 w-full flex-1">
-            <MenuItem>
+            <MenuItem as={Link} to="/">
               <SiHome className="text-2xl" />
               <MenuLabel>home</MenuLabel>
+            </MenuItem>
+            <MenuItem as={Link} to="/observations">
+              <SiPhoto className="text-2xl" />
+              <MenuLabel>observations</MenuLabel>
+            </MenuItem>
+            <MenuItem as={Link} to="/identifications">
+              <SiBinoculars className="text-2xl" />
+              <MenuLabel>identifications</MenuLabel>
             </MenuItem>
           </div>
           <div className="flex flex-col gap-2 py-2 w-full">
@@ -61,7 +72,7 @@ export const Menu = () => {
               <SiUser className="text-2xl" />
               <MenuLabel>profile</MenuLabel>
             </MenuItem>
-            <MenuItem>
+            <MenuItem as={Link} to="/auth/signout">
               <SiLogOut className="text-2xl" />
               <MenuLabel>sign out</MenuLabel>
             </MenuItem>
@@ -72,19 +83,50 @@ export const Menu = () => {
   );
 };
 
-export const MenuItem: FC<ComponentProps<'button'>> = ({ className, ...props }) => {
-  const [open] = useSidebar();
+type PolymorphicAsProp<E extends ElementType> = {
+  as?: E;
+};
+type PolymorphicProps<E extends ElementType> = PropsWithChildren<ComponentPropsWithoutRef<E> & PolymorphicAsProp<E>>;
+
+type MenuItemProps<E extends ElementType = 'button'> = PolymorphicProps<E>;
+
+export function MenuItem<E extends ElementType = 'button'>({ className, as, onClick, ...props }: MenuItemProps<E>) {
+  const [open, setOpen] = useSidebar();
+  const pointerTimeoutHandle = useRef<NodeJS.Timeout | null>(null);
+
+  const Component = as ?? 'button';
+
   return (
-    <button
+    <Component
+      onClick={(...args) => {
+        // If the user clicked the item, we don't want to open the sidebar. They know what they're doing.
+        if (onClick) onClick(...args);
+
+        if (!pointerTimeoutHandle.current) return;
+        clearTimeout(pointerTimeoutHandle.current);
+        pointerTimeoutHandle.current = null;
+      }}
+      onPointerEnter={() => {
+        // If the user hovers over the item, we want to open the sidebar after a delay.
+        pointerTimeoutHandle.current = setTimeout(() => {
+          setOpen(true);
+        }, 1000);
+      }}
+      onPointerLeave={() => {
+        // If the user leaves the item, we want to cancel the sidebar open delay.
+        if (!pointerTimeoutHandle.current) return;
+        clearTimeout(pointerTimeoutHandle.current);
+        pointerTimeoutHandle.current = null;
+      }}
       className={cn(
-        'py-1.5 px-4 flex items-center hover:bg-accent-900 hover:bg-opacity-5 bg-accent-200 rounded-lg font-medium text-alveus-darker',
+        'py-1.5 px-4 flex items-center hover:bg-alveus hover:bg-opacity-5 rounded-lg font-medium text-alveus-darker',
         open ? 'w-full' : 'w-fit',
         className
       )}
       {...props}
     />
   );
-};
+}
 
 const ZeroWidthSeparator = '\u200B';
 

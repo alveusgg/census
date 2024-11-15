@@ -50,11 +50,15 @@ export const useRedeemAllAchievements = () => {
   });
 };
 
+interface Identifiable {
+  id: number;
+}
+
 export const usePatchAchievement = () => {
   const queryClient = useQueryClient();
   return useCallback(
     (id: number) => {
-      const existing: any[] | undefined = queryClient.getQueryData(key('achievements', 'pending'));
+      const existing: Identifiable[] | undefined = queryClient.getQueryData(key('achievements', 'pending'));
       if (!existing) return;
       queryClient.setQueryData(
         key('achievements', 'pending'),

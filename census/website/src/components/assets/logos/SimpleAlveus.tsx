@@ -3,7 +3,7 @@ import { FC, SVGAttributes } from 'react';
 export const SimpleAlveus: FC<SVGAttributes<SVGSVGElement>> = ({ ...props }) => {
   return (
     <svg width="24" viewBox="0 0 28 35" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
-      <g clip-path="url(#clip0_456_1363)">
+      <g clipPath="url(#clip0_456_1363)">
         <path
           d="M19.1 27.2398V28.2398C18.2 31.4398 15.88 32.1798 12.08 32.1798C7.99 32.1798 4.59 29.4298 4 25.8598C5.36 25.2398 6.67 24.5398 7.92 23.7698C8.98 23.1198 10.05 22.3798 11.32 22.2198C11.99 22.1298 12.66 22.2098 13.31 22.3898C14.61 22.7498 15.74 23.5298 16.65 24.5298L19.11 27.2398H19.1Z"
           fill="white"
