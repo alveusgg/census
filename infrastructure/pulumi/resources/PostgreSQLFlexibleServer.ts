@@ -40,7 +40,7 @@ export class PostgreSQLFlexibleServer extends ComponentResource {
         resourceGroupName: args.resourceGroupName,
         administratorLogin: username.result,
         administratorLoginPassword: password.result,
-        version: '12',
+        version: '16',
         storage: {
           storageSizeGB: 32
         },

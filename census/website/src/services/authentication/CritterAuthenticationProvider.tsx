@@ -76,6 +76,7 @@ export const CritterAuthenticationProvider: FC<PropsWithChildren> = ({ children 
         set({ status: AuthenticationStatus.Authenticating });
         const params = new URLSearchParams();
         if (from) params.set('from', from);
+        params.set('origin', window.location.origin);
         window.location.href = `${apiBaseUrl}/auth/signin?${params.toString()}`;
       },
       signOut: async () => {
