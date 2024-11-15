@@ -8,7 +8,7 @@ export const config = z.object({
   TWITCH_CLIENT_ID: z.string(),
   TWITCH_CLIENT_SECRET: z.string(),
 
-  NODE_ENV: z.enum(['development', 'production']).default('development'),
+  NODE_ENV: z.enum(['development', 'production']),
   HOST: z.string(),
   PORT: z.coerce.number(),
 

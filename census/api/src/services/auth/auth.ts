@@ -21,20 +21,17 @@ export const createSignInRequest = (path: string, state: string) => {
 
 export const getHost = () => {
   const { variables } = useEnvironment();
-  const host = (() => {
-    if (variables.NODE_ENV === 'development') {
-      return `http://${variables.HOST}:${variables.PORT}`;
-    }
-    if (variables.API_URL) {
-      return variables.API_URL;
-    }
-    if (variables.CONTAINER_APP_NAME && variables.CONTAINER_APP_ENV_DNS_SUFFIX) {
-      return `https://${variables.CONTAINER_APP_NAME}.${variables.CONTAINER_APP_ENV_DNS_SUFFIX}`;
-    }
-  })();
+  if (variables.NODE_ENV === 'development') {
+    return `http://${variables.HOST}:${variables.PORT}`;
+  }
+  if (variables.API_URL) {
+    return variables.API_URL;
+  }
+  if (variables.CONTAINER_APP_NAME && variables.CONTAINER_APP_ENV_DNS_SUFFIX) {
+    return `https://${variables.CONTAINER_APP_NAME}.${variables.CONTAINER_APP_ENV_DNS_SUFFIX}`;
+  }
 
-  if (!host) throw new Error('No host found');
-  return host;
+  throw new Error('No host found');
 };
 
 export const exchangeCodeForToken = async (path: string, code: string) => {
