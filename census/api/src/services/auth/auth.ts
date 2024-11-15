@@ -2,7 +2,7 @@ import { exchangeCode } from '@twurple/auth';
 import z from 'zod';
 import { useEnvironment } from '../../utils/env/env.js';
 
-const scopes = ['chat:read', 'chat:edit', 'user:read:chat', 'user:write:chat'];
+const scopes: string[] = [];
 export const createSignInRequest = (path: string, state: string) => {
   const env = useEnvironment();
   let origin = `http://${env.variables.HOST}:${env.variables.PORT}`;
@@ -19,12 +19,27 @@ export const createSignInRequest = (path: string, state: string) => {
   return url.toString();
 };
 
+export const getHost = () => {
+  const { variables } = useEnvironment();
+  const host = (() => {
+    if (variables.NODE_ENV === 'development') {
+      return `http://${variables.HOST}:${variables.PORT}`;
+    }
+    if (variables.API_URL) {
+      return variables.API_URL;
+    }
+    if (variables.CONTAINER_APP_NAME && variables.CONTAINER_APP_ENV_DNS_SUFFIX) {
+      return `https://${variables.CONTAINER_APP_NAME}.${variables.CONTAINER_APP_ENV_DNS_SUFFIX}`;
+    }
+  })();
+
+  if (!host) throw new Error('No host found');
+  return host;
+};
+
 export const exchangeCodeForToken = async (path: string, code: string) => {
   const env = useEnvironment();
-  let origin = `http://${env.variables.HOST}:${env.variables.PORT}`;
-  if (env.variables.API_URL) {
-    origin = env.variables.API_URL;
-  }
+  const origin = getHost();
 
   const token = await exchangeCode(
     env.variables.TWITCH_CLIENT_ID,

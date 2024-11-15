@@ -18,8 +18,9 @@ export const config = z.object({
   POSTGRES_DB: z.string(),
   POSTGRES_SSL: z.coerce.boolean().default(false),
 
-  UI_URL: z.string(),
   API_URL: z.string().optional(),
+  CONTAINER_APP_NAME: z.string().optional(),
+  CONTAINER_APP_ENV_DNS_SUFFIX: z.string().optional(),
 
   STORAGE_ACCOUNT_NAME: z.string(),
   STORAGE_ACCOUNT_KEY: z.string(),

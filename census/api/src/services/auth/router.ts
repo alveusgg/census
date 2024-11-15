@@ -12,17 +12,19 @@ const TwitchRedirectResponse = z.object({
 });
 
 const SignInRequest = z.object({
-  from: z.string().optional()
+  from: z.string().optional(),
+  origin: z.string()
 });
 const cache = new Map<string, string>();
 
 export default async function register(router: FastifyInstance) {
   router.get('/auth/signin', async (request, reply) => {
     const key = crypto.randomUUID();
-    const state: { key: string; from?: string } = { key };
+    const state: { key: string; from?: string; origin?: string } = { key };
 
-    const { from } = SignInRequest.parse(request.query);
+    const { from, origin } = SignInRequest.parse(request.query);
     if (from) state.from = from;
+    if (origin) state.origin = origin;
 
     cache.set(key, JSON.stringify(state));
 
@@ -41,7 +43,7 @@ export default async function register(router: FastifyInstance) {
     if (!(await validateToken(token.accessToken))) {
       throw new Error('Invalid token');
     }
-    const { from } = SignInRequest.parse(JSON.parse(state));
+    const { from, origin } = SignInRequest.parse(JSON.parse(state));
 
     const user = await getUserInformation(token.accessToken);
     const jwt = await createJWT(
@@ -57,6 +59,6 @@ export default async function register(router: FastifyInstance) {
     if (from) params.set('from', from);
     cache.delete(query.state);
 
-    return reply.redirect(`${variables.UI_URL}/auth/redirect?${params.toString()}`);
+    return reply.redirect(`${origin}/auth/redirect?${params.toString()}`);
   });
 }
