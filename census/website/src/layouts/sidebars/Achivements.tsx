@@ -24,7 +24,7 @@ export const Achievements = () => {
 
   return (
     <motion.div
-      className="flex flex-col fixed md:relative right-2 top-2 bottom-2 md:top-auto md:bottom-auto md:right-auto antialiased"
+      className="flex flex-col z-10 fixed md:relative right-2 top-2 bottom-2 md:top-auto md:bottom-auto md:right-auto antialiased"
       animate={{ width: open ? '16rem' : '0' }}
       transition={{ ease: 'backInOut', duration: 0.4 }}
     >

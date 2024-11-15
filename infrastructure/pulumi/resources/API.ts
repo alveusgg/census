@@ -25,6 +25,7 @@ interface RawContainerArgs {
   name: string;
   image: string;
   env: Record<string, string | Input<string>>;
+  volumes?: Record<string, Volume>;
 }
 
 interface Volume {
@@ -39,6 +40,8 @@ interface APIArgs {
 
   env: Record<string, string | Input<string>>;
   image: Image | string;
+  command?: Input<string>[];
+  size: Size;
 
   vaults?: Vault[];
 
@@ -93,6 +96,7 @@ const getSidecarContainers = (sidecars?: RawContainerArgs[]) => {
         };
       })
     ],
+    volumeMounts: getVolumeMounts(sidecar.volumes),
     resources: {
       cpu: 1,
       memory: '2.0Gi'
@@ -136,10 +140,20 @@ const getCustomDomains = (
   ];
 };
 
+type Size = 'micro' | 'regular' | 'large';
+
+const getResources = (size: Size) => {
+  if (size === 'micro') return { cpu: 0.25, memory: '0.5Gi' };
+  if (size === 'regular') return { cpu: 1, memory: '2.0Gi' };
+  if (size === 'large') return { cpu: 2, memory: '4.0Gi' };
+  throw new Error(`Unknown size: ${size}`);
+};
+
 export class API extends ComponentResource {
   public readonly resourceGroupName: Input<string>;
   public readonly environmentName: Input<string>;
   public readonly defaultUrl: Output<string>;
+  public readonly defaultHost: Output<string>;
   public readonly identity: Output<SystemAssignedIdentity>;
 
   constructor(id: string, args: APIArgs, opts?: ResourceOptions) {
@@ -190,10 +204,7 @@ export class API extends ComponentResource {
             {
               name: args.name,
               image: getName(args.image),
-              resources: {
-                cpu: 1,
-                memory: '2.0Gi'
-              },
+              resources: getResources(args.size),
               env: [
                 ...Object.entries(args.env).map(([name, value]) => {
                   return {
@@ -207,7 +218,8 @@ export class API extends ComponentResource {
                 },
                 ...(args.port ? [{ name: 'PORT', value: args.port.toString() }] : [])
               ],
-              volumeMounts: getVolumeMounts(args.volumes)
+              volumeMounts: getVolumeMounts(args.volumes),
+              command: args.command
             },
             ...getSidecarContainers(args.sidecars)
           ],
@@ -232,11 +244,13 @@ export class API extends ComponentResource {
       { parent: this }
     );
 
-    const defaultUrl = interpolate`https://${api.name}.${environment.defaultDomain}`;
+    const defaultHost = interpolate`${api.name}.${environment.defaultDomain}`;
+    const defaultUrl = interpolate`https://${defaultHost}`;
 
     this.resourceGroupName = args.resourceGroupName;
     this.environmentName = environment.name;
     this.defaultUrl = defaultUrl;
+    this.defaultHost = defaultHost;
     this.identity = api.identity.apply(i => {
       if (!i) throw new Error('No identity found');
       if (i.type !== 'SystemAssigned') throw new Error('Identity is not system assigned');

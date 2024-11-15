@@ -1,11 +1,12 @@
 import { Component, IngestionMode } from '@pulumi/azure-native/insights';
 import { getSharedKeysOutput, GetSharedKeysResult, Workspace } from '@pulumi/azure-native/operationalinsights';
 import { ResourceGroup } from '@pulumi/azure-native/resources';
-import { Config, getProject, getStack } from '@pulumi/pulumi';
+import { Config, getProject, getStack, interpolate } from '@pulumi/pulumi';
 
 import { ManagedEnvironment, ManagedEnvironmentsStorage } from '@pulumi/azure-native/app';
 import { API } from './resources/API';
 
+import { Endpoint, QueryStringCachingBehavior } from '@pulumi/azure-native/cdn';
 import { Configuration, Database } from '@pulumi/azure-native/dbforpostgresql';
 import {
   BlobContainer,
@@ -23,7 +24,7 @@ import { Website } from './resources/Website';
 const project = getProject();
 const stack = getStack();
 const id = `${project}-${stack}`;
-const simpleId = `cc${stack}`;
+const simpleId = `apc${stack}`;
 
 // MARK: Config
 const config = new Config();
@@ -95,7 +96,7 @@ export = async () => {
     accountName: storage.name
   });
 
-  const environmentStorage = new ManagedEnvironmentsStorage(`${simpleId}-stge`, {
+  const environmentCacheStorage = new ManagedEnvironmentsStorage(`${simpleId}-cache`, {
     resourceGroupName: group.name,
     environmentName: environment.name,
     properties: {
@@ -139,6 +140,7 @@ export = async () => {
     resourceGroupName: group.name,
     environmentName: environment.name,
     port: 3000,
+    size: 'regular',
     env: {
       HOST: '0.0.0.0',
       PORT: '3000',
@@ -155,22 +157,73 @@ export = async () => {
       JWT_SECRET: config.require('jwt-secret'),
       TWITCH_CLIENT_ID: config.require('twitch-client-id'),
       TWITCH_CLIENT_SECRET: config.require('twitch-client-secret'),
-      TWITCH_USERNAME: config.require('twitch-username'),
-      UI_URL: `https://${config.require('ui-domain')}`,
-      API_URL: `https://${config.require('api-domain')}`,
-
-      CHANNELS_TO_LISTEN_TO: 'alveussanctuary,alveusgg,strangecyan',
+      // UI_URL: `https://${config.require('ui-domain')}`,
 
       STORAGE_ACCOUNT_NAME: storage.name,
       STORAGE_ACCOUNT_KEY: key,
       CONTAINER_NAME: container.name
     },
-    image: config.require('api-image'),
+    volumes: {
+      dragonfly: {
+        path: '/data',
+        storage: environmentCacheStorage
+      }
+    },
+    image: config.require('image'),
     scale: {
-      min: 1,
+      min: 0,
       max: 1,
       noOfRequestsPerInstance: 100
-    }
+    },
+    sidecars: [
+      {
+        name: 'dragonfly-cache',
+        image: 'docker.dragonflydb.io/dragonflydb/dragonfly:latest',
+        volumes: {
+          dragonfly: {
+            path: '/data',
+            storage: environmentCacheStorage
+          }
+        },
+        env: {}
+      }
+    ]
+  });
+
+  const imageOptimisation = new API(`${id}-ipx`, {
+    name: 'ipx',
+    resourceGroupName: group.name,
+    environmentName: environment.name,
+    env: {},
+    image: 'node:22',
+    command: [
+      interpolate`IPX_HTTP_DOMAINS=${storage.name}.blob.core.windows.net IPX_HTTP_MAX_AGE=86400 npx --yes ipx serve --port 3000 --host 0.0.0.0`
+    ],
+    size: 'micro',
+    scale: {
+      min: 0,
+      max: 1,
+      noOfRequestsPerInstance: 50
+    },
+    port: 3000
+  });
+
+  const imageOptimisationEndpoint = new Endpoint(`${id}-ipx-cdn`, {
+    endpointName: `${id}-ipx-cdn`,
+    location: 'global',
+    isHttpAllowed: false,
+    isHttpsAllowed: true,
+    originHostHeader: imageOptimisation.defaultHost,
+    origins: [
+      {
+        hostName: imageOptimisation.defaultHost,
+        httpsPort: 443,
+        name: 'origin-image-optimisation'
+      }
+    ],
+    profileName: website.profileName,
+    queryStringCachingBehavior: QueryStringCachingBehavior.IgnoreQueryString,
+    resourceGroupName: group.name
   });
 
   // MARK: Backstage
@@ -178,8 +231,8 @@ export = async () => {
     ...website,
     env: {
       variables: {
-        apiBaseUrl: `https://${config.require('api-domain')}`,
-        imageResizeCDNUrl: config.require('image-resize-cdn-url'),
+        apiBaseUrl: api.defaultUrl,
+        ipxBaseUrl: imageOptimisationEndpoint.hostName.apply(host => `https://${host}`),
         appInsightsConnectionString: appInsights.connectionString
       },
       flags: {}
