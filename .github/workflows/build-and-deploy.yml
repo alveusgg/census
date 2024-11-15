@@ -138,7 +138,7 @@ jobs:
           work-dir: infrastructure/pulumi
           config-map: |
             {
-              "api-image": { value: "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main-${{ github.run_id }}-census-api", secret: false },
+              "image": { value: "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main-${{ github.run_id }}-census-api", secret: false },
             }
         env:
           ARM_USE_OIDC: true

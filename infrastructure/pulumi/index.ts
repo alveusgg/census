@@ -157,7 +157,6 @@ export = async () => {
       JWT_SECRET: config.require('jwt-secret'),
       TWITCH_CLIENT_ID: config.require('twitch-client-id'),
       TWITCH_CLIENT_SECRET: config.require('twitch-client-secret'),
-      // UI_URL: `https://${config.require('ui-domain')}`,
 
       STORAGE_ACCOUNT_NAME: storage.name,
       STORAGE_ACCOUNT_KEY: key,
