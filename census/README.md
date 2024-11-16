@@ -6,20 +6,20 @@ Prerequisites:
 - Ensure you have `pnpm` installed
 - Run `pnpm install` to install the dependencies
 - Ensure you have `docker` installed and running on your machine
-- You will need to copy the `src/services/api/.env.example` file to `src/services/api/.env` and supply the correct environment variables.
+- You will need to copy the `./api/.env.example` file to `./api/.env` and supply the correct environment variables.
 
 ### Variables you will need to change
 
 - `TWITCH_CLIENT_ID`
 - `TWITCH_CLIENT_SECRET`
 
-Go to the [Twitch Developer Dashboard](https://dev.twitch.tv/console) and create a new application to get your `TWITCH_CLIENT_ID` and `TWITCH_CLIENT_SECRET`. Ensure that you set the redirect URL to `http://localhost:35523/auth/redirect` & `http://localhost:35523/admin/redirect`.
+Go to the [Twitch Developer Dashboard](https://dev.twitch.tv/console) and create a new application to get your `TWITCH_CLIENT_ID` and `TWITCH_CLIENT_SECRET`. Ensure that you set the OAuth Redirect URLs to `http://localhost:35523/auth/redirect` & `http://localhost:35523/admin/redirect`.
 
 - `STORAGE_ACCOUNT_NAME`
 - `STORAGE_ACCOUNT_KEY`
 - `CONTAINER_NAME`
 
-Currently, we don't support the Azurite emulator for local development, so you'll need to have an Azure storage account and container that you can use.
+Currently, we don't support the Azurite emulator for local development, so you'll need to have an Azure storage account and container that you can use. From the Azure home page, under Azure services, go to Storage accounts and create a new storage account. `STORAGE_ACCOUNT_NAME` is the name of the newly created storage account. `STORAGE_ACCOUNT_KEY` can be found by going to your storage account's page > Security + networking > Access keys > and copying the key under key1 or key2. From the storage account's page, go to Data storage > Containers and create a new container to supply your `CONTAINER_NAME`.
 
 ### Variables you could change
 
@@ -42,8 +42,6 @@ These are all the default values that are used when the local docker compose fil
 ### Running the services
 
 In the root of the repo, run `docker compose up` to start the remaining services needed for the API to function.
-
-- Edit the file found in `apps/ui/src/services/backstage/local.ts` and point the `apiBaseUrl` to the API URL you're running locally. (You can probably just uncomment the line.)
 
 You can now make changes to both the UI and API and submit a PR for it!
 
