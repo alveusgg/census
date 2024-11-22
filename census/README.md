@@ -1,55 +1,53 @@
-# Getting started with developing
 
-Prerequisites:
+# Getting started
 
-- Clone the repo
-- Ensure you have `pnpm` installed
-- Run `pnpm install` to install the dependencies
-- Ensure you have `docker` installed and running on your machine
-- You will need to copy the `src/services/api/.env.example` file to `src/services/api/.env` and supply the correct environment variables.
+## Prerequisites
 
-### Variables you will need to change
+1. Clone the repository.
+2. Ensure you have `pnpm` installed and run `pnpm install`.
+3. Ensure you have `docker` installed and running on your machine.
+4. Clone `./api/.env.example` and rename as `./api/.env` and configure it as follows.
 
-- `TWITCH_CLIENT_ID`
-- `TWITCH_CLIENT_SECRET`
+### Twitch setup
+1. Go to the [Twitch Developer Dashboard](https://dev.twitch.tv/console).
+2. Create a new application and add the following as OAuth Redirect URLs.
+    - `http://localhost:35523/auth/redirect`
+    - `http://localhost:35523/admin/redirect`
+3. Copy the generated Client ID and Client Secret
+ 	- Update the `./api/.env` file with `TWITCH_CLIENT_ID` and `TWITCH_CLIENT_SECRET`.
 
-Go to the [Twitch Developer Dashboard](https://dev.twitch.tv/console) and create a new application to get your `TWITCH_CLIENT_ID` and `TWITCH_CLIENT_SECRET`. Ensure that you set the redirect URL to `http://localhost:35523/auth/redirect` & `http://localhost:35523/admin/redirect`.
-
-- `STORAGE_ACCOUNT_NAME`
-- `STORAGE_ACCOUNT_KEY`
-- `CONTAINER_NAME`
+### Azure setup
 
 Currently, we don't support the Azurite emulator for local development, so you'll need to have an Azure storage account and container that you can use.
 
-### Variables you could change
+1. Go to the Azure Portal.
+2. Create a storage account: 
+ 	- Under Azure services, select Storage accounts and create a new storage account.
+ 	- Update the `./api/.env` file with `STORAGE_ACCOUNT_NAME`.
+3. Obtain the access key:
+    - From your storage account's page, navigate to Security + networking > Access keys.
+ 	- Update the `./api/.env` file with `STORAGE_ACCOUNT_KEY` with either `key1` or `key2`.
+4. Create a storage container:
+    - From your storage account's page, go to Data storage > Containers and create a new container.
+    - Update the `./api/.env` file with `CONTAINER_NAME`.
+5. Enable public access for the container
+	- From your storage account's page, go to Configuration and set `Allow Blob anonymous access` to `Enabled`.
+	- From your container's page, select Change access level and set the `anonymous access level` as `Container` or `Blob`.
 
-- `JWT_SECRET`
+### `JWT_SECRET` setup
 
 This is the secret that the API uses to sign the JWTs. For local development, you can stick to the default value but know that it makes the token insecure. If you want to generate a new secret, you can run `pnpm --filter=@alveusgg/census-api setup:jwt` to generate a new secret.
 
-### Variables you probably should keep the same
+## Running the services
 
-- `UI_URL`
-- `POSTGRES_USER`
-- `POSTGRES_PASSWORD`
-- `POSTGRES_DB`
-- `POSTGRES_HOST`
-- `HOST`
-- `PORT`
+1. Start the database.
+	- In the root of the repo, run `docker compose up`.
+2. Start the API.
+	- `pnpm --filter=@alveusgg/census-api start`.
+	- `pnpm --filter=@alveusgg/census-api dev` to start in watch mode.
+3. Start the UI.
+	- `pnpm --filter=@alveusgg/census-ui start`.
 
-These are all the default values that are used when the local docker compose file is ran. Unless you have a reason to change them, it's best to keep them the same.
-
-### Running the services
-
-In the root of the repo, run `docker compose up` to start the remaining services needed for the API to function.
-
-- Edit the file found in `apps/ui/src/services/backstage/local.ts` and point the `apiBaseUrl` to the API URL you're running locally. (You can probably just uncomment the line.)
-
-You can now make changes to both the UI and API and submit a PR for it!
-
-- Run `pnpm --filter=@alveusgg/census-api start` to start the API (you can use `pnpm --filter=@alveusgg/census-api dev` to start the API in "watch" mode.)
-- Run `pnpm --filter=@alveusgg/census-ui start` to start the UI
-
-### Seeding the database
+## Seeding the database
 
 You will need to seed the database with the correct data. To add yourself as an admin, run `pnpm --filter=@alveusgg/census-api setup:api` and follow the prompts.
