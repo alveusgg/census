@@ -117,8 +117,9 @@ const runBinary = async (args: string[]) => {
 export const runTwitchDownloader = async (args: string[]) => {
   const { variables } = useEnvironment();
   if (variables.NODE_ENV !== 'development') {
-    throw new Error('TwitchDownloaderCLI is not available in production');
+    console.warn('TwitchDownloaderCLI will not be available in production');
   }
+
   const hasBinary = await checkForBinary();
   if (!hasBinary) {
     await downloadBinary();
