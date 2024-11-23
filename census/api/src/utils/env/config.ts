@@ -1,4 +1,4 @@
-import { ContainerClient, StorageSharedKeyCredential } from '@azure/storage-blob';
+import { ContainerClient } from '@azure/storage-blob';
 import { ApiClient } from '@twurple/api';
 import { AppTokenAuthProvider } from '@twurple/auth';
 import z from 'zod';
@@ -22,8 +22,7 @@ export const config = z.object({
   CONTAINER_APP_NAME: z.string().optional(),
   CONTAINER_APP_ENV_DNS_SUFFIX: z.string().optional(),
 
-  STORAGE_ACCOUNT_NAME: z.string(),
-  STORAGE_ACCOUNT_KEY: z.string(),
+  STORAGE_CONNECTION_STRING: z.string(),
   CONTAINER_NAME: z.string(),
 
   ASSETS_PATH: z.string().default('./assets'),
@@ -41,10 +40,8 @@ export const services = async (variables: z.infer<typeof config>) => {
     variables.POSTGRES_SSL
   );
 
-  const storage = new ContainerClient(
-    `https://${variables.STORAGE_ACCOUNT_NAME}.blob.core.windows.net/${variables.CONTAINER_NAME}`,
-    new StorageSharedKeyCredential(variables.STORAGE_ACCOUNT_NAME, variables.STORAGE_ACCOUNT_KEY)
-  );
+  const storage = new ContainerClient(variables.STORAGE_CONNECTION_STRING, variables.CONTAINER_NAME);
+  await storage.createIfNotExists({ access: 'blob' });
 
   const twitch = new ApiClient({
     authProvider: new AppTokenAuthProvider(variables.TWITCH_CLIENT_ID, variables.TWITCH_CLIENT_SECRET)

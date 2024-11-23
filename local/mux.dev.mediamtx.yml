@@ -1,0 +1,12 @@
+playback: yes
+playbackAddress: :9996
+
+paths:
+  test:
+    source: srt://test:8890?streamid=read:test
+    record: yes
+    recordPath: ./recordings/%path/%Y-%m-%d_%H-%M-%S-%f
+    recordFormat: fmp4
+    recordPartDuration: 1s
+    recordSegmentDuration: 1h
+    recordDeleteAfter: 1h

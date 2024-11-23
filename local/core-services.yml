@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: db01
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    command:
+      - postgres
+      - -c
+      - wal_level=logical
+
+  dragonfly:
+    image: 'docker.dragonflydb.io/dragonflydb/dragonfly'
+    ulimits:
+      memlock: -1
+    ports:
+      - '6379:6379'
+    volumes:
+      - dragonflydata:/data
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    command: 'azurite --loose --blobHost 0.0.0.0 --blobPort 10000 --location /workspace --debug /workspace/debug.log'
+    container_name: 'azurite'
+    hostname: azurite
+    restart: always
+    ports:
+      - '10000:10000'
+    volumes:
+      - azuritedata:/workspace
+volumes:
+  dragonflydata:
+  azuritedata:
+  pgdata:

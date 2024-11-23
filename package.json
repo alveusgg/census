@@ -1,7 +1,12 @@
 {
   "name": "@alveusgg/census",
   "version": "1.0.0",
-  "scripts": {},
+  "scripts": {
+    "deps:up": "docker compose --file local/core-services.yml up",
+    "deps:down": "docker compose --file local/core-services.yml down",
+    "stream:up": "docker compose --file local/clip-services.yml up",
+    "stream:down": "docker compose --file local/clip-services.yml down"
+  },
   "keywords": [],
   "author": "",
   "license": "MIT",

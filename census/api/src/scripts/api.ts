@@ -2,7 +2,7 @@ import { config } from 'dotenv';
 config();
 
 import { input } from '@inquirer/prompts';
-import { users } from '../db/schema/index.js';
+import { feeds, users } from '../db/schema/index.js';
 import { createEnvironment } from '../utils/env/env.js';
 
 const seed = async () => {
@@ -15,7 +15,17 @@ const seed = async () => {
     role: 'admin',
     username
   });
+
   console.log(`${username} has been added to the admin role.`);
+  console.log(`Setting up default development feed...`);
+
+  await environment.db.insert(feeds).values({
+    id: 'pollinator',
+    key: 'pollinatorkey1',
+    status: 'healthy'
+  });
+
+  console.log(`Default development feed has been setup.`);
 
   process.exit(0);
 };
