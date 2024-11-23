@@ -20,19 +20,19 @@
 
 This is the secret that the API uses to sign the JWTs. For local development, you can stick to the default value but know that it makes the token insecure. If you want to generate a new secret, you can run `pnpm --filter=@alveusgg/census-api setup:jwt` to generate a new secret.
 
+## Seeding the database
+
+You will need to seed the database with the correct data. To add yourself as an admin, run `pnpm --filter=@alveusgg/census-api setup:api` and follow the prompts.
+
 ## Running the services
 
-1. Start the database.
-   - In the root of the repo, run `docker compose up`.
+1. Start the local services, the database, cache & blob storage.
+   - In the root of the repo, run `pnpm run deps:up`.
 2. Start the API.
    - `pnpm --filter=@alveusgg/census-api start`.
    - `pnpm --filter=@alveusgg/census-api dev` to start in watch mode.
 3. Start the UI.
-   - `pnpm --filter=@alveusgg/census-website start`.
-
-## Seeding the database
-
-You will need to seed the database with the correct data. To add yourself as an admin, run `pnpm --filter=@alveusgg/census-api setup:api` and follow the prompts.
+   - `pnpm --filter=@alveusgg/census-website start`. This is always started in watch mode.
 
 ## Optional & additional setup
 
