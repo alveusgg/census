@@ -3,6 +3,6 @@ config:
   census:image: ghcr.io/alveusgg/census:main-11799584669-census-api
   census:jwt-secret:
     secure: AAABAFFLzowgnCldcwYtWAiYrmvn6ktctistnnFHDlFf7U79Tpb0I/YSY6bMXNhfXmQmXqVXqkFGtfZ40rkOK8d3ukXcX2ZniYw87o+YAnfu0hvTPI4Iy+Hh4a3M8g7rC/k5bMPOsMkxJxd0XQ0+pfHVMEaA/uo91WtrNqYPoQ39itEAY8KSgUksfEfTTvmQcY1jg4H4sRAigfz59o9lZw==
-  census:twitch-client-id: itag8f5m4r3ynbtrz933d7qh7c6ffq
+  census:twitch-client-id: sjj3rcjojtqyeobptmjf3pjukaerkc
   census:twitch-client-secret:
-    secure: AAABAET+mgAA+bu+Y2jmX/ENpvnBHc2pquz7h75I2MiZWvQ5zWXD19ainH3I8ZosE1dSTuoFJGWTghHzMmE=
+    secure: AAABAJY/MAFnmek/sfNPPpPph4UhaaKq1RTH/h9rXTsuAx8iOHyjAKlI1+O3OfsjQAHnru42kBZEQJzmfT4=
