@@ -158,8 +158,7 @@ export = async () => {
       TWITCH_CLIENT_ID: config.require('twitch-client-id'),
       TWITCH_CLIENT_SECRET: config.require('twitch-client-secret'),
 
-      STORAGE_ACCOUNT_NAME: storage.name,
-      STORAGE_ACCOUNT_KEY: key,
+      STORAGE_CONNECTION_STRING: interpolate`DefaultEndpointsProtocol=https;AccountName=${storage.name};AccountKey=${key};EndpointSuffix=core.windows.net`,
       CONTAINER_NAME: container.name
     },
     volumes: {
