@@ -69,8 +69,7 @@ export const getAppropriateBinary = async () => {
   const asset = data.assets.find(asset => {
     const filename = asset.name.match(/(?<=-)(.*)(?=.zip)/)?.[0];
     if (!filename) throw new Error(`Invalid filename: ${asset.name}`);
-    const [, architecture] = filename.split('-');
-    return architecture === `${getOS(process.platform)}${getArch(process.arch)}`;
+    return filename.endsWith(`${getOS(process.platform)}${getArch(process.arch)}`);
   });
   if (!asset) {
     throw new Error(`No binary found for ${getOS(process.platform)}${getArch(process.arch)}`);
