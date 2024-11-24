@@ -11,11 +11,11 @@ export const getTemporaryFile = (filename: string) => {
 
 export class TemporaryFile {
   private createdAt?: Date;
-  private ttl: number;
+  private ttl?: number;
   dir: string;
   path: string;
   name: string;
-  constructor(name: string, dir: string, path: string, ttl: number) {
+  constructor(name: string, dir: string, path: string, ttl?: number) {
     this.ttl = ttl;
     this.name = name;
     this.dir = dir;
@@ -46,6 +46,18 @@ export class TemporaryFile {
     return promise;
   }
 
+  static async with<T>(filename: string, createCallbackFn: (file: TemporaryFile) => Promise<T>): Promise<T> {
+    const name = filename.replace(/\//g, '_');
+    const dir = join(tmpdir(), 'census');
+    mkdirSync(dir, { recursive: true });
+    const path = join(dir, name);
+    const file = new TemporaryFile(name, dir, path);
+
+    const result = await createCallbackFn(file);
+    await file.delete();
+    return result;
+  }
+
   static async createMany(
     filenames: string[],
     ttl: number,
@@ -70,7 +82,7 @@ export class TemporaryFile {
   }
 
   expired() {
-    if (!this.createdAt) return false;
+    if (!this.createdAt || !this.ttl) return false;
     return this.createdAt.getTime() + this.ttl < Date.now();
   }
 
