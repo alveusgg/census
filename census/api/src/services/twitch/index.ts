@@ -90,11 +90,6 @@ export const getClosestColor = (color: Color) => {
   );
 
   if (closestColor.distance > threshold) {
-    console.log('Color not found', color);
-    console.log('Closest color', closestColor);
-    console.log('Threshold', threshold);
-    console.log('Distance', closestColor.distance);
-    console.log('Off by ', closestColor.distance - threshold);
     throw new Error('Color not found');
   }
   return closestColor.index;
@@ -161,24 +156,17 @@ export const estimateStartDateFromTwitchTimestampAndEncodedTimestamp = (
   twitchTimestamp: Date,
   encodedTimestamp: { minutes: number; seconds: number }
 ) => {
-  console.log('Twitch timestamp', twitchTimestamp);
   const date = applyEncodedTimestamp(twitchTimestamp, encodedTimestamp);
-  console.log('Date', date);
   const candidates = [addHours(date, -1), date, addHours(date, 1)];
 
   const closestCandidate = candidates.reduce<Date>((closest, candidate) => {
     const currentDifference = Math.abs(differenceInSeconds(closest, twitchTimestamp));
     const candidateDifference = Math.abs(differenceInSeconds(candidate, twitchTimestamp));
-    console.log('Current difference', currentDifference);
-    console.log('Candidate difference', candidateDifference);
     if (currentDifference < candidateDifference) {
-      console.log('Returning closest');
       return closest;
     }
-    console.log('Returning candidate');
     return candidate;
   }, candidates[0]);
-  console.log('Closest candidate', closestCandidate);
 
   return closestCandidate;
 };
