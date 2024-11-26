@@ -23,12 +23,12 @@ export const procedure = t.procedure.use(async ({ ctx, next }) => {
   const { variables } = useEnvironment();
   const decoded = await validateJWT('HS256', variables.JWT_SECRET, token);
   if (!decoded.subject) throw new Error('Unauthorized');
-  return withUser({ id: decoded.subject }, next);
+  return withUser({ twitchUserId: decoded.subject }, next);
 });
 
 export const moderatorProcedure = procedure.use(async ({ next }) => {
   const user = useUser();
-  const permissions = await getPermissions(user.id);
+  const permissions = await getPermissions(user.twitchUserId);
   if (!permissions.moderator) {
     throw new Error('Unauthorized');
   }
@@ -37,7 +37,7 @@ export const moderatorProcedure = procedure.use(async ({ next }) => {
 
 export const adminProcedure = procedure.use(async ({ next }) => {
   const user = useUser();
-  const permissions = await getPermissions(user.id);
+  const permissions = await getPermissions(user.twitchUserId);
   if (!permissions.administrate) {
     throw new Error('Unauthorized');
   }
@@ -46,7 +46,7 @@ export const adminProcedure = procedure.use(async ({ next }) => {
 
 export const editorProcedure = procedure.use(async ({ next }) => {
   const user = useUser();
-  const permissions = await getPermissions(user.id);
+  const permissions = await getPermissions(user.twitchUserId);
   if (!permissions.editor) {
     throw new Error('Unauthorized');
   }

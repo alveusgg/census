@@ -50,7 +50,7 @@ export default async function register(router: FastifyInstance) {
       'HS256',
       variables.JWT_SECRET,
       {},
-      { expiresIn: new TimeSpan(30, 'd'), subject: user.login }
+      { expiresIn: new TimeSpan(30, 'd'), subject: user.id }
     );
 
     const params = new URLSearchParams();

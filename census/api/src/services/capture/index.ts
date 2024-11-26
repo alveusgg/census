@@ -125,7 +125,7 @@ export const createFromClip = async (
       startCaptureAt: clip.startDate,
       endCaptureAt: clip.endDate,
       capturedAt: new Date(),
-      capturedBy: user.id,
+      capturedBy: user.twitchUserId,
       feedId: 'pollinator',
       clipMetadata: { views: clip.views, thumbnail: clip.thumbnailUrl }
     })

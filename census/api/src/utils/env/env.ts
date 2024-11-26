@@ -14,7 +14,7 @@ const EnvironmentStore = createStore<Env>('environment');
 export const [withEnvironment, useEnvironment] = EnvironmentStore;
 
 interface User {
-  id: string;
+  twitchUserId: string;
 }
 
 const UserStore = createStore<User>('user');
