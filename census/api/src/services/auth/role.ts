@@ -2,9 +2,9 @@ import { eq } from 'drizzle-orm';
 import { users } from '../../db/schema/index.js';
 import { useEnvironment } from '../../utils/env/env.js';
 
-export const getPermissions = async (userId: string) => {
+export const getPermissions = async (twitchUserId: string) => {
   const env = useEnvironment();
-  const [user] = await env.db.select().from(users).where(eq(users.username, userId));
+  const [user] = await env.db.select().from(users).where(eq(users.twitchUserId, twitchUserId));
 
   const permissions = {
     editor: false,

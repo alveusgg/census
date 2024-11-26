@@ -19,7 +19,7 @@ export const createIdentification = async (observationId: number, iNatId: number
       nickname: name,
       sourceId: iNatId.toString(),
       observationId,
-      suggestedBy: user.id
+      suggestedBy: user.twitchUserId
     })
     .returning();
 

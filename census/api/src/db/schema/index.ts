@@ -22,7 +22,8 @@ export const feedsRelations = relations(feeds, ({ one }) => ({
 export const roleEnum = pgEnum('role', ['capturer', 'member', 'expert', 'moderator', 'researcher', 'admin']);
 
 export const users = pgTable('users', {
-  username: text('username').primaryKey(),
+  twitchUserId: text('twitch_user_id').primaryKey(),
+  username: text('username').notNull(),
   role: roleEnum('role').notNull(),
 
   points: integer('points').default(0).notNull()
@@ -62,7 +63,7 @@ export const capturesRelations = relations(captures, ({ one, many }) => ({
   }),
   capturer: one(users, {
     fields: [captures.capturedBy],
-    references: [users.username]
+    references: [users.twitchUserId]
   }),
   observations: many(observations)
 }));
@@ -76,10 +77,10 @@ export const observations = pgTable('observations', {
   observedAt: timestamp('observed_at').notNull(),
   observedBy: text('observed_by')
     .notNull()
-    .references(() => users.username),
+    .references(() => users.twitchUserId),
 
   removed: boolean('removed').default(false).notNull(),
-  moderated: json('moderated').$type<{ username: string; type: string; message: string }[]>().default([]).notNull(),
+  moderated: json('moderated').$type<{ twitchUserId: string; type: string; message: string }[]>().default([]).notNull(),
   discordThreadId: text('discord_thread_id')
 });
 
@@ -105,8 +106,8 @@ export const identifications = pgTable(
       .notNull(),
     suggestedBy: text('suggested_by')
       .notNull()
-      .references(() => users.username),
-    confirmedBy: text('confirmed_by').references(() => users.username),
+      .references(() => users.twitchUserId),
+    confirmedBy: text('confirmed_by').references(() => users.twitchUserId),
     alternateForId: integer('alternate_for'),
     accessoryForId: integer('accessory_for'),
 
@@ -155,11 +156,11 @@ export const identificationsRelations = relations(identifications, ({ one, many 
   }),
   confirmer: one(users, {
     fields: [identifications.confirmedBy],
-    references: [users.username]
+    references: [users.twitchUserId]
   }),
   suggester: one(users, {
     fields: [identifications.suggestedBy],
-    references: [users.username]
+    references: [users.twitchUserId]
   }),
   alternateFor: one(identifications, {
     fields: [identifications.alternateForId],
@@ -209,9 +210,9 @@ export const achievements = pgTable(
   'achievements',
   {
     id: serial('id').primaryKey(),
-    username: text('username')
+    twitchUserId: text('twitch_user_id')
       .notNull()
-      .references(() => users.username),
+      .references(() => users.twitchUserId),
     type: text('type').notNull(),
     identificationId: integer('identification_id').references(() => identifications.id),
     observationId: integer('observation_id').references(() => observations.id),
@@ -223,7 +224,7 @@ export const achievements = pgTable(
   },
   table => {
     return {
-      usernameIdx: index('username_achievements_idx').on(table.username),
+      twitchUserIdx: index('twitch_user_id_achievements_idx').on(table.twitchUserId),
       typeIdx: index('type_achievements_idx').on(table.type),
       pointsIdx: index('points_achievements_idx').on(table.points)
     };
@@ -245,16 +246,16 @@ export const events = pgTable(
   'events',
   {
     id: serial('id').primaryKey(),
-    username: text('username')
+    twitchUserId: text('twitch_user_id')
       .notNull()
-      .references(() => users.username),
+      .references(() => users.twitchUserId),
     type: text('type').notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     payload: json('payload').notNull()
   },
   table => {
     return {
-      usernameIdx: index('username_events_idx').on(table.username),
+      twitchUserIdx: index('twitch_user_id_events_idx').on(table.twitchUserId),
       typeIdx: index('type_events_idx').on(table.type)
     };
   }
@@ -264,9 +265,9 @@ export const notifications = pgTable(
   'notifications',
   {
     id: serial('id').primaryKey(),
-    username: text('username')
+    twitchUserId: text('twitch_user_id')
       .notNull()
-      .references(() => users.username),
+      .references(() => users.twitchUserId),
     type: text('type').notNull(),
     read: boolean('read').default(false).notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -275,7 +276,7 @@ export const notifications = pgTable(
   },
   table => {
     return {
-      usernameIdx: index('username_notifications_idx').on(table.username)
+      twitchUserIdx: index('twitch_user_id_notifications_idx').on(table.twitchUserId)
     };
   }
 );

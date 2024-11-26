@@ -11,9 +11,14 @@ const seed = async () => {
     message: 'What is your twitch username?'
   });
 
+  const twitchUserId = await input({
+    message: 'What is your twitch user id? Find it using https://www.streamweasels.com/tools/convert-twitch-username-%20to-user-id/'
+  });
+
   await environment.db.insert(users).values({
     role: 'admin',
-    username
+    username,
+    twitchUserId
   });
 
   console.log(`${username} has been added to the admin role.`);
