@@ -4,7 +4,7 @@ import { TimeSpan } from 'oslo';
 import { createJWT } from 'oslo/jwt';
 import { z } from 'zod';
 import { useEnvironment } from '../../utils/env/env.js';
-import { getUserFromTwitchId } from '../users/index.js';
+import { getUserFromTwitchId, updateUsername } from '../users/index.js';
 import { createSignInRequest, exchangeCodeForToken, getUserInformation, validateToken } from './auth.js';
 
 const TwitchRedirectResponse = z.object({
@@ -57,6 +57,9 @@ export default async function register(router: FastifyInstance) {
     try {
       const { id, login } = await getUserInformation(token.accessToken);
       const user = await getUserFromTwitchId(id);
+      if (user.username !== login) {
+        await updateUsername(user.id, login);
+      }
 
       const payload: TokenPayload = {
         id: user.id,
