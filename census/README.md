@@ -5,7 +5,9 @@
 1. Clone the repository.
 2. Ensure you have `pnpm` installed and run `pnpm install`.
 3. Ensure you have `docker` installed and running on your machine.
-4. Clone `./api/.env.example` and rename as `./api/.env` and configure it as follows.
+4. Ensure you have [`ffmpeg`](https://www.ffmpeg.org/) installed
+   - MacOS: run `brew install ffmpeg`
+5. Clone `./api/.env.example` and rename as `./api/.env` and configure it as follows.
 
 ### Twitch setup
 
