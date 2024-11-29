@@ -16,7 +16,7 @@ export default router({
     )
     .mutation(async ({ ctx }) => {
       const user = useUser();
-      const points = await recordAchievement('vote', user.twitchUserId);
+      const points = await recordAchievement('vote', user.id);
       if (points) ctx.points(points);
     }),
   searchForTaxa: procedure.input(z.object({ query: z.string() })).query(async ({ input }) => {

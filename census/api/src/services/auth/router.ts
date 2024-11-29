@@ -1,8 +1,10 @@
+import { CustomError } from '@alveusgg/error';
 import { FastifyInstance } from 'fastify';
 import { TimeSpan } from 'oslo';
 import { createJWT } from 'oslo/jwt';
 import { z } from 'zod';
 import { useEnvironment } from '../../utils/env/env.js';
+import { getUserFromTwitchId } from '../users/index.js';
 import { createSignInRequest, exchangeCodeForToken, getUserInformation, validateToken } from './auth.js';
 
 const TwitchRedirectResponse = z.object({
@@ -16,6 +18,14 @@ const SignInRequest = z.object({
   origin: z.string()
 });
 const cache = new Map<string, string>();
+
+export const TokenPayload = z.object({
+  id: z.coerce.number(),
+  twitchUserId: z.string(),
+  twitchUsername: z.string()
+});
+
+export type TokenPayload = z.infer<typeof TokenPayload>;
 
 export default async function register(router: FastifyInstance) {
   router.get('/auth/signin', async (request, reply) => {
@@ -44,21 +54,36 @@ export default async function register(router: FastifyInstance) {
       throw new Error('Invalid token');
     }
     const { from, origin } = SignInRequest.parse(JSON.parse(state));
+    try {
+      const { id, login } = await getUserInformation(token.accessToken);
+      const user = await getUserFromTwitchId(id);
 
-    const user = await getUserInformation(token.accessToken);
-    const jwt = await createJWT(
-      'HS256',
-      variables.JWT_SECRET,
-      {},
-      { expiresIn: new TimeSpan(30, 'd'), subject: user.id }
-    );
+      const payload: TokenPayload = {
+        id: user.id,
+        twitchUserId: id,
+        twitchUsername: login
+      };
 
-    const params = new URLSearchParams();
-    params.set('token', jwt);
+      const jwt = await createJWT('HS256', variables.JWT_SECRET, payload, {
+        expiresIn: new TimeSpan(30, 'd'),
+        subject: user.id.toString()
+      });
 
-    if (from) params.set('from', from);
-    cache.delete(query.state);
+      const params = new URLSearchParams();
+      params.set('token', jwt);
 
-    return reply.redirect(`${origin}/auth/redirect?${params.toString()}`);
+      if (from) params.set('from', from);
+      cache.delete(query.state);
+
+      return reply.redirect(`${origin}/auth/redirect?${params.toString()}`);
+    } catch (error) {
+      if (error instanceof CustomError) {
+        return reply.redirect(`${origin}/auth/error?type=${error.name}&message=${error.message}`);
+      }
+      if (error instanceof Error) {
+        return reply.redirect(`${origin}/auth/error?type=UnhandledError&message=${error.message}`);
+      }
+      return reply.redirect(`${origin}/auth/error?type=UnknownError`);
+    }
   });
 }

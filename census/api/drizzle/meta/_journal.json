@@ -5,85 +5,15 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1726850043079,
-      "tag": "0000_slim_quasar",
+      "when": 1732877198632,
+      "tag": "0000_wooden_dragon_lord",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1726850045487,
-      "tag": "0001_lucky_captain_stacy",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1729972994349,
-      "tag": "0002_third_cloak",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1730154405334,
-      "tag": "0003_tearful_tusk",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1730154432881,
-      "tag": "0004_black_preak",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1730480767684,
-      "tag": "0005_gigantic_edwin_jarvis",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1730583762309,
-      "tag": "0006_regular_wiccan",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1730583951985,
-      "tag": "0007_stale_albert_cleary",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1730742033175,
-      "tag": "0008_aromatic_kree",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1730758774883,
-      "tag": "0009_thin_carnage",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "7",
-      "when": 1730759232753,
-      "tag": "0010_dazzling_green_goblin",
-      "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "7",
-      "when": 1732650581204,
-      "tag": "0011_classy_phil_sheldon",
+      "when": 1732877224000,
+      "tag": "0001_gray_wonder_man",
       "breakpoints": true
     }
   ]
