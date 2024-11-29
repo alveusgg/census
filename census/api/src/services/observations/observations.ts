@@ -50,7 +50,7 @@ const createObservations = async (captureId: number, selections: Selection[], ni
       captureId,
       nickname,
       observedAt: new Date(),
-      observedBy: user.twitchUserId
+      observedBy: user.id
     })
     .returning();
 
