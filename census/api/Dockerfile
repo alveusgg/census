@@ -10,6 +10,8 @@ FROM base AS build
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 RUN pnpm --filter=@alveusgg/census-api --prod deploy /prod/api
 
+RUN apt-get update && apt-get install -y ffmpeg
+
 FROM base
 COPY --from=build /prod/api /prod/api
 WORKDIR /prod/api
