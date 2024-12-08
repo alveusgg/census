@@ -12,38 +12,36 @@ const registry = {
 
 export type Achievements = keyof typeof registry;
 
-export const recordAchievement = async (action: Achievements, username: string, immediate = false) => {
+export const recordAchievement = async (action: Achievements, userId: number, immediate = false) => {
   const details = registry[action];
   if (!details) throw new Error(`Invalid action: ${action}`);
   const db = useDB();
   return await db.transaction(async tx =>
     withTransaction(tx, async () => {
-      await addAchievement(action, username, details.points, immediate);
-      if (immediate) return await addPoints(username, details.points);
+      await addAchievement(action, userId, details.points, immediate);
+      if (immediate) return await addPoints(userId, details.points);
     })
   );
 };
 
-export const redeemAchievementAndAwardPoints = async (username: string, id: number) => {
+export const redeemAchievementAndAwardPoints = async (userId: number, id: number) => {
   const db = useDB();
   return await db.transaction(async tx =>
     withTransaction(tx, async () => {
-      const achievement = await redeemAchievement(username, id);
-      return await addPoints(achievement.username, achievement.points);
+      const achievement = await redeemAchievement(userId, id);
+      return await addPoints(achievement.userId, achievement.points);
     })
   );
 };
 
-export const redeemAll = async (username: string) => {
+export const redeemAll = async (userId: number) => {
   const db = useDB();
   return await db.transaction(async tx =>
     withTransaction(tx, async () => {
       const pending = await tx
         .select({ id: achievements.id, points: achievements.points })
         .from(achievements)
-        .where(
-          and(eq(achievements.username, username), eq(achievements.redeemed, false), eq(achievements.revoked, false))
-        );
+        .where(and(eq(achievements.userId, userId), eq(achievements.redeemed, false), eq(achievements.revoked, false)));
 
       await tx
         .update(achievements)
@@ -56,7 +54,7 @@ export const redeemAll = async (username: string) => {
         );
 
       const points = pending.reduce((acc, curr) => acc + curr.points, 0);
-      return await addPoints(username, points);
+      return await addPoints(userId, points);
     })
   );
 };
@@ -67,28 +65,28 @@ export const revokeAchievement = async (id: number) => {
     withTransaction(tx, async () => {
       const entry = await getAchievement(id);
       await removeAchievement(id);
-      await removePoints(entry.username, entry.points);
+      await removePoints(entry.userId, entry.points);
     })
   );
 };
 
-const addAchievement = async (action: Achievements, username: string, points: number, immediate = false) => {
+const addAchievement = async (action: Achievements, userId: number, points: number, immediate = false) => {
   const db = useDB();
-  await db.insert(achievements).values({ type: action, username, points, redeemed: immediate });
+  await db.insert(achievements).values({ type: action, userId, points, redeemed: immediate });
 };
 
-const redeemAchievement = async (username: string, id: number) => {
+const redeemAchievement = async (userId: number, id: number) => {
   const db = useDB();
   const [entry] = await db.update(achievements).set({ redeemed: true }).where(eq(achievements.id, id)).returning();
   if (!entry) throw new Error(`Achievement not found: ${id}`);
-  if (entry.username !== username) throw new Error(`Achievement not owned by user: ${id}`);
+  if (entry.userId !== userId) throw new Error(`Achievement not owned by user: ${id}`);
   return entry;
 };
 
-export const getPendingAchievements = async (username: string) => {
+export const getPendingAchievements = async (userId: number) => {
   const db = useDB();
   return await db.query.achievements.findMany({
-    where: and(eq(achievements.username, username), eq(achievements.redeemed, false), eq(achievements.revoked, false)),
+    where: and(eq(achievements.userId, userId), eq(achievements.redeemed, false), eq(achievements.revoked, false)),
     with: {
       identification: true,
       observation: true
@@ -96,9 +94,9 @@ export const getPendingAchievements = async (username: string) => {
   });
 };
 
-export const getAllAchievements = async (username: string) => {
+export const getAllAchievements = async (userId: number) => {
   const db = useDB();
-  return await db.query.achievements.findMany({ where: eq(achievements.username, username) });
+  return await db.query.achievements.findMany({ where: eq(achievements.userId, userId) });
 };
 
 const getAchievement = async (id: number) => {

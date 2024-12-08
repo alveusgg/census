@@ -8,6 +8,9 @@ importers:
 
   .:
     devDependencies:
+      drizzle-kit:
+        specifier: ^0.24.2
+        version: 0.24.2
       prettier:
         specifier: '3'
         version: 3.3.3
@@ -17,6 +20,9 @@ importers:
       '@alveusgg/census-levels':
         specifier: workspace:*
         version: link:../levels
+      '@alveusgg/error':
+        specifier: workspace:*
+        version: link:../../shared/errors
       '@alveusgg/node':
         specifier: workspace:*
         version: link:../../shared/node
@@ -481,6 +487,18 @@ importers:
       '@types/react':
         specifier: ^18.3.4
         version: 18.3.12
+
+  shared/errors:
+    dependencies:
+      fastify:
+        specifier: ^4.28.1
+        version: 4.28.1
+      fastify-plugin:
+        specifier: ^4.5.1
+        version: 4.5.1
+      zod:
+        specifier: ^3.23.8
+        version: 3.23.8
 
   shared/node:
     dependencies:
@@ -4407,7 +4425,7 @@ packages:
     dependencies:
       '@types/http-cache-semantics': 4.0.4
       '@types/keyv': 3.1.4
-      '@types/node': 18.19.64
+      '@types/node': 22.9.0
       '@types/responselike': 1.0.3
     dev: false
 
@@ -4456,7 +4474,7 @@ packages:
   /@types/keyv@3.1.4:
     resolution: {integrity: sha512-BQ5aZNSCpj7D6K2ksrRCTmKRLEpnPvWDiLPfoGyhZ++8YtiK9d/3DBKPJgry359X/P1PfruyYwvnvwFjuEiEIg==}
     dependencies:
-      '@types/node': 18.19.64
+      '@types/node': 22.9.0
     dev: false
 
   /@types/lodash.merge@4.6.9:
@@ -4488,6 +4506,7 @@ packages:
     resolution: {integrity: sha512-955mDqvO2vFf/oL7V3WiUtiz+BugyX8uVbaT2H8oj3+8dRyH2FLiNdowe7eNqRM7IOIZvzDH76EoAT+gwm6aIQ==}
     dependencies:
       undici-types: 5.26.5
+    dev: true
 
   /@types/node@22.9.0:
     resolution: {integrity: sha512-vuyHg81vvWA1Z1ELfvLko2c8f34gyA0zaic0+Rllc5lbCnbSyuvb2Oxpm6TAUAC/2xZN3QGqxBNggD1nNR2AfQ==}
@@ -4511,7 +4530,7 @@ packages:
   /@types/responselike@1.0.3:
     resolution: {integrity: sha512-H/+L+UkTV33uf49PH5pCAUBVPNj2nDBXTN+qS1dOwyyg24l3CcicicCA7ca+HMvJBZcFgl5r8e+RR6elsb4Lyw==}
     dependencies:
-      '@types/node': 18.19.64
+      '@types/node': 22.9.0
     dev: false
 
   /@types/semver@7.5.8:
@@ -8141,7 +8160,7 @@ packages:
       '@protobufjs/path': 1.1.2
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.0
-      '@types/node': 18.19.64
+      '@types/node': 22.9.0
       long: 5.2.3
     dev: false
 
@@ -9196,6 +9215,7 @@ packages:
 
   /undici-types@5.26.5:
     resolution: {integrity: sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==}
+    dev: true
 
   /undici-types@6.19.8:
     resolution: {integrity: sha512-ve2KP6f/JnbPBFyobGHuerC9g1FYGn/F8n1LWTwNxCEzd6IfqTwUQcNXgEtmmQ6DlRrC1hrSrBnCZPokRrDHjw==}

@@ -8,6 +8,7 @@
   "dependencies": {
     "@alveusgg/census-levels": "workspace:*",
     "@alveusgg/node": "workspace:*",
+    "@alveusgg/error": "workspace:*",
     "@azure/storage-blob": "^12.24.0",
     "@fastify/cors": "^9.0.1",
     "@inquirer/prompts": "^5.5.0",

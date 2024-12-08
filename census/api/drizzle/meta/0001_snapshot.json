@@ -1,9 +1,162 @@
 {
-  "id": "ae6afc04-56d7-4801-89ae-88e9a7121a59",
-  "prevId": "e114838c-2cbb-4c1f-b535-2ff178183564",
+  "id": "7bf853a4-4ce5-406e-921a-71f23e047a5a",
+  "prevId": "19b8c48a-6900-4cd0-9a6d-60a2a8d8163c",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
+    "public.achievements": {
+      "name": "achievements",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "identification_id": {
+          "name": "identification_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "observation_id": {
+          "name": "observation_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "points": {
+          "name": "points",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "redeemed": {
+          "name": "redeemed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "revoked": {
+          "name": "revoked",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        }
+      },
+      "indexes": {
+        "user_id_achievements_idx": {
+          "name": "user_id_achievements_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "type_achievements_idx": {
+          "name": "type_achievements_idx",
+          "columns": [
+            {
+              "expression": "type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "points_achievements_idx": {
+          "name": "points_achievements_idx",
+          "columns": [
+            {
+              "expression": "points",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "achievements_user_id_users_id_fk": {
+          "name": "achievements_user_id_users_id_fk",
+          "tableFrom": "achievements",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "tableTo": "users",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "achievements_identification_id_identifications_id_fk": {
+          "name": "achievements_identification_id_identifications_id_fk",
+          "tableFrom": "achievements",
+          "columnsFrom": [
+            "identification_id"
+          ],
+          "tableTo": "identifications",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "achievements_observation_id_observations_id_fk": {
+          "name": "achievements_observation_id_observations_id_fk",
+          "tableFrom": "achievements",
+          "columnsFrom": [
+            "observation_id"
+          ],
+          "tableTo": "observations",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
     "public.captures": {
       "name": "captures",
       "schema": "",
@@ -58,39 +211,147 @@
           "primaryKey": false,
           "notNull": false
         },
-        "clip_url": {
-          "name": "clip_url",
+        "clip_id": {
+          "name": "clip_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
+        },
+        "clip_metadata": {
+          "name": "clip_metadata",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": true
         }
       },
-      "indexes": {},
+      "indexes": {
+        "clip_id_idx": {
+          "name": "clip_id_idx",
+          "columns": [
+            {
+              "expression": "clip_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
       "foreignKeys": {
         "captures_feed_id_feeds_id_fk": {
           "name": "captures_feed_id_feeds_id_fk",
           "tableFrom": "captures",
-          "tableTo": "feeds",
           "columnsFrom": [
             "feed_id"
           ],
+          "tableTo": "feeds",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "clip_url_unique_idx": {
-          "name": "clip_url_unique_idx",
-          "nullsNotDistinct": true,
+        "captures_clip_id_unique": {
+          "name": "captures_clip_id_unique",
           "columns": [
-            "clip_url"
-          ]
+            "clip_id"
+          ],
+          "nullsNotDistinct": false
         }
       }
+    },
+    "public.events": {
+      "name": "events",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "payload": {
+          "name": "payload",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "user_id_events_idx": {
+          "name": "user_id_events_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "type_events_idx": {
+          "name": "type_events_idx",
+          "columns": [
+            {
+              "expression": "type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "events_user_id_users_id_fk": {
+          "name": "events_user_id_users_id_fk",
+          "tableFrom": "events",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "tableTo": "users",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
     },
     "public.feeds": {
       "name": "feeds",
@@ -170,18 +431,24 @@
         },
         "suggested_by": {
           "name": "suggested_by",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true
         },
         "confirmed_by": {
           "name": "confirmed_by",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
         "alternate_for": {
           "name": "alternate_for",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "accessory_for": {
+          "name": "accessory_for",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -213,50 +480,50 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "identifications_observation_id_observations_id_fk": {
           "name": "identifications_observation_id_observations_id_fk",
           "tableFrom": "identifications",
-          "tableTo": "observations",
           "columnsFrom": [
             "observation_id"
           ],
+          "tableTo": "observations",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
-        "identifications_suggested_by_roles_username_fk": {
-          "name": "identifications_suggested_by_roles_username_fk",
+        "identifications_suggested_by_users_id_fk": {
+          "name": "identifications_suggested_by_users_id_fk",
           "tableFrom": "identifications",
-          "tableTo": "roles",
           "columnsFrom": [
             "suggested_by"
           ],
+          "tableTo": "users",
           "columnsTo": [
-            "username"
+            "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
-        "identifications_confirmed_by_roles_username_fk": {
-          "name": "identifications_confirmed_by_roles_username_fk",
+        "identifications_confirmed_by_users_id_fk": {
+          "name": "identifications_confirmed_by_users_id_fk",
           "tableFrom": "identifications",
-          "tableTo": "roles",
           "columnsFrom": [
             "confirmed_by"
           ],
+          "tableTo": "users",
           "columnsTo": [
-            "username"
+            "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -278,8 +545,20 @@
           "primaryKey": false,
           "notNull": true
         },
-        "frame": {
-          "name": "frame",
+        "timestamp": {
+          "name": "timestamp",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "width": {
+          "name": "width",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "height": {
+          "name": "height",
           "type": "integer",
           "primaryKey": false,
           "notNull": true
@@ -296,16 +575,93 @@
           "primaryKey": false,
           "notNull": false
         },
-        "bounding_boxes": {
-          "name": "bounding_boxes",
+        "bounding_box": {
+          "name": "bounding_box",
           "type": "json",
           "primaryKey": false,
-          "notNull": true,
-          "default": "'[]'::json"
+          "notNull": true
         }
       },
       "indexes": {},
       "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.notifications": {
+      "name": "notifications",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "read": {
+          "name": "read",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "payload": {
+          "name": "payload",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "user_id_notifications_idx": {
+          "name": "user_id_notifications_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "notifications_user_id_users_id_fk": {
+          "name": "notifications_user_id_users_id_fk",
+          "tableFrom": "notifications",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "tableTo": "users",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
@@ -323,13 +679,39 @@
           "name": "nickname",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "capture_id": {
           "name": "capture_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true
+        },
+        "observed_at": {
+          "name": "observed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "observed_by": {
+          "name": "observed_by",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "removed": {
+          "name": "removed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "moderated": {
+          "name": "moderated",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::json"
         },
         "discord_thread_id": {
           "name": "discord_thread_id",
@@ -343,48 +725,30 @@
         "observations_capture_id_captures_id_fk": {
           "name": "observations_capture_id_captures_id_fk",
           "tableFrom": "observations",
-          "tableTo": "captures",
           "columnsFrom": [
             "capture_id"
           ],
+          "tableTo": "captures",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "discord_thread_id_unique_idx": {
-          "name": "discord_thread_id_unique_idx",
-          "nullsNotDistinct": true,
-          "columns": [
-            "discord_thread_id"
-          ]
-        }
-      }
-    },
-    "public.roles": {
-      "name": "roles",
-      "schema": "",
-      "columns": {
-        "username": {
-          "name": "username",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
-        "role": {
-          "name": "role",
-          "type": "role",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
+        "observations_observed_by_users_id_fk": {
+          "name": "observations_observed_by_users_id_fk",
+          "tableFrom": "observations",
+          "columnsFrom": [
+            "observed_by"
+          ],
+          "tableTo": "users",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
-      "indexes": {},
-      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
@@ -410,28 +774,28 @@
         "tag_assignments_tag_id_tags_id_fk": {
           "name": "tag_assignments_tag_id_tags_id_fk",
           "tableFrom": "tag_assignments",
-          "tableTo": "tags",
           "columnsFrom": [
             "tag_id"
           ],
+          "tableTo": "tags",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "tag_assignments_identification_id_identifications_id_fk": {
           "name": "tag_assignments_identification_id_identifications_id_fk",
           "tableFrom": "tag_assignments",
-          "tableTo": "identifications",
           "columnsFrom": [
             "identification_id"
           ],
+          "tableTo": "identifications",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -465,6 +829,64 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "twitch_user_id": {
+          "name": "twitch_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "username": {
+          "name": "username",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "role",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "points": {
+          "name": "points",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {
+        "twitch_user_id_idx": {
+          "name": "twitch_user_id_idx",
+          "columns": [
+            {
+              "expression": "twitch_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
     }
   },
   "enums": {
@@ -472,6 +894,7 @@
       "name": "capture_status",
       "schema": "public",
       "values": [
+        "draft",
         "pending",
         "processing",
         "complete",
