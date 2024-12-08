@@ -5,7 +5,7 @@ const make = (extract: { x: number; y: number; width: number; height: number }) 
   if (extract.height > extract.width) {
     return {
       y: extract.y,
-      x: Math.round(extract.x + (extract.width - extract.height) / 2),
+      x: Math.max(0, Math.round(extract.x + (extract.width - extract.height) / 2)),
       height: extract.height,
       width: extract.height
     };
@@ -14,7 +14,7 @@ const make = (extract: { x: number; y: number; width: number; height: number }) 
   if (extract.width > extract.height) {
     return {
       x: extract.x,
-      y: Math.round(extract.y + (extract.height - extract.width) / 2),
+      y: Math.max(0, Math.round(extract.y + (extract.height - extract.width) / 2)),
       height: extract.width,
       width: extract.width
     };
