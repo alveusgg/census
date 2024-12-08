@@ -21,12 +21,22 @@ export const feedsRelations = relations(feeds, ({ one }) => ({
 
 export const roleEnum = pgEnum('role', ['capturer', 'member', 'expert', 'moderator', 'researcher', 'admin']);
 
-export const users = pgTable('users', {
-  username: text('username').primaryKey(),
-  role: roleEnum('role').notNull(),
+export const users = pgTable(
+  'users',
+  {
+    id: serial('id').primaryKey(),
+    twitchUserId: text('twitch_user_id').notNull(),
+    username: text('username').notNull(),
+    role: roleEnum('role').notNull(),
 
-  points: integer('points').default(0).notNull()
-});
+    points: integer('points').default(0).notNull()
+  },
+  table => {
+    return {
+      twitchUserIdIdx: index('twitch_user_id_idx').on(table.twitchUserId)
+    };
+  }
+);
 
 export const captureStatusEnum = pgEnum('capture_status', ['draft', 'pending', 'processing', 'complete', 'archived']);
 
@@ -35,7 +45,9 @@ export const captures = pgTable(
   {
     id: serial('id').primaryKey(),
     capturedAt: timestamp('captured_at').notNull(),
-    capturedBy: text('captured_by').notNull(),
+    capturedBy: integer('captured_by')
+      .notNull()
+      .references(() => users.id),
 
     status: captureStatusEnum('status').default('pending').notNull(),
     feedId: text('feed_id')
@@ -62,7 +74,7 @@ export const capturesRelations = relations(captures, ({ one, many }) => ({
   }),
   capturer: one(users, {
     fields: [captures.capturedBy],
-    references: [users.username]
+    references: [users.id]
   }),
   observations: many(observations)
 }));
@@ -74,12 +86,12 @@ export const observations = pgTable('observations', {
     .references(() => captures.id)
     .notNull(),
   observedAt: timestamp('observed_at').notNull(),
-  observedBy: text('observed_by')
+  observedBy: integer('observed_by')
     .notNull()
-    .references(() => users.username),
+    .references(() => users.id),
 
   removed: boolean('removed').default(false).notNull(),
-  moderated: json('moderated').$type<{ username: string; type: string; message: string }[]>().default([]).notNull(),
+  moderated: json('moderated').$type<{ twitchUserId: string; type: string; message: string }[]>().default([]).notNull(),
   discordThreadId: text('discord_thread_id')
 });
 
@@ -103,10 +115,10 @@ export const identifications = pgTable(
     observationId: integer('observation_id')
       .references(() => observations.id)
       .notNull(),
-    suggestedBy: text('suggested_by')
+    suggestedBy: integer('suggested_by')
       .notNull()
-      .references(() => users.username),
-    confirmedBy: text('confirmed_by').references(() => users.username),
+      .references(() => users.id),
+    confirmedBy: integer('confirmed_by').references(() => users.id),
     alternateForId: integer('alternate_for'),
     accessoryForId: integer('accessory_for'),
 
@@ -155,11 +167,11 @@ export const identificationsRelations = relations(identifications, ({ one, many 
   }),
   confirmer: one(users, {
     fields: [identifications.confirmedBy],
-    references: [users.username]
+    references: [users.id]
   }),
   suggester: one(users, {
     fields: [identifications.suggestedBy],
-    references: [users.username]
+    references: [users.id]
   }),
   alternateFor: one(identifications, {
     fields: [identifications.alternateForId],
@@ -209,9 +221,9 @@ export const achievements = pgTable(
   'achievements',
   {
     id: serial('id').primaryKey(),
-    username: text('username')
+    userId: integer('user_id')
       .notNull()
-      .references(() => users.username),
+      .references(() => users.id),
     type: text('type').notNull(),
     identificationId: integer('identification_id').references(() => identifications.id),
     observationId: integer('observation_id').references(() => observations.id),
@@ -223,7 +235,7 @@ export const achievements = pgTable(
   },
   table => {
     return {
-      usernameIdx: index('username_achievements_idx').on(table.username),
+      userIdIdx: index('user_id_achievements_idx').on(table.userId),
       typeIdx: index('type_achievements_idx').on(table.type),
       pointsIdx: index('points_achievements_idx').on(table.points)
     };
@@ -245,16 +257,16 @@ export const events = pgTable(
   'events',
   {
     id: serial('id').primaryKey(),
-    username: text('username')
+    userId: integer('user_id')
       .notNull()
-      .references(() => users.username),
+      .references(() => users.id),
     type: text('type').notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     payload: json('payload').notNull()
   },
   table => {
     return {
-      usernameIdx: index('username_events_idx').on(table.username),
+      userIdIdx: index('user_id_events_idx').on(table.userId),
       typeIdx: index('type_events_idx').on(table.type)
     };
   }
@@ -264,9 +276,9 @@ export const notifications = pgTable(
   'notifications',
   {
     id: serial('id').primaryKey(),
-    username: text('username')
+    userId: integer('user_id')
       .notNull()
-      .references(() => users.username),
+      .references(() => users.id),
     type: text('type').notNull(),
     read: boolean('read').default(false).notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -275,7 +287,7 @@ export const notifications = pgTable(
   },
   table => {
     return {
-      usernameIdx: index('username_notifications_idx').on(table.username)
+      userIdIdx: index('user_id_notifications_idx').on(table.userId)
     };
   }
 );

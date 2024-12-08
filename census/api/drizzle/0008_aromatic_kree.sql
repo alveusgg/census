@@ -1,1 +1,0 @@
-ALTER TABLE "achievements" ADD COLUMN "redeemed" boolean DEFAULT false NOT NULL;

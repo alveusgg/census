@@ -4,6 +4,7 @@ import { validateJWT } from 'oslo/jwt';
 import { feeds } from '../db/schema/index.js';
 import { useDB } from '../db/transaction.js';
 import { getPermissions } from '../services/auth/role.js';
+import { TokenPayload } from '../services/auth/router.js';
 import { useEnvironment, useUser, withUser } from '../utils/env/env.js';
 import { createContext } from './context.js';
 
@@ -23,7 +24,8 @@ export const procedure = t.procedure.use(async ({ ctx, next }) => {
   const { variables } = useEnvironment();
   const decoded = await validateJWT('HS256', variables.JWT_SECRET, token);
   if (!decoded.subject) throw new Error('Unauthorized');
-  return withUser({ id: decoded.subject }, next);
+  const payload = TokenPayload.parse(decoded.payload);
+  return withUser(payload, next);
 });
 
 export const moderatorProcedure = procedure.use(async ({ next }) => {
