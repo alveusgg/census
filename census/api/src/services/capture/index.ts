@@ -1,10 +1,13 @@
-import { and, count, desc, eq, gte, lte, or } from 'drizzle-orm';
+import { DownstreamError, NotFoundError } from '@alveusgg/error';
+import Mux from '@mux/mux-node';
+import { and, count, desc, eq, gte, inArray, lte, or } from 'drizzle-orm';
 import { Pagination } from '../../api/observation.js';
 import { Capture, captures } from '../../db/schema/index.js';
 import { useDB } from '../../db/transaction.js';
-import { useUser } from '../../utils/env/env.js';
+import { assert } from '../../utils/assert.js';
+import { useEnvironment, useUser } from '../../utils/env/env.js';
+import { downloadVideo } from '../observations/observations.js';
 import { getClip } from '../twitch/index.js';
-
 interface ClipAlreadyUsedResult {
   result: 'error';
   type: 'clip_already_used';
@@ -64,6 +67,7 @@ export const createFromClip = async (
   userIsVerySureItIsNeeded: boolean = false
 ): Promise<CreateFromClipResult> => {
   const db = useDB();
+
   const existing = await getCaptureByClipId(id);
 
   // The clip has already been used in a capture, so we can't use it again
@@ -126,7 +130,7 @@ export const createFromClip = async (
       endCaptureAt: clip.endDate,
       capturedAt: new Date(),
       capturedBy: user.id,
-      feedId: 'pollinator',
+      feedId: 'test',
       clipMetadata: { views: clip.views, thumbnail: clip.thumbnailUrl }
     })
     .returning();
@@ -149,8 +153,15 @@ export const getCapture = async (id: number) => {
       }
     }
   });
-  if (!capture) throw new Error('Capture not found');
+  if (!capture) throw new NotFoundError('Capture not found');
   return capture;
+};
+
+export const getPendingCapturesForFeeds = async (feeds: string[]) => {
+  const db = useDB();
+  return await db.query.captures.findMany({
+    where: and(eq(captures.status, 'pending'), inArray(captures.feedId, feeds))
+  });
 };
 
 export const getCaptureCount = async () => {
@@ -209,5 +220,73 @@ export const processingCaptureRequest = async (id: number) => {
 
 export const completeCaptureRequest = async (id: number, videoUrl: string) => {
   const db = useDB();
-  await db.update(captures).set({ status: 'complete', videoUrl }).where(eq(captures.id, id));
+  const { mux } = useEnvironment();
+
+  const updated: Partial<Capture> = {
+    status: 'complete',
+    videoUrl
+  };
+
+  if (mux) {
+    // If we're using mux (which we are in production) we're going to create an asset and
+    // wait for mux to download & process it from blob storage.
+    const asset = await mux.video.assets.create({
+      input: [{ url: videoUrl }],
+      playback_policy: ['public'],
+      video_quality: 'basic'
+    });
+
+    const assetId = asset.id;
+    const publicPlayback = asset.playback_ids?.find(p => p.policy === 'public');
+    assert(publicPlayback?.id, 'No public playback found on the mux asset');
+
+    const playbackId = publicPlayback.id;
+    await waitForMuxAsset(mux, assetId);
+
+    updated.muxAssetId = assetId;
+    updated.muxPlaybackId = playbackId;
+  }
+
+  const [capture] = await db.update(captures).set(updated).where(eq(captures.id, id)).returning();
+
+  console.log(`Pre-downloading video for capture ${capture.id} for future processing. TTL: 10 minutes`);
+  downloadVideo(videoUrl)
+    .then(() => {
+      console.log(`Downloaded video for capture ${capture.id}`);
+    })
+    .catch(error => {
+      console.error(`Failed to download video for capture ${capture.id}`, error);
+      throw error;
+    });
+  return capture;
+};
+
+const waitForMuxAsset = async (mux: Mux, assetId: string) => {
+  return new Promise<void>((resolve, reject) => {
+    const interval = setInterval(() => {
+      mux.video.assets
+        .retrieve(assetId)
+        .then(asset => {
+          console.log(`Mux asset ${assetId} is ${asset.status}`);
+          if (asset.status === 'errored') {
+            console.error(`Mux asset ${assetId} is in error state`, asset);
+            reject(
+              new DownstreamError(
+                'mux',
+                `Mux asset ${assetId} is in error state: ${asset.errors?.messages?.join(', ')}`
+              )
+            );
+          }
+          if (asset.status === 'ready') {
+            console.log(`Mux asset ${assetId} is ready`);
+            clearInterval(interval);
+            resolve();
+          }
+        })
+        .catch(error => {
+          console.error(`Mux asset ${assetId} is in error state`, error);
+          reject(new DownstreamError('mux', `Mux asset ${assetId} is in error state`));
+        });
+    }, 1000);
+  });
 };

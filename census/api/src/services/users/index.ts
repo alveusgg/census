@@ -1,8 +1,8 @@
 import { eq } from 'drizzle-orm';
 
 import { NotFoundError } from '@alveusgg/error';
-import { users } from '../../db/schema';
-import { useEnvironment } from '../../utils/env/env';
+import { users } from '../../db/schema/index.js';
+import { useEnvironment } from '../../utils/env/env.js';
 
 export const getUser = async (id: number) => {
   const { db } = useEnvironment();

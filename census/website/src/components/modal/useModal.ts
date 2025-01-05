@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { flushSync } from 'react-dom';
 
 export interface ModalProps<T = void> {
   isOpen: boolean;
@@ -18,8 +19,10 @@ export function useModal<T = void>(initial: boolean = false): ModalProps<T> {
   };
 
   const close = () => {
-    setProps(undefined as unknown as T);
-    setIsOpen(false);
+    flushSync(() => {
+      setIsOpen(false);
+      setProps(undefined as unknown as T);
+    });
   };
 
   const toggle = (props?: T) => {

@@ -1,0 +1,1 @@
+ALTER TABLE "identifications" ADD COLUMN "source_ancestor_ids" integer[] NOT NULL;

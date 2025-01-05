@@ -1,6 +1,7 @@
 import { Loading } from '@/components/loaders/Loading';
 import { Suspense } from 'react';
 import { RouterProvider } from 'react-router-dom';
+import { ComponentErrorBoundary } from './components/feedback/ErrorBoundary';
 import { Toaster } from './components/feedback/Toaster';
 import { router } from './router';
 import { CritterAuthenticationProvider } from './services/authentication/CritterAuthenticationProvider';
@@ -18,10 +19,12 @@ export const App = () => {
             <Suspense fallback={<Loading />}>
               <CritterAuthenticationProvider>
                 <AppInsightsProvider>
-                  <APIProvider>
-                    <Toaster />
-                    <RouterProvider router={router} />
-                  </APIProvider>
+                  <ComponentErrorBoundary>
+                    <APIProvider>
+                      <Toaster />
+                      <RouterProvider router={router} />
+                    </APIProvider>
+                  </ComponentErrorBoundary>
                 </AppInsightsProvider>
               </CritterAuthenticationProvider>
             </Suspense>

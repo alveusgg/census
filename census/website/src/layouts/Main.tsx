@@ -1,4 +1,5 @@
 import { LayoutProvider } from '@/components/layout/LayoutProvider';
+import { Loader } from '@/components/loaders/Loader';
 import { PointsProvider } from '@/services/points/PointsProvider';
 import { AnimatePresence } from 'framer-motion';
 import { Suspense } from 'react';
@@ -15,7 +16,13 @@ export const Main = () => {
           <Menu />
           <main className="flex-1 flex flex-col rounded-md bg-accent-100">
             <Header />
-            <Suspense>
+            <Suspense
+              fallback={
+                <div className="flex-1 flex text-accent-900 items-center justify-center">
+                  <Loader />
+                </div>
+              }
+            >
               <div className="flex-1 flex flex-col overflow-y-scroll py-6 px-8">
                 <Outlet />
               </div>

@@ -1,20 +1,22 @@
+import { NotFoundError } from '@alveusgg/error';
 import { and, eq, inArray } from 'drizzle-orm';
-import { achievements } from '../../db/schema';
-import { useDB, withTransaction } from '../../db/transaction';
-import { addPoints, removePoints } from './points';
+import { achievements } from '../../db/schema/index.js';
+import { useDB, withTransaction } from '../../db/transaction.js';
+import { assert } from '../../utils/assert.js';
+import { addPoints, removePoints } from './points.js';
 
 type AchievementDetails = { points: number };
 type Registry = Record<string, AchievementDetails>;
 
 const registry = {
-  vote: { points: 1 }
+  vote: { points: 50 }
 } satisfies Registry;
 
 export type Achievements = keyof typeof registry;
 
 export const recordAchievement = async (action: Achievements, userId: number, immediate = false) => {
   const details = registry[action];
-  if (!details) throw new Error(`Invalid action: ${action}`);
+  assert(details, `Invalid action: ${action}`);
   const db = useDB();
   return await db.transaction(async tx =>
     withTransaction(tx, async () => {
@@ -78,8 +80,8 @@ const addAchievement = async (action: Achievements, userId: number, points: numb
 const redeemAchievement = async (userId: number, id: number) => {
   const db = useDB();
   const [entry] = await db.update(achievements).set({ redeemed: true }).where(eq(achievements.id, id)).returning();
-  if (!entry) throw new Error(`Achievement not found: ${id}`);
-  if (entry.userId !== userId) throw new Error(`Achievement not owned by user: ${id}`);
+  if (!entry) throw new NotFoundError(`Achievement not found: ${id}`);
+  if (entry.userId !== userId) throw new NotFoundError(`Achievement not owned by user: ${id}`);
   return entry;
 };
 
@@ -102,7 +104,7 @@ export const getAllAchievements = async (userId: number) => {
 const getAchievement = async (id: number) => {
   const db = useDB();
   const entry = await db.query.achievements.findFirst({ where: eq(achievements.id, id) });
-  if (!entry) throw new Error(`Achievement not found: ${id}`);
+  if (!entry) throw new NotFoundError(`Achievement not found: ${id}`);
   return entry;
 };
 

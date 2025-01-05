@@ -1,6 +1,8 @@
 import { AutoAnimatedContainer } from '@/components/animation/AnimateHeight';
 import { Button } from '@/components/controls/button/paper';
+import { Field } from '@/components/forms/Field';
 import { Form } from '@/components/forms/Form';
+import { TextField } from '@/components/forms/inputs/TextInput';
 import SiEnterKey from '@/components/icons/SiEnterKey';
 import SiTwitch from '@/components/icons/SiTwitch';
 import { Loader } from '@/components/loaders/Loader';
@@ -8,13 +10,17 @@ import { Modal } from '@/components/modal/Modal';
 import { ModalProps } from '@/components/modal/useModal';
 import { useCapture, useCreateCaptureFromClip } from '@/services/api/capture';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { DialogTitle } from '@radix-ui/react-dialog';
 import { FC, Suspense, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router';
 import { z } from 'zod';
 
 const CreateFromClipFormFields = z.object({
-  url: z.string().url()
+  url: z
+    .string()
+    .url({ message: 'Please enter a valid twitch clip link' })
+    .includes('twitch.tv', { message: 'Please enter a valid twitch clip link' })
 });
 
 type CreateFromClipFormFields = z.infer<typeof CreateFromClipFormFields>;
@@ -36,22 +42,14 @@ export const CreateFromClipModal: FC<ModalProps> = props => {
 
   return (
     <Modal className="bg-alveus-darker text-white px-5 py-4 w-full max-w-4xl" {...props}>
+      <DialogTitle className="sr-only">Create a capture from a twitch clip</DialogTitle>
       <AutoAnimatedContainer>
         <div className="flex flex-col gap-4 py-1">
-          <Form
-            className="flex gap-4 items-center"
-            methods={methods}
-            onSubmit={onSubmit}
-            onError={error => alert(`Error: ${error.message}`)}
-          >
+          <Form className="flex gap-4 items-center" methods={methods} onSubmit={onSubmit}>
             <SiTwitch className="text-3xl" />
-            <input
-              autoFocus
-              type="text"
-              placeholder="Paste a twitch clip link"
-              className="bg-alveus w-full px-3 py-2 rounded-md outline-none text-sm focus:ring-2 ring-white/30 placeholder:text-white/75"
-              {...methods.register('url')}
-            />
+            <Field name="url">
+              <TextField autoFocus placeholder="Paste a twitch clip link" variant="alveus" />
+            </Field>
             <Button
               type="submit"
               variant="alveus"

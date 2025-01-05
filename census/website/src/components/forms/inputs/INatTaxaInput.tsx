@@ -4,6 +4,7 @@ import { cn } from '@/utils/cn';
 import { useQuery } from '@tanstack/react-query';
 import { useDebounce, useMeasure } from '@uidotdev/usehooks';
 import { Command } from 'cmdk';
+import { motion } from 'framer-motion';
 import { FC, useState } from 'react';
 
 export interface InputProps<T> {
@@ -34,7 +35,7 @@ export const INatTaxaInput: FC<InputProps<TaxaSearchResult>> = ({ onSelect, plac
   });
 
   return (
-    <div ref={ref} className="group w-full relative">
+    <div ref={ref} className="group w-full relative flex">
       <button type="button" className="w-full cursor-text" onClick={() => setOpen(true)}>
         <div className="px-3 flex gap-2 items-center w-full transition-colors duration-100 hover:bg-accent-100">
           <SiBinoculars className="text-2xl pt-0.5" />
@@ -45,16 +46,13 @@ export const INatTaxaInput: FC<InputProps<TaxaSearchResult>> = ({ onSelect, plac
       </button>
       {open && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="fixed inset-0 z-40 bg-black/5" onClick={() => setOpen(false)} />
           <div
             style={{ width: width ?? 'auto' }}
-            className={cn(
-              'z-50 bg-accent-50 text-accent-800 outline-none overflow-y-scroll',
-              'absolute top-0 left-0 right-0 rounded-b-md'
-            )}
+            className={cn('z-50 text-accent-800 outline-none', 'absolute top-0 left-0 right-0 rounded-b-md')}
           >
             <Command loop shouldFilter={false}>
-              <div className="px-3 flex cursor-pointer gap-2 items-center w-full transition-colors duration-100 hover:bg-accent-100">
+              <div className="px-3 bg-accent-50 flex cursor-pointer gap-2 items-center w-full transition-colors duration-100 hover:bg-accent-100">
                 <SiBinoculars className="text-2xl pt-0.5" />
                 <Command.Input
                   value={query}
@@ -64,40 +62,49 @@ export const INatTaxaInput: FC<InputProps<TaxaSearchResult>> = ({ onSelect, plac
                   placeholder={placeholder}
                 />
               </div>
-              <Command.List className="h-40 overflow-y-scroll border border-accent border-opacity-50 flex flex-col rounded-b-md">
-                {(search.length === 0 ||
-                  results.isLoading ||
-                  (results.isSuccess && results.data.results.length === 0)) && (
-                  <div className="flex items-center justify-center h-40 w-full">
-                    {search.length === 0 && <Command.Empty>Start typing to search</Command.Empty>}
-                    {results.isLoading && <Command.Loading>Loading...</Command.Loading>}
-                    {results.isSuccess && query.length > 0 && results.data.results.length === 0 && (
-                      <Command.Empty>No results found.</Command.Empty>
+              <Command.List>
+                <motion.div
+                  className="bg-accent-50 border border-accent border-opacity-50 rounded-b-md overflow-clip drop-shadow-sm w-[100.6%] -left-[0.3%] relative"
+                  initial={{ height: 0 }}
+                  animate={{ height: 'auto' }}
+                  transition={{ duration: 0.1 }}
+                >
+                  <div className="h-40 overflow-y-scroll flex flex-col">
+                    {(search.length === 0 ||
+                      results.isLoading ||
+                      (results.isSuccess && results.data.results.length === 0)) && (
+                      <div className="flex items-center justify-center h-40 w-full">
+                        {search.length === 0 && <Command.Empty>Start typing to search</Command.Empty>}
+                        {results.isLoading && <Command.Loading>Loading...</Command.Loading>}
+                        {results.isSuccess && query.length > 0 && results.data.results.length === 0 && (
+                          <Command.Empty>No results found.</Command.Empty>
+                        )}
+                      </div>
                     )}
+                    <Command.Group>
+                      {results.data?.results.map(result => (
+                        <Command.Item
+                          className="px-3 py-1 cursor-pointer data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent-100 data-[disabled=true]:opacity-50"
+                          key={result.id}
+                          value={result.name}
+                          onSelect={() => {
+                            onSelect({
+                              id: result.id,
+                              name: result.preferred_common_name ?? result.name,
+                              scientific: result.name,
+                              family: result.iconic_taxon_name ?? undefined
+                            });
+                            setOpen(false);
+                            setQuery('');
+                          }}
+                        >
+                          <p className="text-sm">{result.preferred_common_name}</p>
+                          <p className="text-xs opacity-75">{result.name}</p>
+                        </Command.Item>
+                      ))}
+                    </Command.Group>
                   </div>
-                )}
-                <Command.Group>
-                  {results.data?.results.map(result => (
-                    <Command.Item
-                      className="px-3 py-1 cursor-pointer data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent-100 data-[disabled=true]:opacity-50"
-                      key={result.id}
-                      value={result.name}
-                      onSelect={() => {
-                        onSelect({
-                          id: result.id,
-                          name: result.preferred_common_name ?? result.name,
-                          scientific: result.name,
-                          family: result.iconic_taxon_name ?? undefined
-                        });
-                        setOpen(false);
-                        setQuery('');
-                      }}
-                    >
-                      <p className="text-sm">{result.preferred_common_name}</p>
-                      <p className="text-xs opacity-75">{result.name}</p>
-                    </Command.Item>
-                  ))}
-                </Command.Group>
+                </motion.div>
               </Command.List>
             </Command>
           </div>

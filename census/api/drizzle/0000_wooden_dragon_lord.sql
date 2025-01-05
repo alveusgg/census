@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS "achievements" (
 CREATE TABLE IF NOT EXISTS "captures" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"captured_at" timestamp NOT NULL,
-	"captured_by" text NOT NULL,
+	"captured_by" integer NOT NULL,
 	"status" "capture_status" DEFAULT 'pending' NOT NULL,
 	"feed_id" text NOT NULL,
 	"start_capture_at" timestamp NOT NULL,

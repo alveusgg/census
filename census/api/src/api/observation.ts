@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { notifyDiscordAboutObservation } from '../services/discord/index.js';
 import {
   createObservationsFromCapture,
   getObservationCount,
@@ -26,6 +27,12 @@ export default router({
     .input(z.object({ captureId: z.number(), observations: z.array(ObservationPayload) }))
     .mutation(async ({ input }) => {
       return await createObservationsFromCapture(input.captureId, input.observations);
+    }),
+
+  notifyDiscordAboutObservation: procedure
+    .input(z.object({ observationId: z.number() }))
+    .mutation(async ({ input }) => {
+      return await notifyDiscordAboutObservation(input.observationId);
     }),
 
   list: procedure.input(z.object({ meta: Pagination, query: Query.optional() })).query(async ({ input }) => {

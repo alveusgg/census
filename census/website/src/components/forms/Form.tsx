@@ -25,9 +25,10 @@ export const Form: FC<PropsWithChildren<FormProps>> = ({
   );
 };
 
+export type ValueOrSetter<T> = T | ((value: T) => T);
 export function useFormState<F extends FieldValues, ID extends Path<F>>(methods: UseFormReturn<F>, id: ID) {
   const setValue = useCallback(
-    (valueOrFunction: PathValue<F, ID> | ((value: PathValue<F, ID>) => PathValue<F, ID>)) => {
+    (valueOrFunction: ValueOrSetter<PathValue<F, ID>>) => {
       if (isCallable(valueOrFunction)) {
         methods.setValue(id, valueOrFunction(methods.getValues(id)), { shouldDirty: true });
       } else {

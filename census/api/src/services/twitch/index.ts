@@ -1,7 +1,8 @@
+import { DownstreamError, ProcessingError } from '@alveusgg/error';
 import { addHours, addSeconds, differenceInSeconds, isBefore, setMinutes, setSeconds, subMinutes } from 'date-fns';
 import sharp from 'sharp';
-import { useEnvironment } from '../../utils/env/env';
-import { ClipNotFoundResult, ClipNotProcessedResult, VODNotFoundResult } from '../capture';
+import { useEnvironment } from '../../utils/env/env.js';
+import { ClipNotFoundResult, ClipNotProcessedResult, VODNotFoundResult } from '../capture/index.js';
 type ClipSuccessResult = {
   result: 'success';
   clip: {
@@ -50,7 +51,7 @@ export const getClip = async (id: string): Promise<ClipResult> => {
 export const getVOD = async (id: string) => {
   const { twitch } = useEnvironment();
   const vod = await twitch.videos.getVideoById(id);
-  if (!vod) throw new Error('VOD not found');
+  if (!vod) throw new DownstreamError('twitch', 'The VOD associated with this clip was not found');
 
   return {
     id,
@@ -79,8 +80,6 @@ interface ClosestColor {
 }
 
 export const getClosestColor = (color: Color) => {
-  const threshold = 100;
-
   const closestColor = Colors.reduce<ClosestColor>(
     (closest, value, index) => {
       const distance = Math.sqrt((color.r - value.r) ** 2 + (color.g - value.g) ** 2 + (color.b - value.b) ** 2);
@@ -89,9 +88,6 @@ export const getClosestColor = (color: Color) => {
     { index: 0, distance: Infinity } as ClosestColor
   );
 
-  if (closestColor.distance > threshold) {
-    throw new Error('Color not found');
-  }
   return closestColor.index;
 };
 
@@ -105,11 +101,11 @@ export const getEncodedTimestamp = async (url: string) => {
 
   const metadata = await image.metadata();
   const { width, height } = metadata;
-  if (!width || !height) throw new Error('Invalid thumbnail');
+  if (!width || !height) throw new ProcessingError('Invalid thumbnail');
   // Ensure the image has sufficient dimensions
   if (width < 2 + 4 * 11 || height < 2) {
     // 2 pixels offset + 4 pixels step * 11 steps for 12 values
-    throw new Error('Image is too small for the specified extraction parameters.');
+    throw new ProcessingError('Image is too small for the specified extraction parameters.');
   }
 
   const rawBuffer = await image.raw().toBuffer();
@@ -126,8 +122,8 @@ export const getEncodedTimestamp = async (url: string) => {
 
   let binary = '';
 
-  let startX = width - 2;
-  let startY = height - 2;
+  const startX = width - 2;
+  const startY = height - 2;
 
   for (let i = 11; i >= 0; i--) {
     const currentX = startX - i * 4;

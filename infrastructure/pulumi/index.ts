@@ -129,7 +129,7 @@ export = async () => {
     value: 'logical'
   });
 
-  const database = new Database(`${id}-db`, {
+  const database = new Database(`${id}-db-api`, {
     resourceGroupName: group.name,
     serverName: server.name
   });
