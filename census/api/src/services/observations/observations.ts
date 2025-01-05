@@ -151,9 +151,10 @@ export const downloadVideo = async (videoUrl: string) => {
 
     const response = await fetch(url);
     if (!response.ok || !response.body) throw new DownstreamError('ffmpeg', 'Failed to download video');
-    const file = TemporaryFile.create(url.pathname, 10 * 60 * 1000, async file => {
+    const file = await TemporaryFile.create(url.pathname, 10 * 60 * 1000, async file => {
       await writeFile(file.path, Readable.fromWeb(response.body as ReadableStream<Uint8Array>));
     });
+    console.log('Downloaded video', file.path);
     return file;
   }, 'Download video');
 };
@@ -167,7 +168,11 @@ export const getStreamStats = async (videoPath: string) => {
   return new Promise<ffmpeg.FfprobeStream>((resolve, reject) => {
     ffmpeg.ffprobe(videoPath, (err, data) => {
       if (err) {
-        reject(new DownstreamError('ffmpeg', 'Failed to get stream stats'));
+        if (err instanceof Error) {
+          reject(new DownstreamError('ffmpeg', `Failed to get stream stats for ${videoPath}: ${err.message}`));
+          return;
+        }
+        reject(new DownstreamError('ffmpeg', `Failed to get stream stats for ${videoPath}`));
         return;
       }
       const streams = data.streams;
