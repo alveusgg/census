@@ -3,6 +3,9 @@ config:
   census:image: ghcr.io/alveusgg/census:main-11799584669-census-api
   census:jwt-secret:
     secure: AAABAFFLzowgnCldcwYtWAiYrmvn6ktctistnnFHDlFf7U79Tpb0I/YSY6bMXNhfXmQmXqVXqkFGtfZ40rkOK8d3ukXcX2ZniYw87o+YAnfu0hvTPI4Iy+Hh4a3M8g7rC/k5bMPOsMkxJxd0XQ0+pfHVMEaA/uo91WtrNqYPoQ39itEAY8KSgUksfEfTTvmQcY1jg4H4sRAigfz59o9lZw==
+  census:mux-token-id: 2fba08c2-0da0-4898-bf9e-f0bc4dd7e4f0
+  census:mux-token-secret:
+    secure: AAABAK0Bp4gGTghzc3aGHBs5drm22+1S1x4TSXMLAJRmcbHac1DmwhnoSATS2bDGVjMXcO4E+XOilGMS247DE1UHe6D663iZbOvrNvynh8ZLDqRaieZHODq8SpmqaNomjSO2rrnS6T8V5oA=
   census:twitch-client-id: sjj3rcjojtqyeobptmjf3pjukaerkc
   census:twitch-client-secret:
     secure: AAABAJY/MAFnmek/sfNPPpPph4UhaaKq1RTH/h9rXTsuAx8iOHyjAKlI1+O3OfsjQAHnru42kBZEQJzmfT4=

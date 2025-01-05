@@ -158,8 +158,15 @@ export = async () => {
       TWITCH_CLIENT_ID: config.require('twitch-client-id'),
       TWITCH_CLIENT_SECRET: config.require('twitch-client-secret'),
 
+      MUX_TOKEN_ID: config.require('mux-token-id'),
+      MUX_TOKEN_SECRET: config.require('mux-token-secret'),
+
+      DEV_FLAG_USE_TWITCH_CLIP_DIRECTLY: 'true',
+
       STORAGE_CONNECTION_STRING: interpolate`DefaultEndpointsProtocol=https;AccountName=${storage.name};AccountKey=${key};EndpointSuffix=core.windows.net`,
-      CONTAINER_NAME: container.name
+      CONTAINER_NAME: container.name,
+
+      APPLICATIONINSIGHTS_CONNECTION_STRING: appInsights.connectionString
     },
     volumes: {
       dragonfly: {

@@ -44,7 +44,7 @@ export default router({
       const { variables } = useEnvironment();
       const clip = await createFromClip(input.id, input.userIsVerySureItIsNeeded);
 
-      if (variables.NODE_ENV === 'development' && variables.DEV_FLAG_USE_TWITCH_CLIP_DIRECTLY) {
+      if (variables.DEV_FLAG_USE_TWITCH_CLIP_DIRECTLY) {
         if (clip.result === 'success') {
           downloadClip(input.id)
             .then(async url => {
