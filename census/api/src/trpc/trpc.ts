@@ -28,6 +28,7 @@ const validateJWT = async (token: string) => {
   }
 };
 const errorHandlingProcedure = t.procedure.use(async opts => {
+  const { telemetry } = useEnvironment();
   const result = await opts.next();
 
   if (!result.ok && result.error) {
@@ -38,6 +39,14 @@ const errorHandlingProcedure = t.procedure.use(async opts => {
         cause: result.error.cause
       });
     }
+
+    telemetry?.trackException({
+      exception: result.error,
+      properties: {
+        path: opts.path,
+        type: opts.type
+      }
+    });
   }
 
   return result;
