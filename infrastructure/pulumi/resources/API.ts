@@ -218,7 +218,7 @@ export class API extends ComponentResource {
                 },
                 ...(args.port ? [{ name: 'PORT', value: args.port.toString() }] : [])
               ],
-              volumeMounts: getVolumeMounts(args.volumes),
+              volumeMounts: [...getVolumeMounts(args.volumes), { volumeName: 'tmp', mountPath: '/tmp' }],
               command: args.command
             },
             ...getSidecarContainers(args.sidecars)
@@ -238,7 +238,7 @@ export class API extends ComponentResource {
               }
             ]
           },
-          volumes: getStorageConnections(args.volumes)
+          volumes: [...getStorageConnections(args.volumes), { name: 'tmp', storageType: 'EmptyDir' }]
         }
       },
       { parent: this }
