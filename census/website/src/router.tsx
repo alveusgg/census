@@ -1,6 +1,7 @@
 import { createBrowserRouter, RouteObject } from 'react-router-dom';
+import { RouteErrorBoundary } from './components/feedback/ErrorBoundary';
+import { NotFoundErrorBoundary } from './components/feedback/NotFoundError';
 import { Main } from './layouts/Main';
-import { Status } from './pages/admin/Status';
 import { Authenticated } from './pages/authentication/Authenticated';
 import { Redirect } from './pages/authentication/Redirect';
 import { SignIn } from './pages/authentication/SignIn';
@@ -35,6 +36,7 @@ const auth: RouteObject = {
 
 export const router = createBrowserRouter([
   {
+    ErrorBoundary: RouteErrorBoundary,
     element: <Authenticated />,
     children: [
       {
@@ -45,20 +47,25 @@ export const router = createBrowserRouter([
             element: <Home />
           },
           {
-            path: '/status',
-            element: <Status />
-          },
-          {
-            path: '/captures/:id',
-            element: <Capture />
-          },
-          {
-            path: '/observations',
+            path: 'observations',
             element: <Observations />
           },
           {
-            path: '/captures',
-            element: <Captures />
+            path: 'captures',
+
+            children: [
+              {
+                index: true,
+                element: <Captures />
+              },
+              {
+                ErrorBoundary: () => (
+                  <NotFoundErrorBoundary>sorry, that capture is not available</NotFoundErrorBoundary>
+                ),
+                path: ':id',
+                element: <Capture />
+              }
+            ]
           }
         ]
       }

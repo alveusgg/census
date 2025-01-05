@@ -93,10 +93,15 @@ export class TemporaryFile {
 }
 
 setInterval(() => {
-  Cache.forEach(async promise => {
-    const file = await promise;
-    if (file.expired()) {
-      await file.delete();
-    }
+  Cache.forEach(promise => {
+    promise
+      .then(file => {
+        if (file.expired()) {
+          void file.delete();
+        }
+      })
+      .catch(err => {
+        console.error(err);
+      });
   });
 }, 30 * 1000);

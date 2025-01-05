@@ -15,6 +15,41 @@
       "when": 1732877224000,
       "tag": "0001_gray_wonder_man",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1734022604204,
+      "tag": "0002_sharp_flatman",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1735841558129,
+      "tag": "0003_square_changeling",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1735856423185,
+      "tag": "0004_white_adam_destine",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1735859124610,
+      "tag": "0005_chemical_bulldozer",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1736100859294,
+      "tag": "0006_windy_deathbird",
+      "breakpoints": true
     }
   ]
 }

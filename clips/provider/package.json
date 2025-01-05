@@ -6,23 +6,26 @@
   "types": "src/index.ts",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts --experimental-eventsource",
-    "start": "tsx src/index.ts --experimental-eventsource"
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/event-source-polyfill": "^1.0.5",
     "@types/node": "^22.5.1"
   },
   "dependencies": {
-    "@azure/storage-blob": "^12.24.0",
-    "@alveusgg/clips-manager": "workspace:*",
-    "@trpc/client": "11.0.0-rc.490",
-    "@trpc/server": "11.0.0-rc.490",
+    "@alveusgg/census-api": "workspace:*",
     "@alveusgg/node": "workspace:*",
+    "@azure/storage-blob": "^12.24.0",
+    "@trpc/client": "11.0.0-rc.633",
+    "@trpc/server": "11.0.0-rc.633",
+    "@ts-rest/core": "^3.51.0",
     "date-fns": "^3.6.0",
     "dotenv": "^16.4.5",
+    "event-source-polyfill": "^1.0.31",
     "eventsource": "^2.0.2",
     "npm": "^10.8.3",
     "tsx": "^4.19.0",

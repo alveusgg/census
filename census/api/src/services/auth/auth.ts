@@ -1,45 +1,30 @@
+import { DownstreamError } from '@alveusgg/error';
 import { exchangeCode } from '@twurple/auth';
 import z from 'zod';
+import { assert } from '../../utils/assert.js';
 import { useEnvironment } from '../../utils/env/env.js';
 
 const scopes: string[] = [];
 export const createSignInRequest = (path: string, state: string) => {
   const env = useEnvironment();
-  const origin = getHost();
 
   const url = new URL('https://id.twitch.tv/oauth2/authorize');
   url.searchParams.set('client_id', env.variables.TWITCH_CLIENT_ID);
-  url.searchParams.set('redirect_uri', `${origin}${path}`);
+  url.searchParams.set('redirect_uri', `${env.host}${path}`);
   url.searchParams.set('response_type', 'code');
   url.searchParams.set('scope', scopes.join(' '));
   url.searchParams.set('state', state);
   return url.toString();
 };
 
-export const getHost = () => {
-  const { variables } = useEnvironment();
-  if (variables.NODE_ENV === 'development') {
-    return `http://${variables.HOST}:${variables.PORT}`;
-  }
-  if (variables.API_URL) {
-    return variables.API_URL;
-  }
-  if (variables.CONTAINER_APP_NAME && variables.CONTAINER_APP_ENV_DNS_SUFFIX) {
-    return `https://${variables.CONTAINER_APP_NAME}.${variables.CONTAINER_APP_ENV_DNS_SUFFIX}`;
-  }
-
-  throw new Error('No host found');
-};
-
 export const exchangeCodeForToken = async (path: string, code: string) => {
   const env = useEnvironment();
-  const origin = getHost();
 
   const token = await exchangeCode(
     env.variables.TWITCH_CLIENT_ID,
     env.variables.TWITCH_CLIENT_SECRET,
     code,
-    `${origin}${path}`
+    `${env.host}${path}`
   );
 
   return token;
@@ -77,11 +62,10 @@ export const getUserInformation = async (token: string) => {
     headers: { Authorization: `Bearer ${token}`, 'client-id': env.variables.TWITCH_CLIENT_ID }
   });
 
-  if (!response.ok) throw new Error('Failed to fetch user data');
+  if (!response.ok) throw new DownstreamError('twitch', 'Failed to fetch user data');
   const data = await response.json();
-  const result = TwitchUsersResponse.safeParse(data);
-  if (!result.success) throw new Error('Invalid response');
-  const user = result.data.data[0];
-  if (!user) throw new Error('No user found');
+  assert.shape(TwitchUsersResponse, data, 'Invalid response');
+  const user = data.data[0];
+  if (!user) throw new DownstreamError('twitch', 'No user found');
   return user;
 };

@@ -1,22 +1,23 @@
 import { z } from 'zod';
-import { suggestIdentification } from '../services/identifications/identifications.js';
+import { addFeedbackToIdentification, suggestIdentification } from '../services/identifications/identifications.js';
 import { getTaxaFromPartialSearch } from '../services/inat/index.js';
 import { recordAchievement } from '../services/points/achievement.js';
-import { procedure, router } from '../trpc/trpc';
+import { procedure, router } from '../trpc/trpc.js';
 import { useUser } from '../utils/env/env.js';
 
 export default router({
-  vote: procedure
+  feedback: procedure
     .input(
       z.object({
         id: z.number(),
-        vote: z.enum(['up', 'down']),
+        type: z.enum(['agree', 'disagree']),
         comment: z.string().optional()
       })
     )
-    .mutation(async ({ ctx }) => {
+    .mutation(async ({ ctx, input }) => {
       const user = useUser();
-      const points = await recordAchievement('vote', user.id);
+      await addFeedbackToIdentification(input.id, user.id, input.type, input.comment);
+      const points = await recordAchievement('vote', user.id, true);
       if (points) ctx.points(points);
     }),
   searchForTaxa: procedure.input(z.object({ query: z.string() })).query(async ({ input }) => {

@@ -4,6 +4,7 @@ import { CustomSelectionColor } from '@/components/editor/CustomSelectionColor';
 import { SelectedSubjectHighlight } from '@/components/editor/SelectedSubjectHighlight';
 import { SubjectSelectionInput } from '@/components/editor/SubjectSelectionInput';
 import { SubjectToggle } from '@/components/editor/SubjectToggle';
+import { AutoVideo } from '@/components/editor/video/AutoVideo';
 import { PlaybackBar } from '@/components/editor/video/PlaybackBar';
 import { VideoContainer } from '@/components/editor/VideoContainer';
 import { Breadcrumbs } from '@/layouts/Breadcrumbs';
@@ -42,6 +43,10 @@ export const Editor: FC<CaptureProps> = ({ id }) => {
     navigate(`/observations`);
   };
 
+  const videoUrl = capture.data.muxPlaybackId
+    ? `https://stream.mux.com/${capture.data.muxPlaybackId}.m3u8`
+    : capture.data.videoUrl;
+
   return (
     <div className="flex-1 flex flex-col gap-6 items-center">
       <CustomSelectionColor id={selectedSubjectId}>
@@ -54,15 +59,9 @@ export const Editor: FC<CaptureProps> = ({ id }) => {
         <Media.Root>
           <VideoContainer>
             <SubjectSelectionInput />
-            <Media.Video
-              className="w-full aspect-video object-cover h-full bg-black"
-              muted
-              loop
-              src={capture.data.videoUrl ?? ''}
-              // A type quirk, the type is wrong
-              onPointerEnterCapture={() => {}}
-              onPointerLeaveCapture={() => {}}
-            />
+            {videoUrl && (
+              <AutoVideo src={videoUrl} className="w-full aspect-video object-cover h-full bg-black" muted loop />
+            )}
             <SelectedSubjectHighlight />
           </VideoContainer>
           <div className="w-full">

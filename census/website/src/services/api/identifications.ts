@@ -13,3 +13,16 @@ export const useSuggestIdentification = () => {
     }
   });
 };
+
+export const useAddFeedbackToIdentification = () => {
+  const trpc = useAPI();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, type, comment }: { id: number; type: 'agree' | 'disagree'; comment?: string }) => {
+      const results = await trpc.identification.feedback.mutate({ id, type, comment });
+      await queryClient.invalidateQueries({ queryKey: key('observations') });
+      return results;
+    }
+  });
+};

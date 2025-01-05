@@ -1,4 +1,5 @@
-import { CustomError } from '@alveusgg/error';
+import { AuthenticationTimeoutError, BadRequestError, CustomError, NotAuthenticatedError } from '@alveusgg/error';
+import { isAfter } from 'date-fns';
 import { FastifyInstance } from 'fastify';
 import { TimeSpan } from 'oslo';
 import { createJWT } from 'oslo/jwt';
@@ -17,7 +18,15 @@ const SignInRequest = z.object({
   from: z.string().optional(),
   origin: z.string()
 });
-const cache = new Map<string, string>();
+
+const SignInMeta = z.object({
+  key: z.string(),
+  from: z.string().optional(),
+  origin: z.string(),
+  expires: z.coerce.date()
+});
+
+type SignInMeta = z.infer<typeof SignInMeta>;
 
 export const TokenPayload = z.object({
   id: z.coerce.number(),
@@ -29,32 +38,35 @@ export type TokenPayload = z.infer<typeof TokenPayload>;
 
 export default async function register(router: FastifyInstance) {
   router.get('/auth/signin', async (request, reply) => {
+    const { redis } = useEnvironment();
     const key = crypto.randomUUID();
-    const state: { key: string; from?: string; origin?: string } = { key };
 
     const { from, origin } = SignInRequest.parse(request.query);
-    if (from) state.from = from;
-    if (origin) state.origin = origin;
 
-    cache.set(key, JSON.stringify(state));
+    const state: SignInMeta = { key, expires: new Date(), origin };
+    if (from) state.from = from;
+
+    await redis.set(key, JSON.stringify(state));
 
     const url = createSignInRequest('/auth/redirect', key);
     return reply.redirect(url);
   });
 
   router.get('/auth/redirect', async (request, reply) => {
-    const { variables } = useEnvironment();
+    const { variables, redis } = useEnvironment();
     const query = TwitchRedirectResponse.parse(request.query);
 
-    const state = cache.get(query.state);
-    if (!state) throw new Error('Login expired or invalid.');
+    const state = await redis.get(query.state);
+    if (!state) throw new BadRequestError('You are trying to complete a login that was never started.');
+    const { from, origin, expires } = SignInMeta.parse(JSON.parse(state));
 
-    const token = await exchangeCodeForToken('/auth/redirect', query.code);
-    if (!(await validateToken(token.accessToken))) {
-      throw new Error('Invalid token');
-    }
-    const { from, origin } = SignInRequest.parse(JSON.parse(state));
     try {
+      if (isAfter(expires, new Date())) throw new AuthenticationTimeoutError('Login expired.');
+
+      const token = await exchangeCodeForToken('/auth/redirect', query.code);
+      if (!(await validateToken(token.accessToken))) {
+        throw new NotAuthenticatedError('Invalid token');
+      }
       const { id, login } = await getUserInformation(token.accessToken);
       const user = await getUserFromTwitchId(id);
       if (user.username !== login) {
@@ -76,12 +88,14 @@ export default async function register(router: FastifyInstance) {
       params.set('token', jwt);
 
       if (from) params.set('from', from);
-      cache.delete(query.state);
+      await redis.del(query.state);
 
       return reply.redirect(`${origin}/auth/redirect?${params.toString()}`);
     } catch (error) {
       if (error instanceof CustomError) {
-        return reply.redirect(`${origin}/auth/error?type=${error.name}&message=${error.message}`);
+        return reply.redirect(
+          `${origin}/auth/error?type=CustomError&error=${encodeURIComponent(JSON.stringify(error.toJSON()))}`
+        );
       }
       if (error instanceof Error) {
         return reply.redirect(`${origin}/auth/error?type=UnhandledError&message=${error.message}`);

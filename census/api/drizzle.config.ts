@@ -5,10 +5,10 @@ export default defineConfig({
   schema: './src/db/schema/index.ts',
   out: './drizzle',
   dbCredentials: {
-    host: "localhost",
+    host: 'localhost',
     port: 5432,
-    user: "myuser",
-    password: "mypassword",
-    database: "db01",
+    user: 'myuser',
+    password: 'mypassword',
+    database: 'db01'
   }
 });

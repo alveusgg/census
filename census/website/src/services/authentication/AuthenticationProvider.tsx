@@ -1,10 +1,15 @@
 import { createContext } from 'react';
+import { z } from 'zod';
 import { StoreApi } from 'zustand';
 import { AuthenticationStatus } from './utils';
 
-export interface Account {
-  id: string;
-}
+export const Account = z.object({
+  id: z.coerce.number(),
+  twitchUserId: z.string(),
+  twitchUsername: z.string()
+});
+
+export type Account = z.infer<typeof Account>;
 
 export interface AuthenticationInformation {
   status: AuthenticationStatus;

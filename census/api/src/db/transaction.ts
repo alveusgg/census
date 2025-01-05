@@ -2,8 +2,8 @@ import { createStore } from '@alveusgg/node';
 import { ExtractTablesWithRelations } from 'drizzle-orm';
 import { PgTransaction } from 'drizzle-orm/pg-core';
 import { PostgresJsQueryResultHKT } from 'drizzle-orm/postgres-js';
-import { useEnvironment } from '../utils/env/env';
-import * as schema from './schema';
+import { useEnvironment } from '../utils/env/env.js';
+import * as schema from './schema/index.js';
 
 const TransactionStore =
   createStore<PgTransaction<PostgresJsQueryResultHKT, typeof schema, ExtractTablesWithRelations<typeof schema>>>(

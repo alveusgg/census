@@ -1,17 +1,21 @@
-import type { AppRouter } from '@alveusgg/clips-manager/src';
+import type { AppRouter } from '@alveusgg/census-api';
 import { createTRPCClient, httpLink, splitLink, unstable_httpSubscriptionLink } from '@trpc/client';
+import EventSource from 'eventsource';
 
-export const initialise = (apiUrl: string) => {
+// @ts-ignore
+globalThis.EventSource = EventSource;
+
+export const createClient = (url: string) => {
   const client = createTRPCClient<AppRouter>({
     links: [
       splitLink({
         // uses the httpSubscriptionLink for subscriptions
         condition: op => op.type === 'subscription',
         true: unstable_httpSubscriptionLink({
-          url: apiUrl
+          url
         }),
         false: httpLink({
-          url: apiUrl
+          url
         })
       })
     ]

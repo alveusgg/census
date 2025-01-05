@@ -1,7 +1,9 @@
 import { Readable } from 'stream';
 import { ReadableStream } from 'stream/web';
 import { z } from 'zod';
-import { useEnvironment } from '../../utils/env/env';
+import { assert } from '../../utils/assert.js';
+import { useEnvironment } from '../../utils/env/env.js';
+import { runLongOperation } from '../../utils/teardown.js';
 
 const VideoQualities = z.object({
   frameRate: z.number(),
@@ -64,17 +66,20 @@ const getHighestQuality = (videoQualities: VideoQuality[]) => {
 
 export const downloadClip = async (id: string) => {
   const { storage } = useEnvironment();
-  const client = storage.getBlockBlobClient(`${id}.mp4`);
 
-  const authentication = await authenticateAgainstClip(id);
-  const highestQuality = getHighestQuality(authentication.data.clip.videoQualities);
-  if (!highestQuality) throw new Error('No video qualities found');
+  return await runLongOperation(async () => {
+    const client = storage.getBlockBlobClient(`${id}.mp4`);
 
-  const url = new URL(highestQuality.sourceURL);
-  url.searchParams.set('token', authentication.data.clip.playbackAccessToken.value);
-  url.searchParams.set('sig', authentication.data.clip.playbackAccessToken.signature);
-  const response = await fetch(url);
+    const authentication = await authenticateAgainstClip(id);
+    const highestQuality = getHighestQuality(authentication.data.clip.videoQualities);
+    assert(highestQuality, 'No video qualities found');
 
-  await client.uploadStream(Readable.fromWeb(response.body as ReadableStream));
-  return client.url;
+    const url = new URL(highestQuality.sourceURL);
+    url.searchParams.set('token', authentication.data.clip.playbackAccessToken.value);
+    url.searchParams.set('sig', authentication.data.clip.playbackAccessToken.signature);
+    const response = await fetch(url);
+
+    await client.uploadStream(Readable.fromWeb(response.body as ReadableStream));
+    return client.url;
+  }, 'Download clip');
 };

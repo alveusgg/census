@@ -1,5 +1,5 @@
 import { cn } from '@/utils/cn';
-import { ButtonHTMLAttributes, forwardRef, PropsWithChildren, useEffect } from 'react';
+import { ButtonHTMLAttributes, forwardRef, PropsWithChildren } from 'react';
 import { Loader } from '../../../loaders/Loader';
 import { ButtonProps } from '../button';
 
@@ -18,34 +18,6 @@ export const Button = forwardRef<
     { children, variant = 'primary', type = 'button', loading, className, disabled, shortcut, onShortcut, ...props },
     ref
   ) => {
-    useEffect(() => {
-      if (!shortcut || disabled) return;
-      const abortController = new AbortController();
-
-      window.addEventListener(
-        'keydown',
-        (e: KeyboardEvent) => {
-          if (e.key.toLowerCase() === shortcut.toLowerCase() && e.metaKey) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            // const button = ref.current;
-            // if (!button) return;
-            // button.setAttribute('data-pressed', 'true');
-            // button.click();
-            // onShortcut?.();
-            // setTimeout(() => {
-            //   button.removeAttribute('data-pressed');
-            // }, 150);
-          }
-        },
-        { signal: abortController.signal }
-      );
-      return () => {
-        abortController.abort();
-      };
-    }, [shortcut, disabled]);
-
     return (
       <button
         ref={ref}
@@ -62,6 +34,7 @@ export const Button = forwardRef<
           className
         )}
         type={type}
+        disabled={!!disabled || !!loading}
         {...props}
       >
         {loading && (

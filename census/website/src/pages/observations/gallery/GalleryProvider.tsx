@@ -9,6 +9,7 @@ export interface GalleryStore {
   unregister: (id: string) => void;
   next: () => void;
   previous: () => void;
+  goto: (id: string) => void;
 }
 
 interface GalleryProviderProps {
@@ -31,6 +32,9 @@ export const GalleryProvider: FC<PropsWithChildren<GalleryProviderProps>> = ({ c
         },
         unregister: (id: string) => {
           set(state => ({ slides: state.slides.filter(slide => slide !== id) }));
+        },
+        goto: (id: string) => {
+          set({ current: id });
         },
         next: () => {
           const { current, slides } = get();

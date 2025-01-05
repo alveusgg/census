@@ -3,16 +3,21 @@ import { parseJWT } from 'oslo/jwt';
 import { FC, PropsWithChildren, useMemo } from 'react';
 import { createStore } from 'zustand';
 import { Variables } from '../backstage/config';
-import { AuthenticationContext, AuthenticationInformation, AuthenticationStore } from './AuthenticationProvider';
+import {
+  Account,
+  AuthenticationContext,
+  AuthenticationInformation,
+  AuthenticationStore
+} from './AuthenticationProvider';
 import { AuthenticationStatus } from './utils';
 
 const TOKEN_KEY = 'cc:token';
 const getAccountFromJWT = (jwt: string) => {
   const claims = parseJWT(jwt);
   if (!claims) throw new Error('No claims found');
-  if (!claims.subject) throw new Error('No subject found');
-  return { id: claims.subject };
+  return Account.parse(claims.payload);
 };
+
 const restoreAuthentication = (): AuthenticationInformation => {
   try {
     const jwt = localStorage.getItem(TOKEN_KEY);

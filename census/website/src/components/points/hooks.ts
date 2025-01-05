@@ -10,8 +10,11 @@ export const usePointAction = () => {
   const bubbleRef = useRef<HTMLDivElement>(null);
   const exhaustedRef = useRef(false);
 
+  const [isPending, setIsPending] = useState(false);
+
   const add = useCallback(
     async (value: number) => {
+      setIsPending(true);
       if (!bubbleRef.current) throw new Error('bubble ref is not set');
       if (exhaustedRef.current) return;
       exhaustedRef.current = true;
@@ -36,9 +39,10 @@ export const usePointAction = () => {
       bankPoints(id, value);
       await sleep(100);
       bubbleRef.current?.remove();
+      setIsPending(false);
     },
     [id, animate, bubbleRef, textRef, bankPoints]
   );
 
-  return useMemo(() => ({ add, id, bubbleRef, textRef }), [add, id, bubbleRef, textRef]);
+  return useMemo(() => ({ add, id, bubbleRef, textRef, isPending }), [add, id, bubbleRef, textRef, isPending]);
 };

@@ -11,6 +11,12 @@ export function useAuthentication<U>(selector: (store: AuthenticationStore) => U
   return useStore(context, selector);
 }
 
+export const useUser = () => {
+  const account = useAuthentication(state => state.account);
+  if (!account) throw new Error('User not authenticated');
+  return account;
+};
+
 export const useRequestToken = () => {
   const getRequestToken = useAuthentication(state => state.getRequestToken);
   return async () => await withCache('requestToken', getRequestToken);

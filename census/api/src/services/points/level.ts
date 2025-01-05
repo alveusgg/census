@@ -1,9 +1,10 @@
 import { levels } from '@alveusgg/census-levels';
+import { assert, panic } from '../../utils/assert.js';
 
 export type Level = keyof typeof levels;
 export const hasReachedLevel = (minimumLevel: Level, points: number) => {
   const level = levels[minimumLevel];
-  if (!level) throw new Error(`Unknown level: ${minimumLevel}`);
+  assert(level, `Unknown level: ${minimumLevel}`);
   return level.points <= points;
 };
 
@@ -15,7 +16,7 @@ export const getLevelForPoints = (points: number) => {
   for (const level of entries.reverse()) {
     if (hasReachedLevel(level, points)) return level;
   }
-  throw new Error('No level reached');
+  return panic('No level reached');
 };
 
 export const didLevelUp = (previous: number, current: number) => {
