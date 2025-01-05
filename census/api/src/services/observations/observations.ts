@@ -166,8 +166,18 @@ export const extractFrameFromVideo = async (video: TemporaryFile, timestamp: num
 export const getStreamStats = async (videoPath: string) => {
   return new Promise<ffmpeg.FfprobeStream>((resolve, reject) => {
     ffmpeg.ffprobe(videoPath, (err, data) => {
-      if (err) reject(new DownstreamError('ffmpeg', 'Failed to get stream stats'));
-      resolve(data.streams[0]);
+      if (err) {
+        reject(new DownstreamError('ffmpeg', 'Failed to get stream stats'));
+        return;
+      }
+      const streams = data.streams;
+      if (!streams || streams.length === 0) reject(new DownstreamError('ffmpeg', 'No streams found'));
+      const videoStream = streams.find(stream => stream.codec_type === 'video');
+      if (!videoStream) {
+        reject(new DownstreamError('ffmpeg', 'No video stream found'));
+        return;
+      }
+      resolve(videoStream);
     });
   });
 };

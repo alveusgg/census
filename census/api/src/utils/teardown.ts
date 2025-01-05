@@ -1,5 +1,6 @@
 import { context, SpanKind, trace } from '@opentelemetry/api';
 import Queue from 'p-queue';
+import { useEnvironment } from './env/env.js';
 
 interface TearDownFn {
   name: string;
@@ -10,6 +11,7 @@ let isShuttingDown = false;
 export const tearDown = async (jobs: TearDownFn[]): Promise<() => void> => {
   return async () => {
     try {
+      const { telemetry } = useEnvironment();
       if (isShuttingDown) return;
       isShuttingDown = true;
 
@@ -24,6 +26,7 @@ export const tearDown = async (jobs: TearDownFn[]): Promise<() => void> => {
         await promise;
         console.log(`Torn down ${name}`);
       }
+      await telemetry?.flush();
       await new Promise(resolve => setTimeout(resolve, 1000));
       process.exit(0);
     } catch (err) {
