@@ -8,6 +8,47 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  build_ipx:
+    name: build ipx
+    runs-on: ubuntu-22.04
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: |
+            suffix=-${{ github.run_id }}-ipx
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: census/website/ipx
+          file: census/website/ipx/Dockerfile
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
   build_census_api:
     name: build api
     runs-on: ubuntu-22.04
@@ -88,7 +129,7 @@ jobs:
     needs:
       - build_census_ui
       - build_census_api
-
+      - build_ipx
     permissions:
       id-token: write
 
@@ -139,6 +180,7 @@ jobs:
           config-map: |
             {
               "image": { value: "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main-${{ github.run_id }}-census-api", secret: false },
+              "ipx": { value: "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main-${{ github.run_id }}-ipx", secret: false }
             }
         env:
           ARM_USE_OIDC: true
