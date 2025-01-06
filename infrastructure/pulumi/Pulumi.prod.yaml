@@ -1,6 +1,7 @@
 config:
   azure-native:location: northcentralus
   census:image: ghcr.io/alveusgg/census:main-11799584669-census-api
+  census:ipx: ghcr.io/alveusgg/census:main-11799584669-ipx
   census:jwt-secret:
     secure: AAABAFFLzowgnCldcwYtWAiYrmvn6ktctistnnFHDlFf7U79Tpb0I/YSY6bMXNhfXmQmXqVXqkFGtfZ40rkOK8d3ukXcX2ZniYw87o+YAnfu0hvTPI4Iy+Hh4a3M8g7rC/k5bMPOsMkxJxd0XQ0+pfHVMEaA/uo91WtrNqYPoQ39itEAY8KSgUksfEfTTvmQcY1jg4H4sRAigfz59o9lZw==
   census:mux-token-id: 2fba08c2-0da0-4898-bf9e-f0bc4dd7e4f0

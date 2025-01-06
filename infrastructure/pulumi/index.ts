@@ -199,11 +199,11 @@ export = async () => {
     name: 'ipx',
     resourceGroupName: group.name,
     environmentName: environment.name,
-    env: {},
-    image: 'node:22',
-    command: [
-      interpolate`IPX_HTTP_DOMAINS=${storage.name}.blob.core.windows.net IPX_HTTP_MAX_AGE=86400 npx --yes ipx serve --port 3000 --host 0.0.0.0`
-    ],
+    env: {
+      IPX_HTTP_DOMAINS: interpolate`${storage.name}.blob.core.windows.net`,
+      IPX_HTTP_MAX_AGE: '86400'
+    },
+    image: config.require('ipx'),
     size: 'micro',
     scale: {
       min: 0,
