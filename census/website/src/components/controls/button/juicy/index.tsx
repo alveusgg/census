@@ -1,5 +1,5 @@
 import { cn } from '@/utils/cn';
-import { ButtonHTMLAttributes, forwardRef, PropsWithChildren } from 'react';
+import { ButtonHTMLAttributes, FC, forwardRef, PropsWithChildren } from 'react';
 import { Loader } from '../../../loaders/Loader';
 import { ButtonProps } from '../button';
 
@@ -62,3 +62,32 @@ export const Button = forwardRef<
     );
   }
 );
+
+import { LinkProps, Link as RouterLink } from 'react-router-dom';
+
+export const Link: FC<PropsWithChildren<ButtonProps & LinkProps & {}>> = ({
+  children,
+  className,
+  disabled,
+  variant = 'primary',
+  ...props
+}) => {
+  return (
+    <RouterLink
+      className={cn(
+        `rounded-xl flex text-sm gap-2 justify-center items-center text-center cursor-pointer font-bold pt-2 pb-3 px-3.5 relative overflow-clip antialiased transition-all duration-75 outline-none`,
+        'shadow-[inset_0_-9px_0px_-0.25rem_rgba(0,0,0,0.15)]',
+        'hover:shadow-[inset_0_-10px_0px_-0.25rem_rgba(0,0,0,0.15)]',
+        'active:shadow-[inset_0_-6px_0px_-0.25rem_rgba(0,0,0,0.15)] active:pt-2.5 active:pb-2.5',
+        'data-[pressed=true]:shadow-[inset_0_-6px_0px_-0.25rem_rgba(0,0,0,0.15)] data-[pressed=true]:pt-2.5 data-[pressed=true]:pb-2.5',
+        'data-[toggled=true]:shadow-[inset_0_2px_0px_2px_rgba(0,0,0,0.15)] data-[toggled=true]:pt-2.5 data-[toggled=true]:pb-2.5 hover:data-[toggled=true]:shadow-[inset_0_2px_0px_2px_rgba(0,0,0,0.15)]',
+        variant && variants[variant],
+        disabled && 'pointer-events-none opacity-50',
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </RouterLink>
+  );
+};

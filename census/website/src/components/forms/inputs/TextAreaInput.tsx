@@ -35,7 +35,10 @@ export const TextAreaInput: FC<InputProps<string> & TextAreaInputProps> = ({
     <InputContainer variant={variant} className={cn(invalid && 'ring-red-500', className)}>
       <textarea
         ref={refCallback}
-        className={cn('w-full min-h-full max-h-96 outline-none bg-transparent px-3 py-2 resize-y', variants[variant])}
+        className={cn(
+          'w-full resize-none min-h-full max-h-96 outline-none bg-transparent px-3 py-2',
+          variants[variant]
+        )}
         value={value}
         onChange={e => onChange(e.target.value)}
         {...props}

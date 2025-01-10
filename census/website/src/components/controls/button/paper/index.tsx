@@ -5,7 +5,8 @@ import { Loader } from '../../../loaders/Loader';
 import { ButtonProps } from '../button';
 
 export const variants = {
-  primary: 'bg-accent-700 bg-opacity-[0.05] hover:bg-opacity-[0.08] text-accent-900',
+  primary:
+    'bg-accent-700 bg-opacity-[0.05] hover:bg-opacity-[0.08] border border-accent-700 border-opacity-10 text-accent-900',
   custom: 'bg-custom hover:bg-custom-darker text-white',
   danger: 'bg-red-500 hover:bg-red-600 text-white',
   alveus: 'bg-alveus hover:bg-alveus-darker text-white'
@@ -21,7 +22,7 @@ export const Button = forwardRef<
     <button
       ref={ref}
       className={cn(
-        `flex disabled:opacity-60 items-center cursor-pointer justify-start text-left gap-2 rounded-lg relative px-3 py-2 overflow-clip font-medium antialiased`,
+        `flex disabled:opacity-60 items-center  cursor-pointer justify-start text-left gap-2 rounded-lg relative px-3 py-2 overflow-clip font-medium antialiased`,
         variant && variants[variant],
         className,
         loading && 'pointer-events-none',

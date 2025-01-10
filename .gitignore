@@ -45,7 +45,6 @@ jspm_packages/
 
 # Gatsby files
 .cache/
-public/
 
 # Vuepress build output
 .vuepress/dist
@@ -71,4 +70,3 @@ Thumbs.db
 dist/
 
 docker-compose.local.yml
-

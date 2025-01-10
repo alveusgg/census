@@ -5,7 +5,7 @@ import { TimeSpan } from 'oslo';
 import { createJWT } from 'oslo/jwt';
 import { z } from 'zod';
 import { useEnvironment } from '../../utils/env/env.js';
-import { getUserFromTwitchId, updateUsername } from '../users/index.js';
+import { getOrCreateUserFromTwitchId, updateUsername } from '../users/index.js';
 import { createSignInRequest, exchangeCodeForToken, getUserInformation, validateToken } from './auth.js';
 
 const TwitchRedirectResponse = z.object({
@@ -68,7 +68,7 @@ export default async function register(router: FastifyInstance) {
         throw new NotAuthenticatedError('Invalid token');
       }
       const { id, login } = await getUserInformation(token.accessToken);
-      const user = await getUserFromTwitchId(id);
+      const user = await getOrCreateUserFromTwitchId(id, login);
       if (user.username !== login) {
         await updateUsername(user.id, login);
       }

@@ -1,3 +1,5 @@
+import { OnboardingFormSchema } from '@alveusgg/census-forms';
+import { BadRequestError } from '@alveusgg/error';
 import { z } from 'zod';
 import { getPermissions } from '../services/auth/role.js';
 import {
@@ -7,10 +9,19 @@ import {
   redeemAll
 } from '../services/points/achievement.js';
 import { getPointsForUser } from '../services/points/points.js';
+import { getUser, onboardUser } from '../services/users/index.js';
 import { procedure, router } from '../trpc/trpc.js';
 import { useUser } from '../utils/env/env.js';
 
 export default router({
+  onboard: procedure.input(OnboardingFormSchema).mutation(async ({ input, ctx }) => {
+    const { id } = useUser();
+    const user = await getUser(id);
+    if (user.role !== 'pending') throw new BadRequestError(`You have already been onboarded.`);
+    const points = await onboardUser(id, input);
+    ctx.points(points);
+    ctx.achievements();
+  }),
   points: procedure.query(async () => {
     const user = useUser();
     return getPointsForUser(user.id);

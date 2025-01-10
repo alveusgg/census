@@ -15,7 +15,7 @@ export const Modal: FC<ModalComponentProps> = ({ children, className, close, isO
         if (!state) close();
       }}
     >
-      <DialogPortal>
+      <DialogPortal container={document.getElementById('modal')}>
         <DialogOverlay />
         {isOpen && (
           <DialogPrimitive.Content

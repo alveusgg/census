@@ -50,6 +50,34 @@
       "when": 1736100859294,
       "tag": "0006_windy_deathbird",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1736190083670,
+      "tag": "0007_opposite_gauntlet",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1736190640910,
+      "tag": "0008_flat_dark_beast",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1736524360676,
+      "tag": "0009_omniscient_spitfire",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1736528024452,
+      "tag": "0010_tranquil_wrecking_crew",
+      "breakpoints": true
     }
   ]
 }

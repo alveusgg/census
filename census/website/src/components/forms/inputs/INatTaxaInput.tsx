@@ -5,11 +5,12 @@ import { useQuery } from '@tanstack/react-query';
 import { useDebounce, useMeasure } from '@uidotdev/usehooks';
 import { Command } from 'cmdk';
 import { motion } from 'framer-motion';
-import { FC, useState } from 'react';
+import { ComponentProps, FC, useState } from 'react';
 
 export interface InputProps<T> {
   onSelect: (value: T) => void;
   placeholder?: string;
+  autoOpen?: boolean;
 }
 
 interface TaxaSearchResult {
@@ -19,12 +20,17 @@ interface TaxaSearchResult {
   scientific: string;
 }
 
-export const INatTaxaInput: FC<InputProps<TaxaSearchResult>> = ({ onSelect, placeholder }) => {
+export const INatTaxaInput: FC<InputProps<TaxaSearchResult> & Omit<ComponentProps<'input'>, 'onSelect'>> = ({
+  onSelect,
+  placeholder,
+  autoOpen,
+  ...props
+}) => {
   const [query, setQuery] = useState('');
   const search = useDebounce(query, 300);
 
   const [ref, { width }] = useMeasure();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(autoOpen);
 
   const api = useAPI();
 
@@ -37,7 +43,7 @@ export const INatTaxaInput: FC<InputProps<TaxaSearchResult>> = ({ onSelect, plac
   return (
     <div ref={ref} className="group w-full relative flex">
       <button type="button" className="w-full cursor-text" onClick={() => setOpen(true)}>
-        <div className="px-3 flex gap-2 items-center w-full transition-colors duration-100 hover:bg-accent-100">
+        <div className="px-3 py-1 flex gap-2 items-center w-full transition-colors duration-100 hover:bg-accent-100">
           <SiBinoculars className="text-2xl pt-0.5" />
           <p className="py-1.5 w-full text-sm text-left text-accent-800 opacity-75 outline-none font-medium">
             {placeholder}
@@ -52,12 +58,13 @@ export const INatTaxaInput: FC<InputProps<TaxaSearchResult>> = ({ onSelect, plac
             className={cn('z-50 text-accent-800 outline-none', 'absolute top-0 left-0 right-0 rounded-b-md')}
           >
             <Command loop shouldFilter={false}>
-              <div className="px-3 bg-accent-50 flex cursor-pointer gap-2 items-center w-full transition-colors duration-100 hover:bg-accent-100">
+              <div className="px-3 py-1 bg-accent-50 flex cursor-pointer gap-2 items-center w-full transition-colors duration-100 hover:bg-accent-100">
                 <SiBinoculars className="text-2xl pt-0.5" />
                 <Command.Input
+                  {...props}
+                  autoFocus
                   value={query}
                   onValueChange={setQuery}
-                  autoFocus
                   className="py-1.5 w-full text-sm bg-transparent text-accent-800 placeholder:opacity-75 placeholder:text-accent-900 font-medium outline-none"
                   placeholder={placeholder}
                 />

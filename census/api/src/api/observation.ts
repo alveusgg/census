@@ -6,7 +6,7 @@ import {
   getObservations,
   ObservationPayload
 } from '../services/observations/observations.js';
-import { editorProcedure, procedure, router } from '../trpc/trpc.js';
+import { procedure, procedureWithPermissions, router } from '../trpc/trpc.js';
 
 export const Pagination = z.object({
   page: z.number().default(1),
@@ -23,13 +23,13 @@ export const Query = z.object({
 export type Query = z.infer<typeof Query>;
 
 export default router({
-  createObservationsFromCapture: editorProcedure
+  createObservationsFromCapture: procedureWithPermissions('capture')
     .input(z.object({ captureId: z.number(), observations: z.array(ObservationPayload) }))
     .mutation(async ({ input }) => {
       return await createObservationsFromCapture(input.captureId, input.observations);
     }),
 
-  notifyDiscordAboutObservation: procedure
+  notifyDiscordAboutObservation: procedureWithPermissions('capture')
     .input(z.object({ observationId: z.number() }))
     .mutation(async ({ input }) => {
       return await notifyDiscordAboutObservation(input.observationId);

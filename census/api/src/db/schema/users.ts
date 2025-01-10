@@ -1,6 +1,6 @@
-import { index, integer, pgEnum, pgTable, serial, text } from 'drizzle-orm/pg-core';
+import { boolean, index, pgEnum, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
 
-export const roleEnum = pgEnum('role', ['capturer', 'member', 'expert', 'moderator', 'researcher', 'admin']);
+export const roleEnum = pgEnum('role', ['capturer', 'member', 'expert', 'moderator', 'researcher', 'admin', 'pending']);
 
 export const users = pgTable(
   'users',
@@ -9,7 +9,9 @@ export const users = pgTable(
     twitchUserId: text('twitch_user_id').notNull(),
     username: text('username').notNull(),
     role: roleEnum('role').notNull(),
-    points: integer('points').default(0).notNull()
+    restricted: boolean('restricted').default(false).notNull(),
+    banned: boolean('banned').default(false).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull()
   },
   table => {
     return {
