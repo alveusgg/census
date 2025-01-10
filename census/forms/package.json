@@ -1,0 +1,10 @@
+{
+  "name": "@alveusgg/census-forms",
+  "private": true,
+  "type": "module",
+  "main": "index.ts",
+  "types": "index.ts",
+  "dependencies": {
+    "zod": "^3.23.8"
+  }
+}

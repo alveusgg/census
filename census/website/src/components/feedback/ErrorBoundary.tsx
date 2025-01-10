@@ -258,3 +258,9 @@ export const ErrorBoundary: FC<PropsWithChildren<ComponentProps<'div'> & { for: 
     </div>
   );
 };
+
+export const handleTRPCError = (error: unknown) => {
+  if (!(error instanceof TRPCClientError)) return;
+  const custom = CustomError.from(error.message);
+  return custom;
+};

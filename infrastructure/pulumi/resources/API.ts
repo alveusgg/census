@@ -193,7 +193,14 @@ export class API extends ComponentResource {
             ? {
                 external: true,
                 targetPort: args.port,
-                customDomains: getCustomDomains(subscriptionId, args.resourceGroupName, environment.name, args.domain)
+                customDomains: getCustomDomains(subscriptionId, args.resourceGroupName, environment.name, args.domain),
+                corsPolicy: {
+                  allowedOrigins: ['*'],
+                  allowedMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+                  allowedHeaders: ['*'],
+                  exposeHeaders: ['*'],
+                  allowCredentials: true
+                }
               }
             : undefined,
           registries,

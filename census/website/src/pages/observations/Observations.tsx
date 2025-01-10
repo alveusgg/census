@@ -14,8 +14,10 @@ import { Timestamp } from '@/components/text/Timestamp';
 import { useSuggestIdentification } from '@/services/api/identifications';
 import { useNotifyDiscordAboutObservation, useObservations } from '@/services/api/observations';
 import { useUser } from '@/services/authentication/hooks';
+import { useHasPermission } from '@/services/permissions/hooks';
 import { cn } from '@/utils/cn';
 import { formatInTimeZone } from 'date-fns-tz';
+import { AnimatePresence, motion } from 'framer-motion';
 import { FC, PropsWithChildren, useEffect, useMemo, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { Slide } from './gallery/GalleryProvider';
@@ -56,9 +58,15 @@ interface IdentificationProps {
 const Identification: FC<IdentificationProps> = ({ identification, map }) => {
   const me = useUser();
   const identificationFeedbackModalProps = useModal<IdentificationFeedbackModalProps>();
+  const canVote = useHasPermission('vote');
   const children = map.get(identification.id);
   return (
-    <div className="px-3 py-1 flex flex-col gap-1" key={identification.id}>
+    <motion.div
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="px-3 py-1 flex flex-col gap-1"
+      key={identification.id}
+    >
       <IdentificationFeedbackModal {...identificationFeedbackModalProps} />
       <div>
         <p className="font-semibold flex items-center gap-1">
@@ -69,18 +77,18 @@ const Identification: FC<IdentificationProps> = ({ identification, map }) => {
           suggested by <span className="font-semibold">{identification.suggester.username}</span>
         </p>
       </div>
-      {!identification.feedback.find(feedback => feedback.userId === me.id) && (
+      {canVote && !identification.feedback.find(feedback => feedback.userId === me.id) && (
         <div className="flex gap-2 items-center">
           <Button
             onClick={() => identificationFeedbackModalProps.open({ feedback: 'agree', identification })}
-            className="text-sm font-semibold px-2.5 py-1.5"
+            className="text-sm font-semibold px-2.5 py-1"
             variant="primary"
           >
             agree
           </Button>
           <Button
             onClick={() => identificationFeedbackModalProps.open({ feedback: 'disagree', identification })}
-            className="text-sm font-semibold px-2.5 py-1.5"
+            className="text-sm font-semibold px-2.5 py-1"
             variant="primary"
           >
             disagree
@@ -90,17 +98,19 @@ const Identification: FC<IdentificationProps> = ({ identification, map }) => {
       {children && children.length > 0 && (
         <div className="ml-2">
           {children.map(child => {
-            return <Identification key={child.id} identification={child} map={map} />;
+            return <Identification identification={child} map={map} />;
           })}
         </div>
       )}
-    </div>
+    </motion.div>
   );
 };
 
 const Observation: FC<{ observation: Observation }> = ({ observation }) => {
   const notifyDiscordAboutObservation = useNotifyDiscordAboutObservation();
   const suggestIdentification = useSuggestIdentification();
+  const canSuggest = useHasPermission('suggest');
+  const canCapture = useHasPermission('capture');
 
   // const accessoryIdentifications = observation.identifications.filter(identification => identification.isAccessory);
   const observationIdentifications = observation.identifications.filter(identification => !identification.isAccessory);
@@ -109,116 +119,145 @@ const Observation: FC<{ observation: Observation }> = ({ observation }) => {
     [observationIdentifications]
   );
 
+  const [accessorySuggestionEnabled, setAccessorySuggestionEnabled] = useState(false);
+
   return (
-    <div className="flex gap-4" key={observation.id}>
-      <Polaroid>
-        <Preloader>
+    <div className="@container">
+      <div className="flex gap-4 flex-col @lg:flex-row" key={observation.id}>
+        <Polaroid>
+          <Preloader>
+            {observation.images.map(image => (
+              <Square key={image.id} src={image.url} options={{ extract: image.boundingBox }} />
+            ))}
+          </Preloader>
           {observation.images.map(image => (
-            <Square key={image.id} src={image.url} options={{ extract: image.boundingBox }} />
+            <Slide key={image.id} id={image.id.toString()}>
+              <div className="w-full h-full overflow-clip relative">
+                <Square
+                  loading="lazy"
+                  className="absolute inset-0 w-full h-full z-10"
+                  src={image.url}
+                  options={{ extract: image.boundingBox }}
+                />
+                <Square
+                  className="absolute inset-0 w-full h-full blur-2xl"
+                  src={image.url}
+                  options={{ extract: image.boundingBox, width: 25, height: 25 }}
+                />
+              </div>
+            </Slide>
           ))}
-        </Preloader>
-        {observation.images.map(image => (
-          <Slide key={image.id} id={image.id.toString()}>
-            <div className="w-full h-full overflow-clip relative">
-              <Square
-                loading="lazy"
-                className="absolute inset-0 w-full h-full z-10"
-                src={image.url}
-                options={{ extract: image.boundingBox }}
-              />
-              <Square
-                className="absolute inset-0 w-full h-full blur-2xl"
-                src={image.url}
-                options={{ extract: image.boundingBox, width: 25, height: 25 }}
-              />
+        </Polaroid>
+        <Note className="w-full h-fit">
+          <div className="pb-2 pt-4 px-4 flex gap-6 justify-between">
+            <div className="font-mono mb-1">
+              <p className="text-lg font-semibold">{observation.observer.username}</p>
+              <p className="text-sm">
+                <Timestamp date={new Date(observation.capture.startCaptureAt)}>
+                  {formatInTimeZone(observation.capture.startCaptureAt, 'America/Chicago', 'MM/dd/yyyy hh:mma')}
+                </Timestamp>
+              </p>
             </div>
-          </Slide>
-        ))}
-      </Polaroid>
-      <Note className="w-full h-fit">
-        <div className="pb-2 pt-4 px-4 flex gap-6 justify-between">
-          <div className="font-mono mb-1">
-            <p className="text-lg font-semibold">{observation.observer.username}</p>
-            <p className="text-sm">
-              <Timestamp date={new Date(observation.capture.startCaptureAt)}>
-                {formatInTimeZone(observation.capture.startCaptureAt, 'America/Chicago', 'MM/dd/yyyy hh:mma')}
-              </Timestamp>
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Link
-              to={`/captures/${observation.capture.id}`}
-              className="rounded-full w-10 h-10 p-1 flex items-center justify-center"
-            >
-              <SiCamera className="text-2xl" />
-            </Link>
-            {observation.discordThreadId ? (
+            <div className="flex gap-2">
               <Link
-                variant={false}
-                target="_blank"
-                rel="noreferrer"
-                to={`https://discord.com/channels/943622444852330518/${observation.discordThreadId}`}
-                className={cn(
-                  'rounded-full w-10 h-10 p-1 flex items-center justify-center text-blue-800 bg-blue-100 hover:bg-blue-200'
-                )}
+                to={`/captures/${observation.capture.id}`}
+                className="rounded-full w-10 h-10 p-1 flex items-center justify-center"
               >
-                <SiDiscord className="text-2xl" />
+                <SiCamera className="text-2xl" />
               </Link>
-            ) : (
+              {observation.discordThreadId && (
+                <Link
+                  variant={false}
+                  target="_blank"
+                  rel="noreferrer"
+                  to={`https://discord.com/channels/943622444852330518/${observation.discordThreadId}`}
+                  className={cn(
+                    'rounded-full w-10 h-10 p-1 flex items-center justify-center text-blue-800 bg-blue-100 hover:bg-blue-200'
+                  )}
+                >
+                  <SiDiscord className="text-2xl" />
+                </Link>
+              )}
+              {!observation.discordThreadId && canCapture && (
+                <Button
+                  variant={false}
+                  onClick={() => notifyDiscordAboutObservation.mutate(observation.id)}
+                  loading={notifyDiscordAboutObservation.isPending}
+                  className={cn(
+                    'rounded-full w-10 h-10 p-1 flex items-center justify-center text-blue-500 bg-blue-50 hover:bg-blue-100'
+                  )}
+                >
+                  <SiDiscord className="text-2xl" />
+                </Button>
+              )}
+              {observation.capture?.clipId && (
+                <Link
+                  target="_blank"
+                  rel="noreferrer"
+                  to={`https://clips.twitch.tv/${observation.capture.clipId}`}
+                  variant={false}
+                  className="rounded-full w-10 h-10 p-1 flex items-center justify-center text-purple-800 bg-purple-700 bg-opacity-10 hover:bg-opacity-20"
+                >
+                  <SiTwitch className="text-2xl" />
+                </Link>
+              )}
+            </div>
+          </div>
+          <div className="py-2 px-3 flex justify-between items-center">
+            <p className="flex items-center gap-2 text-sm font-medium opacity-50">
+              <SiLeaf className="text-xl" />
+              no associated plants
+            </p>
+            {canSuggest && (
               <Button
-                variant={false}
-                onClick={() => notifyDiscordAboutObservation.mutate(observation.id)}
-                loading={notifyDiscordAboutObservation.isPending}
-                className={cn(
-                  'rounded-full w-10 h-10 p-1 flex items-center justify-center text-blue-500 bg-blue-50 hover:bg-blue-100'
-                )}
+                variant="primary"
+                onClick={() => setAccessorySuggestionEnabled(true)}
+                className="text-sm font-semibold pl-2 pr-2.5 py-1 gap-0.5"
               >
-                <SiDiscord className="text-2xl" />
+                <SiSearch className="text-base" />
+                suggest
               </Button>
             )}
-            {observation.capture?.clipId && (
-              <Link
-                target="_blank"
-                rel="noreferrer"
-                to={`https://clips.twitch.tv/${observation.capture.clipId}`}
-                variant={false}
-                className="rounded-full w-10 h-10 p-1 flex items-center justify-center text-purple-800 bg-purple-700 bg-opacity-10 hover:bg-opacity-20"
-              >
-                <SiTwitch className="text-2xl" />
-              </Link>
-            )}
           </div>
-        </div>
-        <div className="py-2 px-3 flex justify-between items-center">
-          <p className="flex items-center gap-2 text-sm font-medium opacity-50">
-            <SiLeaf className="text-xl" />
-            no associated plants
-          </p>
-          <Button variant="primary" className="text-sm font-semibold pl-2 pr-2.5 py-1 gap-0.5">
-            <SiSearch className="text-base" />
-            suggest
-          </Button>
-        </div>
-        {topLevelIdentifications.size > 0 && (
-          <div className="py-2">
-            {Array.from(topLevelIdentifications).map(identification => {
-              return <Identification key={identification.id} identification={identification} map={childrenForParent} />;
-            })}
-          </div>
-        )}
-        <div className="relative">
-          <INatTaxaInput
-            placeholder="suggest identification"
-            onSelect={async taxon => {
-              await suggestIdentification.mutateAsync({
-                observationId: observation.id,
-                iNatId: taxon.id
-              });
-            }}
-          />
-          {suggestIdentification.isPending && <Loader className="absolute top-1/2 -translate-y-1/2 right-3" />}
-        </div>
-      </Note>
+          {accessorySuggestionEnabled && (
+            <div>
+              <INatTaxaInput
+                autoOpen
+                placeholder="suggest plant"
+                onSelect={async taxon => {
+                  await suggestIdentification.mutateAsync({
+                    observationId: observation.id,
+                    iNatId: taxon.id
+                  });
+                }}
+              />
+            </div>
+          )}
+          {topLevelIdentifications.size > 0 && (
+            <motion.div className="py-2">
+              <AnimatePresence initial={false}>
+                {Array.from(topLevelIdentifications).map(identification => {
+                  return <Identification identification={identification} map={childrenForParent} />;
+                })}
+              </AnimatePresence>
+            </motion.div>
+          )}
+          {canSuggest && (
+            <motion.div className="relative">
+              <INatTaxaInput
+                placeholder="suggest identification"
+                onSelect={async taxon => {
+                  await suggestIdentification.mutateAsync({
+                    observationId: observation.id,
+                    iNatId: taxon.id
+                  });
+                }}
+              />
+              {suggestIdentification.isPending && <Loader className="absolute top-1/2 -translate-y-1/2 right-3" />}
+            </motion.div>
+          )}
+        </Note>
+      </div>
     </div>
   );
 };

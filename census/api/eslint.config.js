@@ -19,6 +19,7 @@ export default tseslint.config(...tseslint.configs.recommended, ...tseslint.conf
   },
   rules: {
     'census-custom/no-native-error': 'error',
+    '@typescript-eslint/no-unsafe-argument': 'off',
     '@typescript-eslint/no-unsafe-call': 'off',
     '@typescript-eslint/require-await': 'off',
     '@typescript-eslint/no-misused-promises': 'off',

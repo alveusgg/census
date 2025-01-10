@@ -130,7 +130,7 @@ export const createFromClip = async (
       endCaptureAt: clip.endDate,
       capturedAt: new Date(),
       capturedBy: user.id,
-      feedId: 'test',
+      feedId: 'pollinator',
       clipMetadata: { views: clip.views, thumbnail: clip.thumbnailUrl }
     })
     .returning();

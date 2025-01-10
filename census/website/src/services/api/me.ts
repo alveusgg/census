@@ -1,5 +1,8 @@
+import { handleTRPCError } from '@/components/feedback/ErrorBoundary';
+import { OnboardingFormSchema } from '@alveusgg/census-forms';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { key, useAPI } from '../query/hooks';
 
 export const usePoints = () => {
@@ -18,6 +21,8 @@ export const usePermissions = () => {
     queryFn: () => api.me.permissions.query()
   });
 };
+
+export type Permissions = Awaited<ReturnType<typeof usePermissions>>['data'];
 
 export const usePendingAchievements = () => {
   const api = useAPI();
@@ -67,4 +72,26 @@ export const usePatchAchievement = () => {
     },
     [queryClient]
   );
+};
+
+export const useOnboardUser = () => {
+  const api = useAPI();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: OnboardingFormSchema) => {
+      try {
+        const results = await api.me.onboard.mutate(data);
+        await queryClient.invalidateQueries({ queryKey: key('permissions') });
+        return results;
+      } catch (error) {
+        const custom = handleTRPCError(error);
+        if (custom) {
+          toast.error(custom.message);
+        } else {
+          toast.error('Failed to onboard user');
+        }
+        throw error;
+      }
+    }
+  });
 };

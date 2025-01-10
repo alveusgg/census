@@ -9,7 +9,7 @@ export const QueryProvider: FC<PropsWithChildren> = ({ children }) => {
       new QueryClient({
         defaultOptions: {
           queries: {
-            refetchOnWindowFocus: true,
+            refetchOnWindowFocus: false,
             retry: 1
           }
         }

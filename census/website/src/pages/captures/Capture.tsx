@@ -1,5 +1,5 @@
 import { useCapture } from '@/services/api/capture';
-import { usePermissions } from '@/services/permissions/hooks';
+import { useHasPermission } from '@/services/permissions/hooks';
 import { CaptureEditorProvider } from '@/services/video/CaptureEditorProvider';
 import { FC, useMemo } from 'react';
 import { Navigate, useParams } from 'react-router';
@@ -16,13 +16,13 @@ export const CaptureRedirect: FC = () => {
 };
 
 export const Capture: FC = () => {
-  const { editor } = usePermissions();
+  const canCreateCapture = useHasPermission('capture');
   const params = useParams<{ id: string }>();
   const id = useMemo(() => Number(params.id), [params.id]);
   const capture = useCapture(id);
 
-  if (!editor) throw new Error('Editor permission required');
   if (capture.data.observations.length > 0) return <ReadOnly id={id} />;
+  if (!canCreateCapture) throw new Error('Editor permission required');
 
   return (
     <CaptureEditorProvider>

@@ -1,5 +1,6 @@
+import { Actions, AnyAchievementPayload } from '@alveusgg/census-levels';
 import { relations } from 'drizzle-orm';
-import { boolean, index, integer, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
+import { boolean, index, integer, json, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
 import { identifications } from './identifications.js';
 import { observations } from './observations.js';
 import { users } from './users.js';
@@ -11,7 +12,8 @@ export const achievements = pgTable(
     userId: integer('user_id')
       .notNull()
       .references(() => users.id),
-    type: text('type').notNull(),
+    type: text('type').$type<Actions>().notNull(),
+    payload: json('payload').$type<AnyAchievementPayload>().notNull(),
     identificationId: integer('identification_id').references(() => identifications.id),
     observationId: integer('observation_id').references(() => observations.id),
     points: integer('points').notNull(),

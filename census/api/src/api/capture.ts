@@ -8,7 +8,7 @@ import {
   getCaptures
 } from '../services/capture/index.js';
 import { downloadClip } from '../services/twitch/clips.js';
-import { procedure, router } from '../trpc/trpc.js';
+import { procedure, procedureWithPermissions, router } from '../trpc/trpc.js';
 import { useEnvironment } from '../utils/env/env.js';
 import { Pagination } from './observation.js';
 
@@ -38,7 +38,7 @@ export default router({
     };
   }),
 
-  createFromClip: procedure
+  createFromClip: procedureWithPermissions('capture')
     .input(z.object({ id: z.string(), userIsVerySureItIsNeeded: z.boolean().optional() }))
     .mutation(async ({ input }) => {
       const { variables } = useEnvironment();

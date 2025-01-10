@@ -7,6 +7,7 @@
   "types": "src/index.ts",
   "dependencies": {
     "@alveusgg/census-levels": "workspace:*",
+    "@alveusgg/census-forms": "workspace:*",
     "@alveusgg/error": "workspace:*",
     "@alveusgg/node": "workspace:*",
     "@azure/storage-blob": "^12.24.0",

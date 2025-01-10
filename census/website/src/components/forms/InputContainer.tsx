@@ -18,7 +18,7 @@ export const InputContainer: FC<PropsWithChildren<ComponentProps<'div'> & { vari
   return (
     <div
       className={cn(
-        'group w-full rounded-md outline-none text-sm ring-1 focus-within:ring-2',
+        'group w-full transition-all duration-300 rounded-md outline-none ring-1 focus-within:ring-2',
         variants[variant],
         className
       )}

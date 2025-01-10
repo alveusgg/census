@@ -9,6 +9,7 @@ import { SignOut } from './pages/authentication/SignOut';
 import { SignOutRedirect } from './pages/authentication/SignOutRedirect';
 import { Capture } from './pages/captures/Capture';
 import { Captures } from './pages/captures/Captures';
+import { Onboarding } from './pages/forms/Onboarding';
 import { Home } from './pages/home/Home';
 import { Observations } from './pages/observations/Observations';
 
@@ -64,6 +65,15 @@ export const router = createBrowserRouter([
                 ),
                 path: ':id',
                 element: <Capture />
+              }
+            ]
+          },
+          {
+            path: 'forms',
+            children: [
+              {
+                path: 'onboarding',
+                element: <Onboarding />
               }
             ]
           }

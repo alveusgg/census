@@ -1,27 +1,22 @@
+import { AchievementPayload, Actions, AnyAchievementPayload, registry } from '@alveusgg/census-levels';
 import { NotFoundError } from '@alveusgg/error';
 import { and, eq, inArray } from 'drizzle-orm';
 import { achievements } from '../../db/schema/index.js';
 import { useDB, withTransaction } from '../../db/transaction.js';
 import { assert } from '../../utils/assert.js';
-import { addPoints, removePoints } from './points.js';
+import { getPointsForUser } from './points.js';
 
-type AchievementDetails = { points: number };
-type Registry = Record<string, AchievementDetails>;
-
-const registry = {
-  vote: { points: 50 }
-} satisfies Registry;
-
-export type Achievements = keyof typeof registry;
-
-export const recordAchievement = async (action: Achievements, userId: number, immediate = false) => {
-  const details = registry[action];
-  assert(details, `Invalid action: ${action}`);
+export const recordAchievement = async <A extends Actions>(
+  action: A,
+  userId: number,
+  payload: AchievementPayload<A>['payload'],
+  immediate = false
+) => {
   const db = useDB();
   return await db.transaction(async tx =>
     withTransaction(tx, async () => {
-      await addAchievement(action, userId, details.points, immediate);
-      if (immediate) return await addPoints(userId, details.points);
+      await addAchievement(action, userId, payload, immediate);
+      return await getPointsForUser(userId);
     })
   );
 };
@@ -30,8 +25,8 @@ export const redeemAchievementAndAwardPoints = async (userId: number, id: number
   const db = useDB();
   return await db.transaction(async tx =>
     withTransaction(tx, async () => {
-      const achievement = await redeemAchievement(userId, id);
-      return await addPoints(achievement.userId, achievement.points);
+      await redeemAchievement(userId, id);
+      return await getPointsForUser(userId);
     })
   );
 };
@@ -55,8 +50,7 @@ export const redeemAll = async (userId: number) => {
           )
         );
 
-      const points = pending.reduce((acc, curr) => acc + curr.points, 0);
-      return await addPoints(userId, points);
+      return await getPointsForUser(userId);
     })
   );
 };
@@ -65,16 +59,30 @@ export const revokeAchievement = async (id: number) => {
   const db = useDB();
   await db.transaction(async tx =>
     withTransaction(tx, async () => {
-      const entry = await getAchievement(id);
       await removeAchievement(id);
-      await removePoints(entry.userId, entry.points);
     })
   );
 };
 
-const addAchievement = async (action: Achievements, userId: number, points: number, immediate = false) => {
+const addAchievement = async <A extends Actions>(
+  action: A,
+  userId: number,
+  payload: AchievementPayload<A>['payload'],
+  immediate = false
+) => {
   const db = useDB();
-  await db.insert(achievements).values({ type: action, userId, points, redeemed: immediate });
+  const details = registry[action];
+  assert(details, `Invalid action: ${action}`);
+  const parsed = details.schema.parse(payload);
+
+  await db.insert(achievements).values({
+    type: action,
+    userId,
+    points: details.points,
+    payload: { type: action, payload: parsed } as AnyAchievementPayload,
+    identificationId: 'identificationId' in parsed ? parsed.identificationId : null,
+    redeemed: immediate
+  });
 };
 
 const redeemAchievement = async (userId: number, id: number) => {
@@ -99,13 +107,6 @@ export const getPendingAchievements = async (userId: number) => {
 export const getAllAchievements = async (userId: number) => {
   const db = useDB();
   return await db.query.achievements.findMany({ where: eq(achievements.userId, userId) });
-};
-
-const getAchievement = async (id: number) => {
-  const db = useDB();
-  const entry = await db.query.achievements.findFirst({ where: eq(achievements.id, id) });
-  if (!entry) throw new NotFoundError(`Achievement not found: ${id}`);
-  return entry;
 };
 
 const removeAchievement = async (id: number) => {

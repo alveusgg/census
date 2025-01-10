@@ -1,23 +1,36 @@
 import SiChevronLeft from '@/components/icons/SiChevronLeft';
 import SiChevronRight from '@/components/icons/SiChevronRight';
 import { cn } from '@/utils/cn';
-import { ComponentProps, FC, PropsWithChildren } from 'react';
+import { animate, HTMLMotionProps, motion } from 'framer-motion';
+import { FC, PropsWithChildren, useRef } from 'react';
 import { useGallery } from './hooks';
 
 interface SlideButtonProps {
   direction: 'next' | 'previous';
 }
 
-export const SlideButton: FC<PropsWithChildren<SlideButtonProps & ComponentProps<'button'>>> = ({
+export const SlideButton: FC<PropsWithChildren<SlideButtonProps & HTMLMotionProps<'button'>>> = ({
   direction,
   children,
   ...props
 }) => {
   const [next, previous] = useGallery(state => [state.next, state.previous]);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   return (
-    <button {...props} onClick={() => (direction === 'next' ? next() : previous())}>
+    <motion.button
+      ref={buttonRef}
+      {...props}
+      onClick={() => {
+        direction === 'next' ? next() : previous();
+        if (!buttonRef.current) return;
+        animate([
+          [buttonRef.current, { x: direction === 'next' ? 5 : -5 }, { duration: 0.1 }],
+          [buttonRef.current, { x: 0 }, { duration: 0.1 }]
+        ]);
+      }}
+    >
       {children}
-    </button>
+    </motion.button>
   );
 };
 
@@ -28,13 +41,23 @@ export const Controls: FC = () => {
     <>
       <SlideButton
         direction="previous"
-        className="absolute top-1/2 -translate-y-1/2 -left-2 z-10 bg-white border border-accent border-opacity-50 text-accent-darker p-1 rounded-full shadow-xl cursor-pointer"
+        style={{
+          top: '50%',
+          left: '-0.5rem',
+          y: '-50%'
+        }}
+        className="absolute z-10 bg-white border border-accent border-opacity-50 text-accent-darker p-1 rounded-full shadow-xl cursor-pointer"
       >
         <SiChevronLeft className="text-3xl" />
       </SlideButton>
       <SlideButton
         direction="next"
-        className="absolute top-1/2 -translate-y-1/2 -right-2 z-10 bg-white border border-accent border-opacity-50 text-accent-darker p-1 rounded-full shadow-xl cursor-pointer"
+        style={{
+          top: '50%',
+          right: '-0.5rem',
+          y: '-50%'
+        }}
+        className="absolute z-10 bg-white border border-accent border-opacity-50 text-accent-darker p-1 rounded-full shadow-xl cursor-pointer"
       >
         <SiChevronRight className="text-3xl" />
       </SlideButton>

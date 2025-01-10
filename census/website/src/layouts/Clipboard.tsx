@@ -14,15 +14,26 @@ export const Clipboard: FC<PropsWithChildren<ClipboardProps>> = ({ clip = true, 
       style={{
         borderRadius: '1rem'
       }}
-      className={cn('bg-[#BF896D] w-full mx-auto max-w-3xl relative p-2.5 @container', container?.className)}
+      initial={{
+        y: 40,
+        scale: 1.05
+      }}
+      animate={{
+        y: 0,
+        scale: 1
+      }}
+      className={cn(
+        'md:bg-[#BF896D] w-full mx-auto max-w-3xl relative md:p-2.5 @container md:mt-8',
+        container?.className
+      )}
     >
-      {clip && <Clip className="absolute -top-12 left-1/2 -translate-x-1/2" />}
+      {clip && <Clip className="absolute hidden md:inline -top-12 left-1/2 -translate-x-1/2" />}
       <div
         style={{
           borderRadius: '0.5rem'
         }}
         {...inner}
-        className={cn('bg-accent-50 h-fit min-h-full', inner.className)}
+        className={cn('md:bg-accent-50 h-fit min-h-full md:px-12 md:py-20', inner.className)}
       >
         {children}
       </div>

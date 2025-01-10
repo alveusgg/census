@@ -11,7 +11,7 @@ import { flatten } from 'flat';
 import { validateJWT as originalValidateJWT } from 'oslo/jwt';
 import { feeds } from '../db/schema/index.js';
 import { useDB } from '../db/transaction.js';
-import { getPermissions } from '../services/auth/role.js';
+import { getPermissions, Permissions } from '../services/auth/role.js';
 import { TokenPayload } from '../services/auth/router.js';
 import { useEnvironment, useUser, withUser } from '../utils/env/env.js';
 import { createContext } from './context.js';
@@ -88,38 +88,26 @@ export const procedure = loggedProcedure.use(async ({ ctx, next }) => {
     throw new NotAuthenticatedError('You are using an invalid authentication method.');
   }
 
-  const decoded = await validateJWT(token);
-  if (!decoded.subject) throw new NotAuthenticatedError('Your token is malformed.');
-  const payload = TokenPayload.parse(decoded.payload);
-  return withUser(payload, next);
+  try {
+    const decoded = await validateJWT(token);
+    if (!decoded.subject) throw new NotAuthenticatedError('Your token is malformed.');
+    const payload = TokenPayload.parse(decoded.payload);
+    return withUser(payload, next);
+  } catch {
+    throw new NotAuthenticatedError('Your token is malformed.');
+  }
 });
 
-export const moderatorProcedure = procedure.use(async ({ next }) => {
-  const user = useUser();
-  const permissions = await getPermissions(user.id);
-  if (!permissions.moderator) {
-    throw new ForbiddenError('You are not authorized to perform this action.');
-  }
-  return next();
-});
-
-export const adminProcedure = procedure.use(async ({ next }) => {
-  const user = useUser();
-  const permissions = await getPermissions(user.id);
-  if (!permissions.administrate) {
-    throw new ForbiddenError('You are not authorized to perform this action.');
-  }
-  return next();
-});
-
-export const editorProcedure = procedure.use(async ({ next }) => {
-  const user = useUser();
-  const permissions = await getPermissions(user.id);
-  if (!permissions.editor) {
-    throw new ForbiddenError('You are not authorized to perform this action.');
-  }
-  return next();
-});
+export const procedureWithPermissions = (required: keyof Permissions) => {
+  return procedure.use(async ({ next }) => {
+    const user = useUser();
+    const permissions = await getPermissions(user.id);
+    if (!permissions[required]) {
+      throw new ForbiddenError('You are not authorized to perform this action.');
+    }
+    return next();
+  });
+};
 
 export const integrationProcedure = t.procedure.use(async ({ ctx, next }) => {
   if (!ctx.authorization) {
