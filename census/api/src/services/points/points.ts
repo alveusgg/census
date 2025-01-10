@@ -10,5 +10,5 @@ export const getPointsForUser = async (userId: number) => {
     .from(achievements)
     .where(and(eq(achievements.userId, userId), eq(achievements.redeemed, true)));
   if (!user) throw new NotFoundError(`User not found: ${userId}`);
-  return user.points;
+  return user.points || 0;
 };
