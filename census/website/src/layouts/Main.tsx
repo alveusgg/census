@@ -25,7 +25,7 @@ export const Main = () => {
                   </div>
                 }
               >
-                <div className="flex-1 flex flex-col overflow-y-scroll py-6 px-8">
+                <div className="flex-1 flex flex-col overflow-y-scroll py-6 px-8 @container">
                   <Outlet />
                 </div>
               </Suspense>

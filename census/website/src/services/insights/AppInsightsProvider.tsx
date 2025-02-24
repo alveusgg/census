@@ -27,6 +27,7 @@ export interface AppInsightsStore {
   trackException: (exception: Error) => void;
   addAuthenticatedUserContext: (userId: string) => void;
   trackEvent: (event: string, properties?: { [key: string]: string }) => void;
+  trackMetric: (name: string, value: number, properties?: { [key: string]: string }) => void;
 }
 export const AppInsightsContext = createContext<StoreApi<AppInsightsStore> | null>(null);
 
@@ -102,16 +103,23 @@ export const AppInsightsProvider: FC<PropsWithChildren> = ({ children }) => {
             appInsights.setAuthenticatedUserContext(userId);
           }
           appInsights.trackEvent({ name: event }, properties);
+        },
+        trackMetric: (name: string, value: number, properties?: { [key: string]: string }) => {
+          if (!appInsights.appInsights.isInitialized()) {
+            console.warn(`AppInsights is not enabled in development: ${name}`);
+            return;
+          }
+          appInsights.trackMetric({ name, average: value }, properties);
         }
       })),
     [appInsights]
   );
 
   useEffect(() => {
-    if (import.meta.env.DEV) {
-      console.warn('AppInsights is not enabled in development');
-      return;
-    }
+    // if (import.meta.env.DEV) {
+    //   console.warn('AppInsights is not enabled in development');
+    //   return;
+    // }
 
     if (appInsights.appInsights.isInitialized()) {
       return;
@@ -131,6 +139,7 @@ export const AppInsightsProvider: FC<PropsWithChildren> = ({ children }) => {
     const hasExceptionRegex = /exception/i;
     // If the exception message matches any of these regexes, we don't track it
     const FilteredExceptions: RegExp[] = [/ResizeObserver/];
+
     appInsights.addTelemetryInitializer(envelope => {
       if (hasExceptionRegex.test(envelope.name)) {
         console.debug(`Envelope is an exception`);

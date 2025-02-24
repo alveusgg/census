@@ -5,6 +5,7 @@ export interface Config extends BackstageConfig {
     apiBaseUrl: string;
     ipxBaseUrl: string;
     appInsightsConnectionString: string;
+    imageEncryptionKey: string;
 
     docsUrl: string;
   };

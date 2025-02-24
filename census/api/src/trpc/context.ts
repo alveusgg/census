@@ -4,8 +4,8 @@ export function createContext({ req, res, info }: CreateFastifyContextOptions) {
   const headers = req.headers;
   const authorization = headers.authorization ?? info.connectionParams?.authorization;
 
-  const points = (number: number) => {
-    res.header('x-census-points', number.toString());
+  const points = () => {
+    res.header('x-census-points', new Date().toISOString());
   };
   const achievements = () => {
     res.header('x-census-achievements', new Date().toISOString());

@@ -17,16 +17,16 @@ export const App = () => {
         <Suspense fallback={<Loading />}>
           <BackstageProvider>
             <Suspense fallback={<Loading />}>
-              <CritterAuthenticationProvider>
-                <AppInsightsProvider>
+              <AppInsightsProvider>
+                <CritterAuthenticationProvider>
                   <ComponentErrorBoundary>
                     <APIProvider>
                       <Toaster />
                       <RouterProvider router={router} />
                     </APIProvider>
                   </ComponentErrorBoundary>
-                </AppInsightsProvider>
-              </CritterAuthenticationProvider>
+                </CritterAuthenticationProvider>
+              </AppInsightsProvider>
             </Suspense>
           </BackstageProvider>
         </Suspense>

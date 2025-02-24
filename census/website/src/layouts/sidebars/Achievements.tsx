@@ -1,6 +1,8 @@
 import { Counter } from '@/components/animation/Counter';
 import { Button } from '@/components/controls/button/juicy';
+import { useConfetti } from '@/components/layout/ConfettiProvider';
 import { useAchievements } from '@/components/layout/LayoutProvider';
+import { useModal } from '@/components/modal/useModal';
 import { usePointAction } from '@/components/points/hooks';
 import { PointDestination } from '@/components/points/PointDestination';
 import { PointOrigin } from '@/components/points/PointOrigin';
@@ -11,10 +13,12 @@ import {
   useRedeemAchievement,
   useRedeemAllAchievements
 } from '@/services/api/me';
+import { useCurrentSeason } from '@/services/api/seasons';
 import { cn } from '@/utils/cn';
 import { levels } from '@alveusgg/census-levels';
 import { AnimatePresence, HTMLMotionProps, motion, useAnimate } from 'framer-motion';
-import { FC, PropsWithChildren, useRef } from 'react';
+import { FC, PropsWithChildren, useEffect, useMemo, useRef, useState } from 'react';
+import { LevelUpModal } from './LevelUpModal';
 
 const getLevelForPoints = (points: number) => {
   const level = Object.values(levels).reduce((acc, level) => {
@@ -27,13 +31,32 @@ const getLevelForPoints = (points: number) => {
 
 export const Achievements = () => {
   const [open, setOpen] = useAchievements();
-  const points = usePoints();
+  const season = useCurrentSeason();
+  const points = usePoints(season.data.startDate);
   const pending = usePendingAchievements();
 
   const redeemAll = useRedeemAllAchievements();
+  const level = useMemo(() => getLevelForPoints(points.data), [points.data]);
+  const [knownLevel, setKnownLevel] = useState<number | null>(null);
+
+  const levelUpModalProps = useModal<{ level: number }>();
+
+  const confetti = useConfetti();
+  useEffect(() => {
+    if (knownLevel !== level) {
+      setKnownLevel(level);
+      if (knownLevel !== null) {
+        setTimeout(() => {
+          levelUpModalProps.open({ level });
+          confetti();
+        }, 3000);
+      }
+    }
+  }, [level]);
 
   return (
     <>
+      <LevelUpModal {...levelUpModalProps} />
       <motion.div
         className="flex flex-col z-40 fixed md:relative right-2 top-2 bottom-2 md:top-auto md:bottom-auto md:right-auto antialiased"
         animate={{ width: open ? '16rem' : '0' }}
@@ -85,6 +108,7 @@ export const Achievements = () => {
               {pending.data.length > 0 ? (
                 pending.data.map(achievement => (
                   <Achievement
+                    type={achievement.payload.type}
                     className="bg-[#A356F0] hover:bg-[#9346e0] border border-[#8D40DB] rounded-md flex font-medium px-3 py-2.5 text-white"
                     key={achievement.id}
                     id={achievement.id}
@@ -97,6 +121,32 @@ export const Achievements = () => {
                           <span className="font-bold text-sm">{achievement.points} pts</span>
                         </div>
                         <p className="mt-1 text-left text-sm leading-tight">{achievement.payload.payload.message}</p>
+                      </>
+                    )}
+
+                    {achievement.payload.type === 'shiny' && achievement.identification && (
+                      <>
+                        <div className="flex justify-between">
+                          <p className="font-semibold text-left">🌟 Congrats!</p>
+                          <span className="font-bold text-sm">{achievement.points} pts</span>
+                        </div>
+                        <p className="mt-1 text-left text-sm leading-tight">
+                          You identified one of Dr. Allison's shinies! Well done!{' '}
+                          <span className="font-bold">{achievement.identification.nickname}</span>
+                        </p>
+                      </>
+                    )}
+
+                    {achievement.payload.type === 'identify' && achievement.identification && (
+                      <>
+                        <div className="flex justify-between">
+                          <p className="font-semibold text-left">🔬 Congrats!</p>
+                          <span className="font-bold text-sm">{achievement.points} pts</span>
+                        </div>
+                        <p className="mt-1 text-left text-sm leading-tight">
+                          You successfully identified a{' '}
+                          <span className="font-bold">{achievement.identification.nickname}!</span> Well done!
+                        </p>
                       </>
                     )}
                   </Achievement>
@@ -122,13 +172,15 @@ export const Achievements = () => {
 interface AchievementProps {
   id: number;
   points: number;
+  type: 'identify' | 'shiny' | string;
 }
 
-const Achievement: FC<PropsWithChildren<AchievementProps & Omit<HTMLMotionProps<'button'>, 'id'>>> = ({
+const Achievement: FC<PropsWithChildren<AchievementProps & Omit<HTMLMotionProps<'button'>, 'id' | 'type'>>> = ({
   id,
   points,
   children,
   className,
+  type,
   ...props
 }) => {
   const action = usePointAction();
@@ -137,7 +189,10 @@ const Achievement: FC<PropsWithChildren<AchievementProps & Omit<HTMLMotionProps<
   const [redeemedRef, animate] = useAnimate();
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const confetti = useConfetti();
+
   const handleRedeem = async () => {
+    if (type === 'shiny' || type === 'identify') confetti();
     if (!containerRef.current) throw new Error('No container ref');
     await animate(containerRef.current, { opacity: 0.5 }, { duration: 0.2 });
     await Promise.all([redeem.mutateAsync(id), action.add(points)]);

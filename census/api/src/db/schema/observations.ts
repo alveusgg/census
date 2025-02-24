@@ -16,7 +16,8 @@ export const observations = pgTable('observations', {
     .notNull()
     .references(() => users.id),
   removed: boolean('removed').default(false).notNull(),
-  moderated: json('moderated').$type<{ twitchUserId: string; type: string; message: string }[]>().default([]).notNull(),
+  confirmedAs: integer('confirmed_as'),
+  moderated: json('moderated').$type<{ userId: string; type: string; message: string }[]>().default([]).notNull(),
   discordThreadId: text('discord_thread_id')
 });
 
@@ -30,5 +31,9 @@ export const observationsRelations = relations(observations, ({ one, many }) => 
   observer: one(users, {
     fields: [observations.observedBy],
     references: [users.id]
+  }),
+  confirmedIdentification: one(identifications, {
+    fields: [observations.confirmedAs],
+    references: [identifications.id]
   })
 }));

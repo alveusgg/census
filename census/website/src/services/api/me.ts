@@ -5,11 +5,11 @@ import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { key, useAPI } from '../query/hooks';
 
-export const usePoints = () => {
+export const usePoints = (from: Date) => {
   const api = useAPI();
   return useSuspenseQuery({
-    queryKey: key('points'),
-    queryFn: () => api.me.points.query(),
+    queryKey: key('points', from.toISOString()),
+    queryFn: () => api.me.points.query({ from }),
     refetchOnWindowFocus: true
   });
 };
@@ -76,12 +76,11 @@ export const usePatchAchievement = () => {
 
 export const useOnboardUser = () => {
   const api = useAPI();
-  const queryClient = useQueryClient();
+  const client = useQueryClient();
   return useMutation({
     mutationFn: async (data: OnboardingFormSchema) => {
       try {
         const results = await api.me.onboard.mutate(data);
-        await queryClient.invalidateQueries({ queryKey: key('permissions') });
         return results;
       } catch (error) {
         const custom = handleTRPCError(error);
@@ -92,6 +91,9 @@ export const useOnboardUser = () => {
         }
         throw error;
       }
+    },
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: key('permissions') });
     }
   });
 };

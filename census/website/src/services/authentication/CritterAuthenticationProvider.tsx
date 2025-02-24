@@ -3,6 +3,7 @@ import { parseJWT } from 'oslo/jwt';
 import { FC, PropsWithChildren, useMemo } from 'react';
 import { createStore } from 'zustand';
 import { Variables } from '../backstage/config';
+import { useAddAuthenticatedContext } from '../insights/hooks';
 import {
   Account,
   AuthenticationContext,
@@ -36,9 +37,13 @@ const restoreAuthentication = (): AuthenticationInformation => {
 
 export const CritterAuthenticationProvider: FC<PropsWithChildren> = ({ children }) => {
   const apiBaseUrl = useVariable<Variables>('apiBaseUrl');
+  const addAuthenticatedUserContext = useAddAuthenticatedContext();
 
   const store = useMemo(() => {
     const restoredAuthentication = restoreAuthentication();
+    if (restoredAuthentication.account) {
+      addAuthenticatedUserContext(restoredAuthentication.account.id.toString());
+    }
 
     return createStore<AuthenticationStore>((set, get) => ({
       ...restoredAuthentication,
@@ -64,6 +69,7 @@ export const CritterAuthenticationProvider: FC<PropsWithChildren> = ({ children 
             status: AuthenticationStatus.Authenticated,
             account
           });
+          addAuthenticatedUserContext(account.id.toString());
 
           const from = params.get('from');
           if (from) return from;

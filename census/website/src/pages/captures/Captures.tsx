@@ -9,7 +9,7 @@ export const Captures = () => {
         return page.data.map(capture => {
           return (
             <div key={capture.id}>
-              <pre>{capture.startCaptureAt}</pre>
+              <pre>{capture.startCaptureAt.toISOString()}</pre>
               <img src={capture.clipMetadata?.thumbnail?.replace(regex, '')} />
             </div>
           );

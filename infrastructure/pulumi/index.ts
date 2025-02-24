@@ -6,6 +6,7 @@ import { Config, getProject, getStack, interpolate } from '@pulumi/pulumi';
 import { ManagedEnvironment, ManagedEnvironmentsStorage } from '@pulumi/azure-native/app';
 import { API } from './resources/API';
 
+import { PrincipalType, RoleAssignment } from '@pulumi/azure-native/authorization';
 import { Endpoint, QueryStringCachingBehavior } from '@pulumi/azure-native/cdn';
 import { Configuration, Database } from '@pulumi/azure-native/dbforpostgresql';
 import {
@@ -193,6 +194,15 @@ export = async () => {
         env: {}
       }
     ]
+  });
+
+  // Grant the API access to the logs workspace
+  // This is required for the API to periodically download & save logs to the database
+  new RoleAssignment(`${id}-logs-role-assignment`, {
+    principalId: api.identity.principalId,
+    principalType: PrincipalType.ServicePrincipal,
+    roleDefinitionId: '/providers/Microsoft.Authorization/roleDefinitions/73c42c96-874c-492b-b04d-ab87d138a893',
+    scope: workspace.id
   });
 
   const imageOptimisation = new API(`${id}-ipx`, {

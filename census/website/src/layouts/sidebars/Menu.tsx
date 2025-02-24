@@ -1,13 +1,15 @@
 import { SimpleAlveus } from '@/components/assets/logos/SimpleAlveus';
 import { Wordmark } from '@/components/assets/logos/Wordmark';
 import { Button } from '@/components/controls/button/juicy';
-import SiBinoculars from '@/components/icons/SiBinoculars';
+import SiCog from '@/components/icons/SiCog';
 import SiHome from '@/components/icons/SiHome';
 import SiLogOut from '@/components/icons/SiLogOut';
 import SiMenu from '@/components/icons/SiMenu';
 import SiPhoto from '@/components/icons/SiPhoto';
 import SiUser from '@/components/icons/SiUser';
+import SiUsers from '@/components/icons/SiUsers';
 import { useSidebar } from '@/components/layout/LayoutProvider';
+import { usePermissions } from '@/services/api/me';
 import { cn } from '@/utils/cn';
 import { AnimatePresence, HTMLMotionProps, motion } from 'framer-motion';
 import { ComponentPropsWithoutRef, ElementType, FC, PropsWithChildren, useRef } from 'react';
@@ -24,6 +26,7 @@ export const MenuTrigger = () => {
 
 export const Menu = () => {
   const [open, setOpen] = useSidebar();
+  const permissions = usePermissions();
   return (
     <AnimatePresence initial={false}>
       <motion.nav
@@ -62,10 +65,22 @@ export const Menu = () => {
               <SiPhoto className="text-2xl" />
               <MenuLabel>observations</MenuLabel>
             </MenuItem>
-            <MenuItem as={Link} to="/identifications">
+            {/* <MenuItem as={Link} to="/identifications">
               <SiBinoculars className="text-2xl" />
               <MenuLabel>identifications</MenuLabel>
-            </MenuItem>
+            </MenuItem> */}
+            {permissions.data.moderate && (
+              <MenuItem as={Link} to="/users">
+                <SiUsers className="text-2xl" />
+                <MenuLabel>users</MenuLabel>
+              </MenuItem>
+            )}
+            {permissions.data.admin && (
+              <MenuItem as={Link} to="/admin">
+                <SiCog className="text-2xl" />
+                <MenuLabel>admin</MenuLabel>
+              </MenuItem>
+            )}
           </div>
           <div className="flex flex-col gap-2 py-2 w-full">
             <MenuItem>

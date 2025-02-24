@@ -60,14 +60,14 @@ interface CreateObservationsFromCaptureInput {
 
 export const useCreateObservationsFromCapture = () => {
   const trpc = useAPI();
-  const queryClient = useQueryClient();
+  const client = useQueryClient();
   return useMutation({
     mutationFn: async ({ captureId, observations }: CreateObservationsFromCaptureInput) => {
       const result = await trpc.observation.createObservationsFromCapture.mutate({
         captureId,
         observations
       });
-      await queryClient.invalidateQueries({ queryKey: key('capture', captureId.toString()) });
+      await client.invalidateQueries({ queryKey: key('capture', captureId.toString()) });
       return result;
     }
   });

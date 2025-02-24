@@ -2,6 +2,7 @@ import { createBrowserRouter, RouteObject } from 'react-router-dom';
 import { RouteErrorBoundary } from './components/feedback/ErrorBoundary';
 import { NotFoundErrorBoundary } from './components/feedback/NotFoundError';
 import { Main } from './layouts/Main';
+import { Users } from './pages/admin/Users';
 import { Authenticated } from './pages/authentication/Authenticated';
 import { Redirect } from './pages/authentication/Redirect';
 import { SignIn } from './pages/authentication/SignIn';
@@ -11,8 +12,9 @@ import { Capture } from './pages/captures/Capture';
 import { Captures } from './pages/captures/Captures';
 import { Onboarding } from './pages/forms/Onboarding';
 import { Home } from './pages/home/Home';
+import { IdentificationPage } from './pages/identifications/Identification';
+import { Identifications } from './pages/identifications/Identifications';
 import { Observations } from './pages/observations/Observations';
-
 const auth: RouteObject = {
   path: 'auth',
   children: [
@@ -52,6 +54,16 @@ export const router = createBrowserRouter([
             element: <Observations />
           },
           {
+            path: 'identifications',
+            element: <Identifications />,
+            children: [
+              {
+                path: ':id',
+                element: <IdentificationPage />
+              }
+            ]
+          },
+          {
             path: 'captures',
 
             children: [
@@ -76,6 +88,10 @@ export const router = createBrowserRouter([
                 element: <Onboarding />
               }
             ]
+          },
+          {
+            path: 'users',
+            element: <Users />
           }
         ]
       }

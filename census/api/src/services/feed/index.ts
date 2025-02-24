@@ -1,6 +1,6 @@
-import { inArray } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 
-import { NotAuthenticatedError } from '@alveusgg/error';
+import { NotAuthenticatedError, NotFoundError } from '@alveusgg/error';
 import { feeds } from '../../db/schema/index.js';
 import { useDB } from '../../db/transaction.js';
 
@@ -24,4 +24,15 @@ export const ensureKeyForFeeds = async (feedIds: string[], key: string) => {
   }
 
   return targets.map(target => target.id);
+};
+
+export const getFeed = async (feedId: string) => {
+  const db = useDB();
+  const feed = await db.query.feeds.findFirst({
+    where: eq(feeds.id, feedId)
+  });
+  if (!feed) {
+    throw new NotFoundError(`Feed ${feedId} not found`);
+  }
+  return feed;
 };

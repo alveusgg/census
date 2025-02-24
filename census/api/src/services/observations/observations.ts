@@ -1,6 +1,6 @@
 import { BadRequestError, DownstreamError } from '@alveusgg/error';
 import { randomUUID } from 'crypto';
-import { count, desc, eq } from 'drizzle-orm';
+import { count, desc, eq, isNull } from 'drizzle-orm';
 import ffmpeg from 'fluent-ffmpeg';
 import { writeFile } from 'fs/promises';
 import { ReadableStream } from 'node:stream/web';
@@ -94,6 +94,13 @@ const createObservations = async (captureId: number, selections: Selection[], ni
   }, 'Download clip & process images');
 };
 
+export const getImagesForObservationId = async (observationId: number) => {
+  const db = useDB();
+  return await db.query.images.findMany({
+    where: eq(images.observationId, observationId)
+  });
+};
+
 export const getObservationCount = async () => {
   const db = useDB();
   const [result] = await db.select({ count: count() }).from(observations);
@@ -109,12 +116,18 @@ export const getObservations = (pagination: Pagination) => {
       identifications: {
         with: {
           suggester: true,
-          feedback: true
+          feedback: {
+            with: {
+              submitter: true
+            }
+          },
+          shiny: true
         }
       },
       observer: true
     },
     orderBy: desc(observations.observedAt),
+    where: isNull(observations.confirmedAs),
     columns: {
       moderated: false
     },

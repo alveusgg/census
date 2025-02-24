@@ -4,16 +4,18 @@ import { useQueryClient } from '@tanstack/react-query';
 import { createTRPCClient, httpBatchLink, splitLink, TRPCLink, unstable_httpSubscriptionLink } from '@trpc/client';
 import { observable } from '@trpc/server/observable';
 import { createContext, FC, PropsWithChildren, useRef } from 'react';
+import SuperJSON from 'superjson';
 import { useRequestToken } from '../authentication/hooks';
 import { Variables } from '../backstage/config';
 import { key } from './hooks';
-
 interface PointsLinkOptions {
-  update: (points: number) => void;
-  invalidate: () => void;
+  invalidate: {
+    achievements: () => void;
+    points: () => void;
+  };
 }
 
-export function pointsLink({ update, invalidate }: PointsLinkOptions): TRPCLink<AppRouter> {
+export function pointsLink({ invalidate }: PointsLinkOptions): TRPCLink<AppRouter> {
   return () =>
     ({ next, op }) => {
       return observable(observer => {
@@ -27,9 +29,9 @@ export function pointsLink({ update, invalidate }: PointsLinkOptions): TRPCLink<
               }
               const headers = response.headers;
               const points = headers.get('x-census-points');
-              if (points) update(parseInt(points));
+              if (points) invalidate.points();
               const achievements = headers.get('x-census-achievements');
-              if (achievements) invalidate();
+              if (achievements) invalidate.achievements();
             } finally {
               observer.next(value);
             }
@@ -54,11 +56,13 @@ export const APIProvider: FC<PropsWithChildren> = ({ children }) => {
     createTRPCClient<AppRouter>({
       links: [
         pointsLink({
-          update: points => {
-            queryClient.setQueryData(key('points'), points);
-          },
-          invalidate: () => {
-            queryClient.invalidateQueries({ queryKey: key('achievements', 'pending') });
+          invalidate: {
+            achievements: () => {
+              queryClient.invalidateQueries({ queryKey: key('achievements', 'pending') });
+            },
+            points: () => {
+              queryClient.invalidateQueries({ queryKey: key('points') });
+            }
           }
         }),
         splitLink({
@@ -66,10 +70,12 @@ export const APIProvider: FC<PropsWithChildren> = ({ children }) => {
           condition: op => op.type === 'subscription',
           true: unstable_httpSubscriptionLink({
             url,
+            transformer: SuperJSON,
             connectionParams: async () => ({ authorization: `Bearer ${await requestToken()}` })
           }),
           false: httpBatchLink({
             url,
+            transformer: SuperJSON,
             headers: async () => ({ authorization: `Bearer ${await requestToken()}` })
           })
         })

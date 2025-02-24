@@ -1,12 +1,21 @@
-import { eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 
 import { OnboardingFormSchema } from '@alveusgg/census-forms';
 import { NotAuthenticatedError } from '@alveusgg/error';
-import { users } from '../../db/schema/index.js';
+import { Role, users } from '../../db/schema/index.js';
 import { responses } from '../../db/schema/responses.js';
 import { useDB, withTransaction } from '../../db/transaction.js';
-import { assert } from '../../utils/assert.js';
 import { recordAchievement } from '../points/achievement.js';
+
+export const getUsers = async () => {
+  const db = useDB();
+  return db.select().from(users).orderBy(desc(users.createdAt));
+};
+
+export const promoteUser = async (id: number, role: Role) => {
+  const db = useDB();
+  await db.update(users).set({ role }).where(eq(users.id, id));
+};
 
 export const getUser = async (id: number) => {
   const db = useDB();
@@ -38,16 +47,9 @@ export const onboardUser = async (id: number, data: OnboardingFormSchema) => {
   return await db.transaction(async tx => {
     return await withTransaction(tx, async () => {
       await tx.update(users).set({ role: 'capturer' }).where(eq(users.id, id));
-      const points = await recordAchievement(
-        'onboard',
-        id,
-        { message: 'You signed up to the Alveus Pollinator Census!' },
-        true
-      );
-      assert(points, 'Failed to record achievement');
+      await recordAchievement('onboard', id, { message: 'You signed up to the Alveus Pollinator Census!' }, true);
       await recordAchievement('onboard', id, { message: 'Click to redeem your first achievement!' });
       await tx.insert(responses).values({ userId: id, type: 'onboarding', payload: data });
-      return points;
     });
   });
 };
