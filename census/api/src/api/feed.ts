@@ -1,3 +1,4 @@
+import { ProcessingError } from '@alveusgg/error';
 import z from 'zod';
 import { subscribeToChanges } from '../db/listen.js';
 import { completeCaptureRequest, getCapture, getPendingCapturesForFeeds } from '../services/capture/index.js';
@@ -21,6 +22,9 @@ export default router({
         }
 
         for await (const change of subscribeToChanges({ table: 'captures', events: ['insert'] })) {
+          if (typeof change.id !== 'number') {
+            throw new ProcessingError('Invalid capture id');
+          }
           const request = await getCapture(change.id);
           if (!targets.includes(request.feedId) || request.status !== 'pending') break;
 
