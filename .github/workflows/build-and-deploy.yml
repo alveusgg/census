@@ -194,7 +194,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           workingDirectory: census/sync
           preCommands: |
-            echo "${{ steps.pulumi.outputs.wranglerConfig }}" > .wrangler/wrangler.generated.jsonc
+            echo '${{ steps.pulumi.outputs.wranglerConfig }}' > .wrangler/wrangler.generated.jsonc
           command: |
             deploy --config .wrangler/wrangler.generated.jsonc --env prod
           postCommands: |
