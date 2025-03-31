@@ -17,6 +17,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { FC } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router';
+
 export const Onboarding: FC = () => {
   const navigate = useNavigate();
   const methods = useForm<OnboardingFormSchema>({
