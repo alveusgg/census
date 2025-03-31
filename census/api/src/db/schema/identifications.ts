@@ -1,6 +1,7 @@
 import { relations } from 'drizzle-orm';
 import { boolean, index, integer, pgEnum, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
 import { observations } from './observations.js';
+import { shinies } from './seasons.js';
 import { tagAssignments } from './tags.js';
 import { users } from './users.js';
 
@@ -26,6 +27,7 @@ export const identifications = pgTable(
       .references(() => users.id),
     confirmedBy: integer('confirmed_by').references(() => users.id),
     alternateForId: integer('alternate_for'),
+    shinyId: integer('shiny_id').references(() => shinies.id),
     isAccessory: boolean('is_accessory').default(false)
   },
   table => {
@@ -63,6 +65,10 @@ export const feedbackRelations = relations(feedback, ({ one }) => ({
   identification: one(identifications, {
     fields: [feedback.identificationId],
     references: [identifications.id]
+  }),
+  submitter: one(users, {
+    fields: [feedback.userId],
+    references: [users.id]
   })
 }));
 
@@ -82,6 +88,10 @@ export const identificationsRelations = relations(identifications, ({ one, many 
   alternateFor: one(identifications, {
     fields: [identifications.alternateForId],
     references: [identifications.id]
+  }),
+  shiny: one(shinies, {
+    fields: [identifications.shinyId],
+    references: [shinies.id]
   }),
   tags: many(tagAssignments),
   feedback: many(feedback)

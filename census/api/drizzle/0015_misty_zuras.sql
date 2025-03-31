@@ -1,0 +1,2 @@
+ALTER TABLE "metrics" DROP CONSTRAINT "metrics_created_at_unique";--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "unique_name_created_at_idx" ON "metrics" USING btree ("name","created_at");

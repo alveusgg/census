@@ -35,7 +35,7 @@ export const Onboarding: FC = () => {
     navigate('/observations');
   };
   return (
-    <Clipboard className="text-accent-900 min-h-screen">
+    <Clipboard container={{ className: 'max-w-3xl' }} className="text-accent-900 min-h-screen md:px-12 md:py-20">
       <Form className="flex flex-col gap-4" methods={methods} onSubmit={onSubmit}>
         <h1 className="text-3xl font-semibold leading-8 text-center text-balance sm:text-left">
           welcome to the <span className="font-extrabold">alveus pollinator census!</span>

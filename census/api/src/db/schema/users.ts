@@ -2,6 +2,8 @@ import { boolean, index, pgEnum, pgTable, serial, text, timestamp } from 'drizzl
 
 export const roleEnum = pgEnum('role', ['capturer', 'member', 'expert', 'moderator', 'researcher', 'admin', 'pending']);
 
+export type Role = (typeof roleEnum.enumValues)[number];
+
 export const users = pgTable(
   'users',
   {

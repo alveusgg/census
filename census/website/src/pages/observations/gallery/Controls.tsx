@@ -34,6 +34,11 @@ export const SlideButton: FC<PropsWithChildren<SlideButtonProps & HTMLMotionProp
   );
 };
 
+export const ClickToMove: FC = () => {
+  const [next] = useGallery(state => [state.next, state.previous]);
+  return <button className="absolute inset-0 z-10" onClick={() => next()} />;
+};
+
 export const Controls: FC = () => {
   const { slides, current, goto } = useGallery(state => state);
   if (slides.length <= 1) return null;

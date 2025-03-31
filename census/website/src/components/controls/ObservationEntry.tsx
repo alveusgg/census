@@ -98,7 +98,7 @@ export const ObservationEntryVote: FC<PropsWithChildren<ObservationEntryProps & 
   );
 };
 
-const DownThumb: FC<SVGAttributes<SVGSVGElement>> = props => {
+export const DownThumb: FC<SVGAttributes<SVGSVGElement>> = props => {
   return (
     <svg width="12" height="10" viewBox="0 0 12 10" fill="none" {...props}>
       <path
@@ -113,7 +113,7 @@ const DownThumb: FC<SVGAttributes<SVGSVGElement>> = props => {
   );
 };
 
-const UpThumb: FC<SVGAttributes<SVGSVGElement>> = props => {
+export const UpThumb: FC<SVGAttributes<SVGSVGElement>> = props => {
   return (
     <svg width="12" height="10" viewBox="0 0 12 10" fill="none" {...props}>
       <path

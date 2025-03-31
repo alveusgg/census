@@ -1,0 +1,26 @@
+{
+  "name": "@alveusgg/census-sync",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "wrangler dev",
+    "deploy": "wrangler deploy --name census-sync --id $1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@alveusgg/census-api": "workspace:*",
+    "@tldraw/sync-core": "^3.10.3",
+    "@tldraw/tlschema": "^3.11.0",
+    "@trpc/client": "11.0.0-rc.633",
+    "@trpc/server": "11.0.0-rc.633",
+    "itty-router": "^5.0.18",
+    "p-throttle": "^6.2.0",
+    "superjson": "^2.2.2"
+  },
+  "devDependencies": {
+    "wrangler": "^4.4.0"
+  }
+}

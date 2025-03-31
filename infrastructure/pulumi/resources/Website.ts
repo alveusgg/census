@@ -1,5 +1,6 @@
 import {
   ClientPortOperator,
+  CustomDomain,
   DestinationProtocol,
   Endpoint,
   Profile,
@@ -7,8 +8,9 @@ import {
   RedirectType,
   SkuName
 } from '@pulumi/azure-native/cdn';
-import { ComponentResource, Input, Output, ResourceOptions } from '@pulumi/pulumi';
+import { all, ComponentResource, Input, Output, ResourceOptions } from '@pulumi/pulumi';
 
+import { getCustomDomainOutput } from '@pulumi/azure-native/cdn/getCustomDomain';
 import {
   BlobServiceProperties,
   Kind,
@@ -17,10 +19,12 @@ import {
   SkuName as StorageSkuName
 } from '@pulumi/azure-native/storage';
 import { cdn } from '@pulumi/azure-native/types/input';
-
+import { Record as CloudflareRecord } from '@pulumi/cloudflare';
+import { Project } from './Project';
 export interface WebsiteArgs {
-  resourceGroupName: Input<string>;
+  project: Project;
   type: 'spa' | 'mpa';
+  subdomain: string;
 }
 
 const enforceHTTPSRule: cdn.DeliveryRuleArgs = {
@@ -79,7 +83,6 @@ const spaRewriteRule: cdn.DeliveryRuleArgs = {
 
 export interface IWebsite {
   readonly endpoint: Input<string>;
-  readonly resourceGroupName: Input<string>;
   readonly accountName: Input<string>;
   readonly containerName: Input<string>;
   readonly endpointName: Input<string>;
@@ -88,7 +91,6 @@ export interface IWebsite {
 
 export class Website extends ComponentResource implements IWebsite {
   public readonly endpoint: Output<string>;
-  public readonly resourceGroupName: Input<string>;
   public readonly accountName: Output<string>;
   public readonly containerName: Output<string>;
   public readonly endpointName: Output<string>;
@@ -96,15 +98,17 @@ export class Website extends ComponentResource implements IWebsite {
   public readonly blobEndpoint: Output<string>;
 
   constructor(id: string, args: WebsiteArgs, opts?: ResourceOptions) {
-    super('si:index:Website', id, args, opts);
+    super('sprinkle:index:Website', id, args, opts);
+
+    if (!args.project.zone) throw new Error('No zone found');
+    if (!args.project.cloudflare) throw new Error('No cloudflare config found');
 
     const simpleId = id.replace(/-/g, '');
-    const { resourceGroupName } = args;
 
     const profile = new Profile(
       `${id}-profile`,
       {
-        resourceGroupName,
+        resourceGroupName: args.project.group.name,
         location: 'global',
         sku: {
           name: SkuName.Standard_Microsoft
@@ -118,7 +122,7 @@ export class Website extends ComponentResource implements IWebsite {
       {
         enableHttpsTrafficOnly: true,
         kind: Kind.StorageV2,
-        resourceGroupName,
+        resourceGroupName: args.project.group.name,
         sku: {
           name: StorageSkuName.Standard_LRS
         }
@@ -131,7 +135,7 @@ export class Website extends ComponentResource implements IWebsite {
       {
         accountName: storageAccount.name,
         blobServicesName: 'default',
-        resourceGroupName,
+        resourceGroupName: args.project.group.name,
         cors: {
           corsRules: [
             {
@@ -151,7 +155,7 @@ export class Website extends ComponentResource implements IWebsite {
       `${id}-static`,
       {
         accountName: storageAccount.name,
-        resourceGroupName,
+        resourceGroupName: args.project.group.name,
         indexDocument: 'index.html',
         error404Document: 'index.html'
       },
@@ -183,15 +187,48 @@ export class Website extends ComponentResource implements IWebsite {
         ],
         profileName: profile.name,
         queryStringCachingBehavior: QueryStringCachingBehavior.NotSet,
-        resourceGroupName,
+        resourceGroupName: args.project.group.name,
         deliveryPolicy: { rules }
       },
       { parent: this }
     );
 
-    this.endpoint = endpoint.hostName.apply(hn => `https://${hn}`);
+    const record = new CloudflareRecord(`${id}-dns`, {
+      name: args.subdomain,
+      type: 'CNAME',
+      zoneId: args.project.zone.id,
+      proxied: false,
+      content: endpoint.hostName
+    });
+
+    const customDomain = new CustomDomain(
+      `${id}-custom-domain`,
+      {
+        endpointName: endpoint.name,
+        hostName: record.hostname,
+        profileName: profile.name,
+        resourceGroupName: args.project.group.name
+      },
+      { parent: this }
+    );
+
+    all([customDomain.name, endpoint.name, profile.name, args.project.group.name]).apply(
+      ([customDomainName, endpointName, profileName, resourceGroupName]) =>
+        getCustomDomainOutput({
+          resourceGroupName,
+          customDomainName,
+          endpointName,
+          profileName
+        }).apply(domain => {
+          if (domain.customHttpsProvisioningState === 'Disabled') {
+            console.log('Unfortunately, you must manually enable custom domain HTTPs for this profile.');
+            console.log('You just need to turn the "Custom domain HTTPS" toggle to "On" in the Azure portal.');
+          }
+        })
+    );
+
+    this.endpoint = record.hostname.apply(hn => `https://${hn}`);
     this.blobEndpoint = storageAccount.primaryEndpoints.web;
-    this.resourceGroupName = resourceGroupName;
     this.accountName = storageAccount.name;
     this.containerName = staticWebsite.containerName;
     this.endpointName = endpoint.name;

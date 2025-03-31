@@ -4,6 +4,7 @@ packages:
   - 'census/website'
   - 'census/api'
   - 'census/levels'
+  - 'census/sync'
   - 'census/forms'
   - 'infrastructure/pulumi'
   - 'shared/*'

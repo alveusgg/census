@@ -1,5 +1,14 @@
 import { DownstreamError, ProcessingError } from '@alveusgg/error';
-import { addHours, addSeconds, differenceInSeconds, isBefore, setMinutes, setSeconds, subMinutes } from 'date-fns';
+import {
+  addHours,
+  addSeconds,
+  differenceInSeconds,
+  isBefore,
+  setMinutes,
+  setSeconds,
+  subMinutes,
+  subSeconds
+} from 'date-fns';
 import sharp from 'sharp';
 import { useEnvironment } from '../../utils/env/env.js';
 import { ClipNotFoundResult, ClipNotProcessedResult, VODNotFoundResult } from '../capture/index.js';
@@ -17,7 +26,7 @@ type ClipSuccessResult = {
 };
 type ClipResult = ClipNotFoundResult | ClipNotProcessedResult | VODNotFoundResult | ClipSuccessResult;
 
-export const getClip = async (id: string): Promise<ClipResult> => {
+export const getClip = async (id: string, latencyFromCamToRecorderInSeconds: number): Promise<ClipResult> => {
   const { twitch } = useEnvironment();
   const clip = await twitch.clips.getClipById(id);
   if (!clip || !clip.id || !clip.creationDate) return { result: 'error', type: 'clip_not_found' };
@@ -32,16 +41,18 @@ export const getClip = async (id: string): Promise<ClipResult> => {
     return addSeconds(vodStartDate, clip.vodOffset);
   })();
 
-  const encodedTimestamp = await getEncodedTimestamp(getThumbnailUrl(clip.thumbnailUrl));
+  const highResThumbnailUrl = getThumbnailUrl(clip.thumbnailUrl);
+  const encodedTimestamp = await getEncodedTimestamp(highResThumbnailUrl);
   const startDate = estimateStartDateFromTwitchTimestampAndEncodedTimestamp(estimatedStartDate, encodedTimestamp);
-  const endDate = addSeconds(startDate, clip.duration);
+  const startDateWithLatency = subSeconds(startDate, latencyFromCamToRecorderInSeconds);
+  const endDate = addSeconds(startDateWithLatency, clip.duration);
 
   const result = {
     id,
     title: clip.title,
     embedUrl: clip.embedUrl,
-    thumbnailUrl: clip.thumbnailUrl,
-    startDate,
+    thumbnailUrl: highResThumbnailUrl,
+    startDate: startDateWithLatency,
     endDate,
     views: clip.views
   };

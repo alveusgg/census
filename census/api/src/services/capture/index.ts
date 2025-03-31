@@ -6,6 +6,7 @@ import { Capture, captures } from '../../db/schema/index.js';
 import { useDB } from '../../db/transaction.js';
 import { assert } from '../../utils/assert.js';
 import { useEnvironment, useUser } from '../../utils/env/env.js';
+import { getFeed } from '../feed/index.js';
 import { downloadVideo } from '../observations/observations.js';
 import { getClip } from '../twitch/index.js';
 interface ClipAlreadyUsedResult {
@@ -69,6 +70,7 @@ export const createFromClip = async (
   const db = useDB();
 
   const existing = await getCaptureByClipId(id);
+  const feed = await getFeed('pollinator');
 
   // The clip has already been used in a capture, so we can't use it again
   // The website redirects to the capture included in the error
@@ -81,7 +83,7 @@ export const createFromClip = async (
   }
 
   // This can fail if the clip is deleted from twitch or the vod isn't available
-  const result = await getClip(id);
+  const result = await getClip(id, feed.latencyFromCamToRecorderInSeconds ?? 0);
   if (result.result === 'error') {
     // error could be clip_not_found, clip_not_processed, or vod_not_found
     return result;
@@ -130,7 +132,7 @@ export const createFromClip = async (
       endCaptureAt: clip.endDate,
       capturedAt: new Date(),
       capturedBy: user.id,
-      feedId: 'pollinator',
+      feedId: feed.id,
       clipMetadata: { views: clip.views, thumbnail: clip.thumbnailUrl }
     })
     .returning();

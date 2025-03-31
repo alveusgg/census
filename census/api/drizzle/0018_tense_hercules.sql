@@ -1,0 +1,1 @@
+ALTER TABLE "feeds" ADD COLUMN "latency_from_cam_to_recorder_in_seconds" integer DEFAULT 0;

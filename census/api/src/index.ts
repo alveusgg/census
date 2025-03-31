@@ -5,6 +5,7 @@ import { createEnvironment, withEnvironment } from './utils/env/env.js';
 const environment = await createEnvironment();
 
 import cors from '@fastify/cors';
+import websocket from '@fastify/websocket';
 import { fastifyTRPCPlugin, FastifyTRPCPluginOptions } from '@trpc/server/adapters/fastify';
 import fastify from 'fastify';
 import router from './api/index.js';
@@ -23,7 +24,8 @@ await withEnvironment(environment, async () => {
     allowedHeaders: ['authorization', 'content-type', 'traceparent', 'tracestate'],
     exposedHeaders: ['X-Census-Points', 'X-Census-Achievements']
   });
-  await server.register(authRouter);
+  await server.register(websocket);
+  await server.register(authRouter, { prefix: '/auth' });
   await server.register(fastifyTRPCPlugin, {
     trpcOptions: {
       router,

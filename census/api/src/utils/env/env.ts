@@ -33,5 +33,12 @@ import { createStore } from '@alveusgg/node';
 const EnvironmentStore = createStore<Env>('environment');
 export const [withEnvironment, useEnvironment] = EnvironmentStore;
 
-const UserStore = createStore<TokenPayload>('user');
+type UserActions = {
+  points: () => void;
+  achievements: () => void;
+};
+
+type User = TokenPayload & UserActions;
+
+const UserStore = createStore<User>('user');
 export const [withUser, useUser] = UserStore;

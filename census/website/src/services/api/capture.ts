@@ -1,11 +1,11 @@
 import type { ObservationPayload } from '@alveusgg/census-api/src/services/observations/observations';
-import { useMutation, useQueryClient, useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { infiniteQueryOptions, useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { key, useAPI, useLiveQuery } from '../query/hooks';
 
 export const useCapture = (id: number) => {
-  const snapshotQueryKey = key('capture', id.toString());
   const trpc = useAPI();
+  const snapshotQueryKey = key('capture', id.toString());
   const callback = useLiveQuery(snapshotQueryKey);
 
   const result = useSuspenseQuery({
@@ -28,7 +28,7 @@ export const useCapture = (id: number) => {
 
 export const useCaptures = () => {
   const trpc = useAPI();
-  return useSuspenseInfiniteQuery({
+  return infiniteQueryOptions({
     queryKey: key('captures'),
     queryFn: ({ pageParam }) => trpc.capture.captures.query({ meta: { page: pageParam, size: 30 } }),
     initialPageParam: 1,
@@ -60,14 +60,14 @@ interface CreateObservationsFromCaptureInput {
 
 export const useCreateObservationsFromCapture = () => {
   const trpc = useAPI();
-  const queryClient = useQueryClient();
+  const client = useQueryClient();
   return useMutation({
     mutationFn: async ({ captureId, observations }: CreateObservationsFromCaptureInput) => {
       const result = await trpc.observation.createObservationsFromCapture.mutate({
         captureId,
         observations
       });
-      await queryClient.invalidateQueries({ queryKey: key('capture', captureId.toString()) });
+      await client.invalidateQueries({ queryKey: key('capture', captureId.toString()) });
       return result;
     }
   });

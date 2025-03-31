@@ -23,7 +23,7 @@ export const Clipboard: FC<PropsWithChildren<ClipboardProps>> = ({ clip = true, 
         scale: 1
       }}
       className={cn(
-        'md:bg-[#BF896D] w-full mx-auto max-w-3xl relative md:p-2.5 @container md:mt-8',
+        'md:bg-[#BF896D] w-full mx-auto max-w-4xl relative md:p-2.5 @container md:mt-8',
         container?.className
       )}
     >
@@ -33,7 +33,7 @@ export const Clipboard: FC<PropsWithChildren<ClipboardProps>> = ({ clip = true, 
           borderRadius: '0.5rem'
         }}
         {...inner}
-        className={cn('md:bg-accent-50 h-fit min-h-full md:px-12 md:py-20', inner.className)}
+        className={cn('md:bg-accent-50 h-fit min-h-full', inner.className)}
       >
         {children}
       </div>

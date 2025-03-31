@@ -28,6 +28,7 @@
     "event-source-polyfill": "^1.0.31",
     "eventsource": "^2.0.2",
     "npm": "^10.8.3",
+    "superjson": "^2.2.2",
     "tsx": "^4.19.0",
     "zod": "^3.23.8"
   }

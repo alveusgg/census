@@ -26,3 +26,4 @@ export const useAddAuthenticatedContext = () => {
 };
 
 export const useSessionId = () => useAppInsights(store => store.getSessionId());
+export const useTrackMetric = () => useAppInsights(store => store.trackMetric);

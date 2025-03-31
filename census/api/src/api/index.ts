@@ -4,12 +4,18 @@ import feed from './feed.js';
 import identification from './identification.js';
 import me from './me.js';
 import observation from './observation.js';
+import seasons from './seasons.js';
 import twitch from './twitch.js';
+import users from './users.js';
+import guides from './guides.js';
 export default router({
   me,
   feed,
   capture,
   observation,
   identification,
-  twitch
+  twitch,
+  users,
+  seasons,
+  guides
 });

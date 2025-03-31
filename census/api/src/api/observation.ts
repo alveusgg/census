@@ -7,6 +7,7 @@ import {
   ObservationPayload
 } from '../services/observations/observations.js';
 import { procedure, procedureWithPermissions, router } from '../trpc/trpc.js';
+import { useUser } from '../utils/env/env.js';
 
 export const Pagination = z.object({
   page: z.number().default(1),
@@ -36,8 +37,28 @@ export default router({
     }),
 
   list: procedure.input(z.object({ meta: Pagination, query: Query.optional() })).query(async ({ input }) => {
+    const user = useUser();
     const count = await getObservationCount();
-    const data = await getObservations(input.meta);
+    let data = await getObservations(input.meta);
+
+    // Fog of war: hide feedback from users who haven't given feedback yet
+    // in order to avoid existing votes influencing new votes
+    const hasGivenFeedback = data.some(observation =>
+      observation.identifications.some(identification =>
+        identification.feedback.some(feedback => feedback.userId === user.id)
+      )
+    );
+
+    if (!hasGivenFeedback) {
+      data = data.map(observation => ({
+        ...observation,
+        identifications: observation.identifications.map(identification => ({
+          ...identification,
+          feedback: []
+        }))
+      }));
+    }
+
     return {
       meta: {
         ...input.meta,

@@ -12,17 +12,16 @@ export const variants = {
   alveus: 'bg-alveus hover:bg-alveus-darker text-white'
 };
 
-export type PaperButtonProps = ButtonProps & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'disabled'> & {};
-
 export const Button = forwardRef<
   HTMLButtonElement,
-  PropsWithChildren<ButtonProps & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'disabled'> & {}>
->(({ children, className, variant = 'primary', type = 'button', disabled, loading, ...props }, ref) => {
+  PropsWithChildren<ButtonProps & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'disabled'> & { compact?: boolean }>
+>(({ children, className, variant = 'primary', type = 'button', disabled, loading, compact, ...props }, ref) => {
   return (
     <button
       ref={ref}
       className={cn(
-        `flex disabled:opacity-60 items-center  cursor-pointer justify-start text-left gap-2 rounded-lg relative px-3 py-2 overflow-clip font-medium antialiased`,
+        `flex disabled:opacity-60 items-center cursor-pointer justify-start text-left gap-2 rounded-lg relative px-3 py-2 overflow-clip font-medium antialiased`,
+        compact && 'text-sm font-semibold px-2 py-1 gap-0.5',
         variant && variants[variant],
         className,
         loading && 'pointer-events-none',
@@ -46,11 +45,12 @@ export const Button = forwardRef<
   );
 });
 
-export const Link: FC<PropsWithChildren<ButtonProps & LinkProps & {}>> = ({
+export const Link: FC<PropsWithChildren<ButtonProps & LinkProps & { compact?: boolean }>> = ({
   children,
   className,
   disabled,
   variant = 'primary',
+  compact,
   ...props
 }) => {
   return (
@@ -58,6 +58,7 @@ export const Link: FC<PropsWithChildren<ButtonProps & LinkProps & {}>> = ({
       className={cn(
         'flex items-center justify-start text-left cursor-pointer gap-2 rounded-lg relative px-3 py-2 overflow-clip font-medium antialiased',
         variant && variants[variant],
+        compact && 'text-sm font-semibold px-2 py-1 gap-0.5',
         disabled && 'pointer-events-none opacity-60',
         className
       )}

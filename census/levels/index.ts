@@ -8,7 +8,7 @@ export const levels = {
   },
   rookie: {
     number: 2,
-    points: 2000,
+    points: 450,
     name: 'Rookie'
   },
   veteran: {
@@ -25,7 +25,15 @@ export const levels = {
 
 const vote = achievement(
   'vote',
-  50,
+  20,
+  z.object({
+    identificationId: z.number()
+  })
+);
+
+const comment = achievement(
+  'comment',
+  20,
   z.object({
     identificationId: z.number()
   })
@@ -39,9 +47,28 @@ const onboard = achievement(
   })
 );
 
+const identify = achievement(
+  'identify',
+  300,
+  z.object({
+    identificationId: z.number()
+  })
+);
+
+const shiny = achievement(
+  'shiny',
+  1000,
+  z.object({
+    identificationId: z.number()
+  })
+);
+
 export const registry = {
   vote,
-  onboard
+  onboard,
+  comment,
+  identify,
+  shiny
 };
 
 export type Actions = keyof typeof registry;

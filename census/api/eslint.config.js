@@ -25,6 +25,7 @@ export default tseslint.config(...tseslint.configs.recommended, ...tseslint.conf
     '@typescript-eslint/no-misused-promises': 'off',
     '@typescript-eslint/no-unsafe-assignment': 'off',
     '@typescript-eslint/no-unsafe-member-access': 'off',
+    '@typescript-eslint/no-redundant-type-constituents': 'off',
     '@typescript-eslint/no-unused-vars': [
       'error',
       {

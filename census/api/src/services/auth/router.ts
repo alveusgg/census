@@ -37,7 +37,7 @@ export const TokenPayload = z.object({
 export type TokenPayload = z.infer<typeof TokenPayload>;
 
 export default async function register(router: FastifyInstance) {
-  router.get('/auth/signin', async (request, reply) => {
+  router.get('/signin', async (request, reply) => {
     const { redis } = useEnvironment();
     const key = crypto.randomUUID();
 
@@ -52,7 +52,7 @@ export default async function register(router: FastifyInstance) {
     return reply.redirect(url);
   });
 
-  router.get('/auth/redirect', async (request, reply) => {
+  router.get('/redirect', async (request, reply) => {
     const { variables, redis } = useEnvironment();
     const query = TwitchRedirectResponse.parse(request.query);
 

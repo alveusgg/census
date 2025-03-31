@@ -9,6 +9,7 @@ import { initTRPC, TRPCError } from '@trpc/server';
 import { eq } from 'drizzle-orm';
 import { flatten } from 'flat';
 import { validateJWT as originalValidateJWT } from 'oslo/jwt';
+import SuperJSON from 'superjson';
 import { feeds } from '../db/schema/index.js';
 import { useDB } from '../db/transaction.js';
 import { getPermissions, Permissions } from '../services/auth/role.js';
@@ -16,7 +17,7 @@ import { TokenPayload } from '../services/auth/router.js';
 import { useEnvironment, useUser, withUser } from '../utils/env/env.js';
 import { createContext } from './context.js';
 
-const t = initTRPC.context<typeof createContext>().create();
+const t = initTRPC.context<typeof createContext>().create({ transformer: SuperJSON });
 export const router = t.router;
 
 const validateJWT = async (token: string) => {
@@ -27,43 +28,21 @@ const validateJWT = async (token: string) => {
     throw new NotAuthenticatedError('Your token not signed correctly');
   }
 };
-const errorHandlingProcedure = t.procedure.use(async opts => {
-  const { telemetry } = useEnvironment();
-  const result = await opts.next();
 
-  if (!result.ok && result.error) {
-    if (result.error.cause instanceof CustomError) {
-      result.error = new TRPCError({
-        code: result.error.cause.category,
-        message: JSON.stringify(result.error.cause.toJSON()),
-        cause: result.error.cause
-      });
-    }
-
-    telemetry?.trackException({
-      exception: result.error,
-      properties: {
-        path: opts.path,
-        type: opts.type
-      }
-    });
-  }
-
-  return result;
-});
-
-const loggedProcedure = errorHandlingProcedure.use(async opts => {
+const loggedProcedure = t.procedure.use(async opts => {
   const tracer = trace.getTracer('ApplicationInsightsTracer');
   const input = {
-    traceparent: opts.ctx.req.headers['traceparent'],
-    tracestate: opts.ctx.req.headers['tracestate']
+    traceparent: opts.ctx.req.headers['traceparent'] as string,
+    tracestate: opts.ctx.req.headers['tracestate'] as string
   };
+
   const ctx = propagation.extract(context.active(), input);
+
   return tracer.startActiveSpan(`TRPC ${opts.type}`, { kind: SpanKind.SERVER }, ctx, async span => {
     const result = await opts.next();
     const input = await opts.getRawInput();
     if (typeof input === 'object') {
-      span.setAttributes(flatten({ input }));
+      span.setAttributes(flatten({ input: SuperJSON.serialize(input).json }));
     }
     const meta = { path: opts.path, type: opts.type, ok: result.ok };
     span.setAttributes({
@@ -73,6 +52,24 @@ const loggedProcedure = errorHandlingProcedure.use(async opts => {
       [SEMATTRS_HTTP_STATUS_CODE]: result.ok ? 200 : 500
     });
     span.setStatus({ code: result.ok ? SpanStatusCode.OK : SpanStatusCode.ERROR });
+
+    if (!result.ok && result.error) {
+      if (result.error.cause instanceof CustomError) {
+        result.error = new TRPCError({
+          code: result.error.cause.category,
+          message: JSON.stringify(result.error.cause.toJSON()),
+          cause: result.error.cause
+        });
+      }
+
+      span.recordException({
+        code: result.error.code,
+        message: result.error.message,
+        name: result.error.name,
+        stack: result.error.stack
+      });
+    }
+
     span.end();
     return result;
   });
@@ -92,7 +89,9 @@ export const procedure = loggedProcedure.use(async ({ ctx, next }) => {
     const decoded = await validateJWT(token);
     if (!decoded.subject) throw new NotAuthenticatedError('Your token is malformed.');
     const payload = TokenPayload.parse(decoded.payload);
-    return withUser(payload, next);
+
+    context.active().setValue(Symbol.for('ai.user.authUserId'), payload.id);
+    return withUser({ ...payload, points: ctx.points, achievements: ctx.achievements }, next);
   } catch {
     throw new NotAuthenticatedError('Your token is malformed.');
   }

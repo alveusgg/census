@@ -1,3 +1,5 @@
+import { DefaultAzureCredential } from '@azure/identity';
+import { LogsQueryClient } from '@azure/monitor-query';
 import { ContainerClient } from '@azure/storage-blob';
 import Mux from '@mux/mux-node';
 import { ApiClient } from '@twurple/api';
@@ -42,6 +44,7 @@ export const config = z.object({
   DISCORD_SERVER_ID: z.string().optional(),
   DISCORD_IS_FORUM: z.coerce.boolean().optional().default(false),
   APPLICATIONINSIGHTS_CONNECTION_STRING: z.string().optional(),
+  WORKSPACE_ID: z.string().optional(),
 
   JWT_SECRET: z.string().transform(value => Buffer.from(value, 'hex')),
 
@@ -88,6 +91,17 @@ export const services = async (variables: z.infer<typeof config>) => {
     });
   })();
 
+  const logs = (() => {
+    if (!variables.WORKSPACE_ID) {
+      return;
+    }
+
+    const creds = new DefaultAzureCredential();
+    const client = new LogsQueryClient(creds);
+
+    return client;
+  })();
+
   const options: RedisOptions = {};
   if (variables.REDIS_PASSWORD) {
     options.password = variables.REDIS_PASSWORD;
@@ -121,6 +135,7 @@ export const services = async (variables: z.infer<typeof config>) => {
     twitch,
     telemetry,
     redis,
-    mux
+    mux,
+    logs
   };
 };

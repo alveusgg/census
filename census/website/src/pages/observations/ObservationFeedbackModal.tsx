@@ -7,11 +7,11 @@ import { ModalProps } from '@/components/modal/useModal';
 import { usePointAction } from '@/components/points/hooks';
 import { PointOrigin } from '@/components/points/PointOrigin';
 import { useAddFeedbackToIdentification } from '@/services/api/identifications';
+import { Identification } from '@/services/api/observations';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FC } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Identification } from './Observations';
 
 export interface IdentificationFeedbackModalProps {
   identification: Identification;
@@ -46,13 +46,15 @@ const IdentificationFeedbackForm: FC<ModalProps<IdentificationFeedbackModalProps
 
   const submitFeedback = async (data: IdentificationFeedbackFields) => {
     await addFeedback.mutateAsync({ id: identification.id, type: feedback, comment: data.comment });
-    await action.add(20);
+    await action.add(data.comment ? 40 : 20);
     props.close();
   };
   return (
     <Form className="flex flex-col gap-3" methods={methods} onSubmit={submitFeedback}>
       <div className="flex flex-col">
-        <h1 className="text-2xl font-bold">Submit feedback for {identification.name}</h1>
+        <h1 className="text-2xl font-bold flex justify-between items-center gap-1">
+          <span>Submit feedback for {identification.name}</span>
+        </h1>
         <p className="leading-tight">{label[feedback]}</p>
       </div>
       <Field name="comment">

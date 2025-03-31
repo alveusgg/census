@@ -33,7 +33,7 @@ export const getEmitKeys = (params: KeyParams) => {
 
 interface KeyParams {
   table: string;
-  id?: number;
+  id?: number | string;
 }
 
 interface Event {
@@ -43,13 +43,13 @@ interface Event {
 
 interface Change {
   table: string;
-  id: number;
+  id: number | string;
   event: 'insert' | 'update' | 'delete';
 }
 
 // postgres.js's type signature for `Row` is Record<string, any>
 export const listen = async (row: Row | null, info: ReplicationEvent) => {
-  assert.shape(z.object({ id: z.number() }), row, 'Row must have an id');
+  assert.shape(z.object({ id: z.number().or(z.string()) }), row, 'Row must have an id');
   const change: Change = {
     table: info.relation.table,
     id: row.id,
