@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { infiniteQueryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { key, useAPI } from '../query/hooks';
 import { RouterOutput, TypeFromOutput } from './helpers';
 
@@ -8,7 +8,7 @@ export type Feedback = Identification['feedback'][number];
 
 export const useObservations = () => {
   const trpc = useAPI();
-  return useSuspenseInfiniteQuery({
+  return infiniteQueryOptions({
     queryKey: key('observations'),
     queryFn: ({ pageParam }) => trpc.observation.list.query({ meta: { page: pageParam, size: 30 } }),
     initialPageParam: 1,

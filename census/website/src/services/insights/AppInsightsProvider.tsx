@@ -116,10 +116,10 @@ export const AppInsightsProvider: FC<PropsWithChildren> = ({ children }) => {
   );
 
   useEffect(() => {
-    // if (import.meta.env.DEV) {
-    //   console.warn('AppInsights is not enabled in development');
-    //   return;
-    // }
+    if (import.meta.env.DEV) {
+      console.warn('AppInsights is not enabled in development');
+      return;
+    }
 
     if (appInsights.appInsights.isInitialized()) {
       return;

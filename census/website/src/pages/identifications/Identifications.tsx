@@ -1,5 +1,6 @@
 import { Square } from '@/components/assets/images/Square';
 import { useIdentificationsGroupedBySource, useImagesForObservationId } from '@/services/api/identifications';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { Outlet } from 'react-router';
 import { Preloader } from '../observations/Observations';
 import { ClickToMove } from '../observations/gallery/Controls';
@@ -7,8 +8,10 @@ import { Slide } from '../observations/gallery/GalleryProvider';
 import { Polaroid } from '../observations/gallery/Polaroid';
 
 export const Identifications = () => {
-  const identificationsGroupedBySource = useIdentificationsGroupedBySource();
-  const images = useImagesForObservationId(identificationsGroupedBySource.data[0].observationIds[0]);
+  const query = useIdentificationsGroupedBySource();
+  const identificationsGroupedBySource = useSuspenseQuery(query);
+  const imageQuery = useImagesForObservationId(identificationsGroupedBySource.data[0].observationIds[0]);
+  const images = useSuspenseQuery(imageQuery);
 
   return (
     <>

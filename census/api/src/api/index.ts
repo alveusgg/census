@@ -7,7 +7,7 @@ import observation from './observation.js';
 import seasons from './seasons.js';
 import twitch from './twitch.js';
 import users from './users.js';
-
+import guides from './guides.js';
 export default router({
   me,
   feed,
@@ -16,5 +16,6 @@ export default router({
   identification,
   twitch,
   users,
-  seasons
+  seasons,
+  guides
 });

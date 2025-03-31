@@ -10,3 +10,4 @@ export * from './responses.js';
 export * from './seasons.js';
 export * from './tags.js';
 export * from './users.js';
+export * from './guides.js';

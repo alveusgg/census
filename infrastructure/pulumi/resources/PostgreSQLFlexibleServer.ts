@@ -1,9 +1,10 @@
-import { FirewallRule, Server } from '@pulumi/azure-native/dbforpostgresql';
+import { Configuration, FirewallRule, Server } from '@pulumi/azure-native/dbforpostgresql';
 import { ComponentResource, Input, Output, ResourceOptions } from '@pulumi/pulumi';
 import { RandomPassword, RandomString } from '@pulumi/random';
 
 interface PostgreSQLFlexibleServerArgs {
   resourceGroupName: Input<string>;
+  configuration?: Record<string, string>;
 }
 
 export class PostgreSQLFlexibleServer extends ComponentResource {
@@ -14,7 +15,7 @@ export class PostgreSQLFlexibleServer extends ComponentResource {
   public readonly name: Output<string>;
 
   constructor(id: string, args: PostgreSQLFlexibleServerArgs, opts?: ResourceOptions) {
-    super('si:index:PostgreSQLFlexibleServer', id, args, opts);
+    super('sprinkle:index:PostgreSQLFlexibleServer', id, args, opts);
 
     const username = new RandomString(
       `${id}-username`,
@@ -51,6 +52,16 @@ export class PostgreSQLFlexibleServer extends ComponentResource {
       },
       { parent: this }
     );
+
+    for (const [key, value] of Object.entries(args.configuration ?? {})) {
+      new Configuration(`${id}-db-wal-config`, {
+        resourceGroupName: args.resourceGroupName,
+        serverName: server.name,
+        configurationName: key,
+        source: 'user-override',
+        value
+      });
+    }
 
     new FirewallRule(
       `${id}-azure-access`,

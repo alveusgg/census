@@ -4,7 +4,7 @@ import SiChevronDown from '@/components/icons/SiChevronDown';
 import { useCurrentSeason } from '@/services/api/seasons';
 import { key, useAPI } from '@/services/query/hooks';
 import { cn } from '@/utils/cn';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { FC } from 'react';
 import { ShiniesForSeason } from '../identifications/Shiny';
@@ -13,7 +13,7 @@ import { Podium } from './leaderboards/Podium';
 
 const useLeaderboard = (from: Date) => {
   const trpc = useAPI();
-  return useSuspenseQuery({
+  return queryOptions({
     queryKey: key('points', 'leaderboard'),
     queryFn: async () => {
       const [leaderboard, place] = await Promise.all([
@@ -26,8 +26,10 @@ const useLeaderboard = (from: Date) => {
 };
 
 export const Home: FC = () => {
-  const season = useCurrentSeason();
-  const leaderboard = useLeaderboard(season.data.startDate);
+  const query = useCurrentSeason();
+  const season = useSuspenseQuery(query);
+  const leaderboardQuery = useLeaderboard(season.data.startDate);
+  const leaderboard = useSuspenseQuery(leaderboardQuery);
   const [first, second, third] = leaderboard.data.leaderboard;
 
   return (

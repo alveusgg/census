@@ -1,9 +1,9 @@
-import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { key, useAPI } from '../query/hooks';
 
 export const useUsers = () => {
   const api = useAPI();
-  return useSuspenseQuery({
+  return queryOptions({
     queryKey: key('users'),
     queryFn: () => api.users.users.query()
   });

@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { key, useAPI } from '../query/hooks';
 
 export const useSuggestIdentification = () => {
@@ -42,7 +42,7 @@ export const useAddFeedbackToIdentification = () => {
 
 export const useIdentificationsGroupedBySource = () => {
   const trpc = useAPI();
-  return useSuspenseQuery({
+  return queryOptions({
     queryKey: key('identifications', 'groupedBySource'),
     queryFn: () => trpc.identification.identificationsGroupedBySource.query()
   });
@@ -50,7 +50,7 @@ export const useIdentificationsGroupedBySource = () => {
 
 export const useImagesForObservationId = (observationId: number) => {
   const trpc = useAPI();
-  return useSuspenseQuery({
+  return queryOptions({
     queryKey: key('images', observationId.toString()),
     queryFn: () => trpc.identification.images.query({ observationId })
   });
@@ -58,7 +58,7 @@ export const useImagesForObservationId = (observationId: number) => {
 
 export const useIdentification = (identificationId: number) => {
   const trpc = useAPI();
-  return useSuspenseQuery({
+  return queryOptions({
     queryKey: key('identification', identificationId.toString()),
     queryFn: () => trpc.identification.get.query({ id: identificationId })
   });

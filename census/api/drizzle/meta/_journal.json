@@ -127,6 +127,13 @@
       "when": 1738069999278,
       "tag": "0018_tense_hercules",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1742750122266,
+      "tag": "0019_lazy_thunderbolt_ross",
+      "breakpoints": true
     }
   ]
 }

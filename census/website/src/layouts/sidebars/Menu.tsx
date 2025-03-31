@@ -11,6 +11,7 @@ import SiUsers from '@/components/icons/SiUsers';
 import { useSidebar } from '@/components/layout/LayoutProvider';
 import { usePermissions } from '@/services/api/me';
 import { cn } from '@/utils/cn';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { AnimatePresence, HTMLMotionProps, motion } from 'framer-motion';
 import { ComponentPropsWithoutRef, ElementType, FC, PropsWithChildren, useRef } from 'react';
 import { Link } from 'react-router-dom';
@@ -26,7 +27,8 @@ export const MenuTrigger = () => {
 
 export const Menu = () => {
   const [open, setOpen] = useSidebar();
-  const permissions = usePermissions();
+  const query = usePermissions();
+  const permissions = useSuspenseQuery(query);
   return (
     <AnimatePresence initial={false}>
       <motion.nav

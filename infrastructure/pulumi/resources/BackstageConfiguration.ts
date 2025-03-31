@@ -16,10 +16,10 @@ export class BackstageConfiguration extends ComponentResource {
   public readonly url: Output<string>;
 
   constructor(id: string, args: BackstageConfigurationArgs, opts?: ResourceOptions) {
-    super(`si:index:BackstageConfiguration`, id, args, opts);
+    super(`sprinkle:index:BackstageConfiguration`, id, args, opts);
 
     new Blob(
-      `${id}-backstage-index`,
+      `${id}-index`,
       {
         blobName: 'backstage.json',
         resourceGroupName: args.resourceGroupName,

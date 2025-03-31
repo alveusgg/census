@@ -1,13 +1,14 @@
 import { handleTRPCError } from '@/components/feedback/ErrorBoundary';
 import { OnboardingFormSchema } from '@alveusgg/census-forms';
-import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { key, useAPI } from '../query/hooks';
+import { RouterOutput, TypeFromOutput } from './helpers';
 
 export const usePoints = (from: Date) => {
   const api = useAPI();
-  return useSuspenseQuery({
+  return queryOptions({
     queryKey: key('points', from.toISOString()),
     queryFn: () => api.me.points.query({ from }),
     refetchOnWindowFocus: true
@@ -16,17 +17,17 @@ export const usePoints = (from: Date) => {
 
 export const usePermissions = () => {
   const api = useAPI();
-  return useSuspenseQuery({
+  return queryOptions({
     queryKey: key('permissions'),
     queryFn: () => api.me.permissions.query()
   });
 };
 
-export type Permissions = Awaited<ReturnType<typeof usePermissions>>['data'];
+export type Permissions = TypeFromOutput<RouterOutput['me']['permissions']>;
 
 export const usePendingAchievements = () => {
   const api = useAPI();
-  return useSuspenseQuery({
+  return queryOptions({
     queryKey: key('achievements', 'pending'),
     queryFn: () => api.me.achievements.pending.query(),
     refetchOnWindowFocus: true
@@ -35,7 +36,7 @@ export const usePendingAchievements = () => {
 
 export const useAllAchievements = () => {
   const api = useAPI();
-  return useSuspenseQuery({
+  return queryOptions({
     queryKey: key('achievements'),
     queryFn: () => api.me.achievements.all.query()
   });

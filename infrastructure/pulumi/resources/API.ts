@@ -1,9 +1,9 @@
 import { BindingType, ContainerApp, ManagedEnvironmentsStorage } from '@pulumi/azure-native/app';
-import { getManagedEnvironment } from '@pulumi/azure-native/app/getManagedEnvironment';
 import { PrincipalType, RoleAssignment, getClientConfig } from '@pulumi/azure-native/authorization';
-
-import { ComponentResource, Input, Output, ResourceOptions, all, interpolate, output } from '@pulumi/pulumi';
-
+import { Record as CloudflareRecord } from '@pulumi/cloudflare';
+import { ComponentResource, Input, Output, ResourceOptions, interpolate, output } from '@pulumi/pulumi';
+import { ContainerAppsCluster } from './ContainerAppsCluster';
+import { Project } from './Project';
 interface Registry {
   server: string;
   username: string;
@@ -34,8 +34,8 @@ interface Volume {
 }
 
 interface APIArgs {
-  resourceGroupName: Input<string>;
-  environmentName: Input<string>;
+  project: Project;
+  cluster: ContainerAppsCluster;
   name: string;
 
   env: Record<string, string | Input<string>>;
@@ -53,10 +53,7 @@ interface APIArgs {
   };
   volumes?: Record<string, Volume>;
   sidecars?: RawContainerArgs[];
-  domain?: {
-    domain: string;
-    certificateName: string;
-  };
+  subdomain?: string;
 }
 
 interface RegistryArgs {
@@ -123,18 +120,15 @@ const getStorageConnections = (volumes?: Record<string, Volume>) => {
   }));
 };
 
-const getCustomDomains = (
-  subscriptionId: Input<string>,
-  resourceGroupName: Input<string>,
-  environmentName: Input<string>,
-  domain?: { domain: string; certificateName: string }
-) => {
-  if (!domain) return [];
+const getCustomDomains = (project: Project, cluster: ContainerAppsCluster, subdomain?: string) => {
+  if (!subdomain) return [];
+  if (!project.zone) throw new Error('No zone found');
+  if (!cluster.certificate) throw new Error('No certificate found');
 
   return [
     {
-      name: domain.domain,
-      certificateId: interpolate`/subscriptions/${subscriptionId}/resourceGroups/${resourceGroupName}/providers/Microsoft.App/managedEnvironments/${environmentName}/managedCertificates/${domain.certificateName}`,
+      name: interpolate`${subdomain}.${project.zone.name}`,
+      certificateId: cluster.certificate.id,
       bindingType: BindingType.SniEnabled
     }
   ];
@@ -150,25 +144,18 @@ const getResources = (size: Size) => {
 };
 
 export class API extends ComponentResource {
-  public readonly resourceGroupName: Input<string>;
-  public readonly environmentName: Input<string>;
   public readonly defaultUrl: Output<string>;
   public readonly defaultHost: Output<string>;
   public readonly identity: Output<SystemAssignedIdentity>;
-
+  public readonly api: ContainerApp;
+  public readonly validationRecord?: CloudflareRecord;
+  public readonly record?: CloudflareRecord;
   constructor(id: string, args: APIArgs, opts?: ResourceOptions) {
-    super('si:index:API', id, args, opts);
+    super('sprinkle:index:API', id, args, opts);
 
     const registries: RegistryArgs[] = [];
     const secrets: SecretArgs[] = [];
 
-    const environment = all([args.environmentName, args.resourceGroupName]).apply(
-      ([environmentName, resourceGroupName]) =>
-        getManagedEnvironment({
-          resourceGroupName,
-          environmentName
-        })
-    );
     const subscriptionId = getClientConfig().then(c => c.subscriptionId);
 
     if (typeof args.image === 'object' && args.image.registry) {
@@ -180,11 +167,25 @@ export class API extends ComponentResource {
       secrets.push({ name: `${id}-pwd`, value: args.image.registry.password });
     }
 
+    if (args.project.zone && args.subdomain) {
+      this.validationRecord = new CloudflareRecord(
+        `${id}-dns-validation`,
+        {
+          zoneId: args.project.zone.id,
+          name: `asuid.${args.subdomain}`,
+          type: 'TXT',
+          proxied: false,
+          content: args.cluster.verificationId
+        },
+        { parent: this }
+      );
+    }
+
     const api = new ContainerApp(
       `${id}`,
       {
-        resourceGroupName: args.resourceGroupName,
-        managedEnvironmentId: environment.id,
+        resourceGroupName: args.project.group.name,
+        managedEnvironmentId: args.cluster.environment.id,
         identity: {
           type: 'SystemAssigned'
         },
@@ -193,7 +194,7 @@ export class API extends ComponentResource {
             ? {
                 external: true,
                 targetPort: args.port,
-                customDomains: getCustomDomains(subscriptionId, args.resourceGroupName, environment.name, args.domain),
+                customDomains: getCustomDomains(args.project, args.cluster, args.subdomain),
                 corsPolicy: {
                   allowedOrigins: ['*'],
                   allowedMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -251,13 +252,27 @@ export class API extends ComponentResource {
       { parent: this }
     );
 
-    const defaultHost = interpolate`${api.name}.${environment.defaultDomain}`;
-    const defaultUrl = interpolate`https://${defaultHost}`;
+    if (args.subdomain && args.project.zone) {
+      this.record = new CloudflareRecord(
+        `${id}-dns`,
+        {
+          zoneId: args.project.zone.id,
+          name: args.subdomain,
+          type: 'CNAME',
+          proxied: true,
+          content: interpolate`${api.name}.${args.cluster.environment.defaultDomain}`
+        },
+        { parent: this }
+      );
 
-    this.resourceGroupName = args.resourceGroupName;
-    this.environmentName = environment.name;
-    this.defaultUrl = defaultUrl;
-    this.defaultHost = defaultHost;
+      this.defaultHost = this.record.hostname;
+      this.defaultUrl = interpolate`https://${this.defaultHost}`;
+    } else {
+      this.defaultHost = interpolate`${api.name}.${args.cluster.environment.defaultDomain}`;
+      this.defaultUrl = interpolate`https://${this.defaultHost}`;
+    }
+
+    this.api = api;
     this.identity = api.identity.apply(i => {
       if (!i) throw new Error('No identity found');
       if (i.type !== 'SystemAssigned') throw new Error('Identity is not system assigned');

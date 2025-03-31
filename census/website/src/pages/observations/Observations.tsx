@@ -1,11 +1,13 @@
 import { Breadcrumbs } from '@/layouts/Breadcrumbs';
 import { useObservations } from '@/services/api/observations';
+import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { FC, PropsWithChildren, useEffect, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { Observation } from './Observation';
 
 export const Observations = () => {
-  const result = useObservations();
+  const query = useObservations();
+  const result = useSuspenseInfiniteQuery(query);
 
   return (
     <div className="flex flex-col gap-4 w-full mx-auto max-w-4xl">

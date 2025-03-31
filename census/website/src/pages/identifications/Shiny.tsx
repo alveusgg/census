@@ -4,6 +4,7 @@ import { Shiny, useCurrentSeason, useShiniesForSeason } from '@/services/api/sea
 import { Variables } from '@/services/backstage/config';
 import { cn } from '@/utils/cn';
 import { useVariable } from '@alveusgg/backstage';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { useMeasure } from '@uidotdev/usehooks';
 import { addMonths, format } from 'date-fns';
 import { motion } from 'framer-motion';
@@ -11,8 +12,10 @@ import { ComponentProps, FC, useMemo, useState } from 'react';
 import { IdentificationModal, IdentificationProps } from './Identification';
 
 export const ShiniesForSeason = () => {
-  const season = useCurrentSeason();
-  const shinies = useShiniesForSeason(season.data.id);
+  const query = useCurrentSeason();
+  const season = useSuspenseQuery(query);
+  const shiniesQuery = useShiniesForSeason(season.data.id);
+  const shinies = useSuspenseQuery(shiniesQuery);
 
   const [ref, { height }] = useMeasure();
   const [expanded, setExpanded] = useState(false);
@@ -32,10 +35,10 @@ export const ShiniesForSeason = () => {
       >
         <motion.div transition={!expanded ? { duration: 0 } : undefined} layout className="flex gap-8">
           <div className="flex-1 flex flex-col gap-2">
-            <h1 className="text-4xl font-bold">Dr. Allison's Shiny Bugs</h1>
+            <h1 className="text-4xl font-bold">Shiny Bugs</h1>
             <p className="text-balance">
-              our resident entomologist has selected 24 special bugs that she wants to find. this resets every season so
-              get spotting and maybe you’ll unlock one and earn the{' '}
+              our resident entomologists have selected 24 special bugs that they want to find. this resets every season
+              so get spotting and maybe you’ll unlock one and earn the{' '}
               <span className="font-bold">rodential energy sticker!</span>
             </p>
           </div>

@@ -7,6 +7,7 @@ import { Modal } from '@/components/modal/Modal';
 import { ModalProps } from '@/components/modal/useModal';
 import { Timestamp } from '@/components/text/Timestamp';
 import { useIdentification } from '@/services/api/identifications';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { formatInTimeZone } from 'date-fns-tz';
 import { motion } from 'framer-motion';
 import { FC, Suspense } from 'react';
@@ -22,7 +23,8 @@ export interface IdentificationProps {
 }
 
 const Identification: FC<IdentificationProps> = ({ identificationId }) => {
-  const identification = useIdentification(identificationId);
+  const query = useIdentification(identificationId);
+  const identification = useSuspenseQuery(query);
 
   if (!identification.data?.observation) throw new Error('Observation not found');
 

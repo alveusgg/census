@@ -16,6 +16,7 @@ import {
 import { useCurrentSeason } from '@/services/api/seasons';
 import { cn } from '@/utils/cn';
 import { levels } from '@alveusgg/census-levels';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { AnimatePresence, HTMLMotionProps, motion, useAnimate } from 'framer-motion';
 import { FC, PropsWithChildren, useEffect, useMemo, useRef, useState } from 'react';
 import { LevelUpModal } from './LevelUpModal';
@@ -31,9 +32,12 @@ const getLevelForPoints = (points: number) => {
 
 export const Achievements = () => {
   const [open, setOpen] = useAchievements();
-  const season = useCurrentSeason();
-  const points = usePoints(season.data.startDate);
-  const pending = usePendingAchievements();
+  const query = useCurrentSeason();
+  const season = useSuspenseQuery(query);
+  const pointsQuery = usePoints(season.data.startDate);
+  const points = useSuspenseQuery(pointsQuery);
+  const pendingQuery = usePendingAchievements();
+  const pending = useSuspenseQuery(pendingQuery);
 
   const redeemAll = useRedeemAllAchievements();
   const level = useMemo(() => getLevelForPoints(points.data), [points.data]);

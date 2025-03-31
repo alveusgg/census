@@ -6,7 +6,7 @@ import { usePromoteUser, useUsers } from '@/services/api/users';
 import { ColumnDef, RowSelectionState, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { FC, useState } from 'react';
 
-type User = Awaited<ReturnType<typeof useUsers>['data']>[number];
+type User = TypeFromOutput<RouterOutput['users']['users']>;
 
 const columns: ColumnDef<User>[] = [
   {
@@ -68,10 +68,13 @@ import {
 import SiChevronDown from '@/components/icons/SiChevronDown';
 import SiLock from '@/components/icons/SiLock';
 import { Confirm, useConfirm } from '@/components/modal/Confirm';
+import { RouterOutput, TypeFromOutput } from '@/services/api/helpers';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 
 export const Users: FC = () => {
-  const users = useUsers();
+  const query = useUsers();
+  const users = useSuspenseQuery(query);
 
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
