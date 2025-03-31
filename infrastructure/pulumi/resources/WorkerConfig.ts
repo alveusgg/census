@@ -1,4 +1,4 @@
-import { ComponentResource, Input, jsonStringify, Output, ResourceOptions } from '@pulumi/pulumi';
+import { ComponentResource, Input, interpolate, jsonStringify, Output, ResourceOptions } from '@pulumi/pulumi';
 
 export interface WorkerConfigArgs {
   account_id: Input<string>;
@@ -29,13 +29,15 @@ export interface WorkerConfigArgs {
 }
 
 export class WorkerConfig extends ComponentResource {
-  config: Output<string>;
+  wranglerConfig: Output<string>;
   hostname: Output<string>;
+  name: Output<string>;
 
   constructor(id: string, args: WorkerConfigArgs, opts?: ResourceOptions) {
     super(`sprinkle:index:WorkerConfig`, id, args, opts);
 
-    this.config = jsonStringify({
+    this.name = interpolate`${args.name}-${args.env}`;
+    this.wranglerConfig = jsonStringify({
       compatibility_date: '2024-07-01',
       main: args.main,
       workers_dev: false,
@@ -45,13 +47,13 @@ export class WorkerConfig extends ComponentResource {
           account_id: args.account_id,
           durable_objects: args.durable_objects,
           migrations: args.migrations,
-          name: args.name,
+          name: this.name,
           routes: args.routes
         }
       }
     });
 
-    this.hostname = this.config.apply(config => {
+    this.hostname = this.wranglerConfig.apply(config => {
       const routes = JSON.parse(config).env[args.env].routes;
       if (!routes || routes.length === 0) {
         throw new Error('No routes found');

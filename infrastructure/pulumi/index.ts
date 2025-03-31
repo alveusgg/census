@@ -8,8 +8,9 @@ import {
   StorageAccount
 } from '@pulumi/azure-native/storage';
 import { ListStorageAccountKeysResult } from '@pulumi/azure-native/storage/v20220901';
-import { getZoneOutput } from '@pulumi/cloudflare';
+import { getZoneOutput, WorkersSecret } from '@pulumi/cloudflare';
 import { all, Config, getProject, getStack, interpolate } from '@pulumi/pulumi';
+import { RandomPassword } from '@pulumi/random';
 import { API } from './resources/API';
 import { BackstageConfiguration } from './resources/BackstageConfiguration';
 import { ContainerAppsCluster } from './resources/ContainerAppsCluster';
@@ -19,8 +20,9 @@ import { Project } from './resources/Project';
 import { Website } from './resources/Website';
 import { WorkerConfig } from './resources/WorkerConfig';
 
-const id = `${getProject()}-${getStack()}`;
-const simpleId = `apc${getStack()}`;
+const stack = getStack();
+const id = `${getProject()}-${stack}`;
+const simpleId = `apc${stack}`;
 
 // MARK: Config
 const config = new Config();
@@ -113,6 +115,11 @@ export = async () => {
     listRedisKeysOutput({ resourceGroupName, name: name }).apply(r => r.primaryKey)
   );
 
+  const WorkerApiToken = new RandomPassword(`${id}-worker-api-token`, {
+    length: 32,
+    special: true
+  });
+
   // MARK: API
   const api = new API(`${id}-api`, {
     name: 'api',
@@ -138,6 +145,8 @@ export = async () => {
 
       KV_NAMESPACE_ID: kv.namespace.id,
       KV_TOKEN: kv.token.value,
+
+      WORKER_API_TOKEN: WorkerApiToken.result,
 
       JWT_SECRET: config.require('jwt-secret'),
       TWITCH_CLIENT_ID: config.require('twitch-client-id'),
@@ -183,8 +192,8 @@ export = async () => {
 
   const worker = new WorkerConfig(`${id}-worker-config`, {
     account_id: config.require('cf-account-id'),
-    name: 'census-sync',
-    env: 'prod',
+    name: 'sync',
+    env: stack,
     main: 'worker.ts',
     vars: {
       API_BASE_URL: api.defaultUrl
@@ -209,6 +218,14 @@ export = async () => {
         pattern: interpolate`${id}-sync.strangecyan.com`
       }
     ]
+  });
+
+  // This might fail on the very first run, but it will work on the second run
+  new WorkersSecret(`${id}-worker-secret`, {
+    name: 'WORKER_API_TOKEN',
+    accountId: config.require('cf-account-id'),
+    scriptName: worker.name,
+    secretText: WorkerApiToken.result
   });
 
   // MARK: Backstage

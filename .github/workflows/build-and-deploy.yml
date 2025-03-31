@@ -89,31 +89,6 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-  build_census_sync:
-    name: build sync
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-          run_install: false
-
-      - name: Install dependencies
-        run: pnpm i
-
-      - name: Build & upload as worker version
-        id: deploy-worker
-        run: |
-          pnpm run deploy -- ${{ github.run_id }}
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
   build_census_ui:
     name: build ui
     runs-on: ubuntu-latest
@@ -184,19 +159,21 @@ jobs:
         run: pnpm i
 
       - uses: pulumi/auth-actions@v1
+        name: Login to Pulumi
         with:
           organization: alveusgg
           requested-token-type: urn:pulumi:token-type:access_token:personal
           scope: user:changesbyjames
 
-      - name: Azure CLI Login
+      - name: Login to Azure
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - uses: pulumi/actions@v5
+      - uses: pulumi/actions@v6
+        name: Deploy infrastructure
         id: pulumi
         with:
           command: up
@@ -213,7 +190,19 @@ jobs:
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
           ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
 
-      - name: az cli copy
+      - name: Build & upload worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          workingDirectory: census/sync
+          preCommands: |
+            echo "${{ steps.pulumi.outputs.wranglerConfig }}" > .wrangler/wrangler.generated.jsonc
+          command: |
+            deploy --config .wrangler/wrangler.generated.jsonc --env prod
+          postCommands: |
+            rm .wrangler/wrangler.generated.jsonc
+
+      - name: Upload UI & purge CDN
         uses: azure/CLI@v2
         with:
           azcliversion: 2.53.0
