@@ -1,6 +1,7 @@
 {
   "name": "@alveusgg/census",
   "version": "1.0.0",
+  "packageManager": "pnpm@9.14.2",
   "scripts": {
     "deps:up": "docker compose --file local/core-services.yml up -d",
     "deps:down": "docker compose --file local/core-services.yml down",
