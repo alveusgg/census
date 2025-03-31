@@ -1,0 +1,27 @@
+{
+  "name": "census-sync",
+  "main": "worker.ts",
+  "compatibility_date": "2024-07-01",
+  "workers_dev": false,
+
+  "dev": {
+    "port": 5172,
+    "ip": "0.0.0.0"
+  },
+
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "TLDRAW_DURABLE_OBJECT",
+        "class_name": "TldrawDurableObject"
+      }
+    ]
+  },
+
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_classes": ["TldrawDurableObject"]
+    }
+  ]
+}

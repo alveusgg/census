@@ -71,7 +71,7 @@ sw.addEventListener('fetch', event => {
           headers: { 'Content-Type': 'image/png', 'Cache-Control': 'max-age=604800' }
         });
 
-        cache.put(event.request, response);
+        await cache.put(event.request, response);
         return response;
       })()
     );

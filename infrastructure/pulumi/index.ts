@@ -1,82 +1,72 @@
-import { Component, IngestionMode } from '@pulumi/azure-native/insights';
-import { getSharedKeysOutput, GetSharedKeysResult, Workspace } from '@pulumi/azure-native/operationalinsights';
-import { ResourceGroup } from '@pulumi/azure-native/resources';
-import { Config, getProject, getStack, interpolate } from '@pulumi/pulumi';
-
-import { ManagedEnvironment, ManagedEnvironmentsStorage } from '@pulumi/azure-native/app';
-import { API } from './resources/API';
-
-import { Endpoint, QueryStringCachingBehavior } from '@pulumi/azure-native/cdn';
-import { Configuration, Database } from '@pulumi/azure-native/dbforpostgresql';
+import { listRedisKeysOutput, Redis } from '@pulumi/azure-native/cache';
+import { Database } from '@pulumi/azure-native/dbforpostgresql';
 import {
   BlobContainer,
-  FileShare,
   Kind,
   listStorageAccountKeysOutput,
   SkuName,
   StorageAccount
 } from '@pulumi/azure-native/storage';
 import { ListStorageAccountKeysResult } from '@pulumi/azure-native/storage/v20220901';
+import { getZoneOutput, WorkersSecret } from '@pulumi/cloudflare';
+import { all, Config, getProject, getStack, interpolate } from '@pulumi/pulumi';
+import { RandomPassword } from '@pulumi/random';
+import { API } from './resources/API';
 import { BackstageConfiguration } from './resources/BackstageConfiguration';
+import { ContainerAppsCluster } from './resources/ContainerAppsCluster';
+import { KV } from './resources/KV';
 import { PostgreSQLFlexibleServer } from './resources/PostgreSQLFlexibleServer';
+import { Project } from './resources/Project';
 import { Website } from './resources/Website';
+import { WorkerConfig } from './resources/WorkerConfig';
 
-const project = getProject();
 const stack = getStack();
-const id = `${project}-${stack}`;
+const id = `${getProject()}-${stack}`;
 const simpleId = `apc${stack}`;
 
 // MARK: Config
 const config = new Config();
 
 export = async () => {
-  // MARK: Resource Group
-  const group = new ResourceGroup(`${id}-group`);
-
-  // MARK: Logs
-  const workspace = new Workspace(`${id}-logs`, {
-    resourceGroupName: group.name,
-    sku: { name: 'PerGB2018' },
-    retentionInDays: 30
+  const zone = getZoneOutput({
+    accountId: config.require('cf-account-id'),
+    zoneId: config.require('cf-zone-id')
   });
 
-  const workspaceSharedKey = getSharedKeysOutput({
-    resourceGroupName: group.name,
-    workspaceName: workspace.name
-  }).apply((r: GetSharedKeysResult) => {
-    if (!r.primarySharedKey) throw new Error('Primary shared key not found');
-    return r.primarySharedKey;
-  });
-
-  const appInsights = new Component(`${id}-app-insights`, {
-    resourceGroupName: group.name,
-    applicationType: 'web',
-    kind: 'web',
-    ingestionMode: IngestionMode.LogAnalytics,
-    workspaceResourceId: workspace.id
+  const project = new Project(id, {
+    cloudflare: {
+      zone,
+      originCertificate: config.require('cloudflare-origin-cert'),
+      originCertificatePassword: config.get('cloudflare-origin-cert-password') ?? ''
+    }
   });
 
   // MARK: Website
   const website = new Website(`${simpleId}-web`, {
-    resourceGroupName: group.name,
-    type: 'spa'
+    project,
+    type: 'spa',
+    subdomain: 'census'
   });
 
-  const environment = new ManagedEnvironment(`${id}-managed`, {
-    resourceGroupName: group.name,
-    appLogsConfiguration: {
-      destination: 'log-analytics',
-      logAnalyticsConfiguration: {
-        customerId: workspace.customerId,
-        sharedKey: workspaceSharedKey
-      }
-    }
+  const cluster = new ContainerAppsCluster(`${id}-clstr`, {
+    project
   });
 
+  // Create config from incoming
+  // Return config as json in the outputs
+
+  // echo output into "./wrangler.generated.jsonc"
+  // e.g. echo {{ pulumi.output.wrangler.config }} > ./wrangler.generated.jsonc
+  // Run wrangler deploy w/ auth
+  // e.g. wrangler deploy --config ./wrangler.generated.jsonc
+  // CF_API_TOKEN is set in the environment
+  // CF_ACCOUNT_ID is set in the environment
+
+  // MARK: Storage
   const storage = new StorageAccount(simpleId, {
     enableHttpsTrafficOnly: true,
     kind: Kind.StorageV2,
-    resourceGroupName: group.name,
+    resourceGroupName: project.group.name,
     sku: {
       name: SkuName.Standard_LRS
     },
@@ -84,61 +74,58 @@ export = async () => {
   });
 
   const key = listStorageAccountKeysOutput({
-    resourceGroupName: group.name,
+    resourceGroupName: project.group.name,
     accountName: storage.name
   }).apply((r: ListStorageAccountKeysResult) => {
     if (!r.keys[0].value) throw new Error('Primary key not found');
     return r.keys[0].value;
   });
 
-  const share = new FileShare(`${simpleId}share`, {
-    resourceGroupName: group.name,
-    accountName: storage.name
-  });
-
-  const environmentCacheStorage = new ManagedEnvironmentsStorage(`${simpleId}-cache`, {
-    resourceGroupName: group.name,
-    environmentName: environment.name,
-    properties: {
-      azureFile: {
-        accountName: storage.name,
-        shareName: share.name,
-        accessMode: 'ReadWrite',
-        accountKey: key
-      }
-    }
-  });
-
-  const container = new BlobContainer(`${simpleId}-image-blob`, {
-    resourceGroupName: group.name,
+  const container = new BlobContainer(`${simpleId}-assets-blob`, {
+    resourceGroupName: project.group.name,
     accountName: storage.name,
     publicAccess: 'Blob',
-    containerName: 'images'
+    containerName: 'assets'
   });
 
   // MARK: Database
   const server = new PostgreSQLFlexibleServer(`${id}-db`, {
-    resourceGroupName: group.name
-  });
-
-  new Configuration(`${id}-db-wal-config`, {
-    resourceGroupName: group.name,
-    serverName: server.name,
-    configurationName: 'wal_level',
-    source: 'user-override',
-    value: 'logical'
+    resourceGroupName: project.group.name,
+    configuration: {
+      wal_level: 'logical'
+    }
   });
 
   const database = new Database(`${id}-db-api`, {
-    resourceGroupName: group.name,
+    resourceGroupName: project.group.name,
     serverName: server.name
+  });
+
+  // MARK: Cache
+  const kv = new KV(`${id}-kv`, {
+    accountId: config.require('cf-account-id')
+  });
+
+  const redis = new Redis(`${id}-redis`, {
+    resourceGroupName: project.group.name,
+    sku: { name: 'Basic', family: 'C', capacity: 1 }
+  });
+
+  const redisKey = all([redis.name, redis.hostName, project.group.name]).apply(([name, _, resourceGroupName]) =>
+    listRedisKeysOutput({ resourceGroupName, name: name }).apply(r => r.primaryKey)
+  );
+
+  const WorkerApiToken = new RandomPassword(`${id}-worker-api-token`, {
+    length: 32,
+    special: true
   });
 
   // MARK: API
   const api = new API(`${id}-api`, {
     name: 'api',
-    resourceGroupName: group.name,
-    environmentName: environment.name,
+    project,
+    cluster,
+    subdomain: 'api-census',
     port: 3000,
     size: 'regular',
     env: {
@@ -151,8 +138,15 @@ export = async () => {
       POSTGRES_SSL: 'true',
       POSTGRES_DB: database.name,
 
-      REDIS_HOST: 'localhost',
-      REDIS_PORT: '6379',
+      REDIS_HOST: redis.hostName,
+      REDIS_PORT: redis.sslPort.apply(p => p.toString()),
+      REDIS_PASSWORD: redisKey,
+      REDIS_SSL: 'true',
+
+      KV_NAMESPACE_ID: kv.namespace.id,
+      KV_TOKEN: kv.token.value,
+
+      WORKER_API_TOKEN: WorkerApiToken.result,
 
       JWT_SECRET: config.require('jwt-secret'),
       TWITCH_CLIENT_ID: config.require('twitch-client-id'),
@@ -166,39 +160,22 @@ export = async () => {
       STORAGE_CONNECTION_STRING: interpolate`DefaultEndpointsProtocol=https;AccountName=${storage.name};AccountKey=${key};EndpointSuffix=core.windows.net`,
       CONTAINER_NAME: container.name,
 
-      APPLICATIONINSIGHTS_CONNECTION_STRING: appInsights.connectionString
-    },
-    volumes: {
-      dragonfly: {
-        path: '/data',
-        storage: environmentCacheStorage
-      }
+      APPLICATIONINSIGHTS_CONNECTION_STRING: project.insights.connectionString
     },
     image: config.require('image'),
     scale: {
       min: 0,
       max: 1,
       noOfRequestsPerInstance: 100
-    },
-    sidecars: [
-      {
-        name: 'dragonfly-cache',
-        image: 'docker.dragonflydb.io/dragonflydb/dragonfly:latest',
-        volumes: {
-          dragonfly: {
-            path: '/data',
-            storage: environmentCacheStorage
-          }
-        },
-        env: {}
-      }
-    ]
+    }
   });
 
+  // MARK: Image Optimisation
   const imageOptimisation = new API(`${id}-ipx`, {
     name: 'ipx',
-    resourceGroupName: group.name,
-    environmentName: environment.name,
+    project,
+    cluster,
+    subdomain: 'image-optimisation-census',
     env: {
       IPX_HTTP_DOMAINS: interpolate`${storage.name}.blob.core.windows.net`,
       IPX_HTTP_MAX_AGE: '86400'
@@ -213,32 +190,54 @@ export = async () => {
     port: 3000
   });
 
-  const imageOptimisationEndpoint = new Endpoint(`${id}-ipx-cdn`, {
-    endpointName: `${id}-ipx-cdn`,
-    location: 'global',
-    isHttpAllowed: false,
-    isHttpsAllowed: true,
-    originHostHeader: imageOptimisation.defaultHost,
-    origins: [
+  const worker = new WorkerConfig(`${id}-worker-config`, {
+    account_id: config.require('cf-account-id'),
+    name: 'sync',
+    env: stack,
+    main: 'worker.ts',
+    vars: {
+      API_BASE_URL: api.defaultUrl
+    },
+    durable_objects: {
+      bindings: [
+        {
+          class_name: 'TldrawDurableObject',
+          name: 'TLDRAW_DURABLE_OBJECT'
+        }
+      ]
+    },
+    migrations: [
       {
-        hostName: imageOptimisation.defaultHost,
-        httpsPort: 443,
-        name: 'origin-image-optimisation'
+        tag: 'v1',
+        new_classes: ['TldrawDurableObject']
       }
     ],
-    profileName: website.profileName,
-    queryStringCachingBehavior: QueryStringCachingBehavior.IgnoreQueryString,
-    resourceGroupName: group.name
+    routes: [
+      {
+        custom_domain: true,
+        pattern: interpolate`${id}-sync.strangecyan.com`
+      }
+    ]
+  });
+
+  // This might fail on the very first run, but it will work on the second run
+  new WorkersSecret(`${id}-worker-secret`, {
+    name: 'WORKER_API_TOKEN',
+    accountId: config.require('cf-account-id'),
+    scriptName: worker.name,
+    secretText: WorkerApiToken.result
   });
 
   // MARK: Backstage
   const backstage = new BackstageConfiguration(`${id}-backstage`, {
     ...website,
+    resourceGroupName: project.group.name,
     env: {
       variables: {
         apiBaseUrl: api.defaultUrl,
-        ipxBaseUrl: imageOptimisationEndpoint.hostName.apply(host => `https://${host}`),
-        appInsightsConnectionString: appInsights.connectionString
+        ipxBaseUrl: imageOptimisation.defaultUrl,
+        syncWorkerUrl: worker.hostname.apply(h => `https://${h}`),
+        appInsightsConnectionString: project.insights.connectionString
       },
       flags: {}
     }
@@ -246,6 +245,7 @@ export = async () => {
   // MARK: Outputs
   return {
     ...website,
+    ...worker,
     backstage
   };
 };

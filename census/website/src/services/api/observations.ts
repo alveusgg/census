@@ -1,9 +1,14 @@
-import { useMutation, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { infiniteQueryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { key, useAPI } from '../query/hooks';
+import { RouterOutput, TypeFromOutput } from './helpers';
+
+export type Observation = TypeFromOutput<RouterOutput['observation']['list']>;
+export type Identification = Observation['identifications'][number];
+export type Feedback = Identification['feedback'][number];
 
 export const useObservations = () => {
   const trpc = useAPI();
-  return useSuspenseInfiniteQuery({
+  return infiniteQueryOptions({
     queryKey: key('observations'),
     queryFn: ({ pageParam }) => trpc.observation.list.query({ meta: { page: pageParam, size: 30 } }),
     initialPageParam: 1,
@@ -20,7 +25,9 @@ export const useNotifyDiscordAboutObservation = () => {
   return useMutation({
     mutationFn: async (observationId: number) => {
       await trpc.observation.notifyDiscordAboutObservation.mutate({ observationId });
-      await client.invalidateQueries({ queryKey: key('observations') });
+    },
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: key('observations') });
     }
   });
 };

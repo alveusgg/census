@@ -1,3 +1,12 @@
+playback: yes
+playbackAddress: :9996
+
 paths:
-  test:
-    runOnInit: ffmpeg -re -f lavfi -i testsrc2=size=3840x2160:rate=60 -f lavfi -i aevalsrc="sin(0*2*PI*t)" -c:v libx264 -r 30 -g 30 -preset fast -vb 8000k -pix_fmt rgb24 -pix_fmt yuv420p -f rtsp rtsp://localhost:$RTSP_PORT/$MTX_PATH
+  pollinator:
+    runOnInit: ffmpeg -re -stream_loop -1 -i https://cdn.free-stock.video/1492021/nature-plant-garden-insects-insect-flower-butterfly-6125-full.mp4 -c copy -f rtsp rtsp://localhost:$RTSP_PORT/$MTX_PATH
+    record: yes
+    recordPath: ./recordings/%path/%Y-%m-%d_%H-%M-%S-%f
+    recordFormat: fmp4
+    recordPartDuration: 1s
+    recordSegmentDuration: 1h
+    recordDeleteAfter: 0s

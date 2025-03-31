@@ -9,15 +9,21 @@ interface CounterProps {
 
 export const Counter: FC<CounterProps & ComponentProps<'p'>> = ({ children, duration, delay = 0, ...props }) => {
   const ref = useRef<HTMLParagraphElement>(null);
+  const initialised = useRef(false);
   const [, animate] = useAnimate();
 
   useEffect(() => {
     if (!ref.current) return;
     const initial = ref.current.textContent;
-    const number = Number(initial);
+    let number = Number(initial);
     if (!initial || isNaN(number)) {
       ref.current.textContent = children.toString();
       return;
+    }
+
+    if (!initialised.current) {
+      number = 0;
+      initialised.current = true;
     }
 
     animate(number, children, {

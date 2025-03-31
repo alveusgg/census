@@ -1,4 +1,4 @@
-import { useContext } from 'react';
+import { useCallback, useContext } from 'react';
 import { useLocation } from 'react-router';
 import { useStore } from 'zustand';
 import { AuthenticationContext, AuthenticationStore } from './AuthenticationProvider';
@@ -19,7 +19,7 @@ export const useUser = () => {
 
 export const useRequestToken = () => {
   const getRequestToken = useAuthentication(state => state.getRequestToken);
-  return async () => await withCache('requestToken', getRequestToken);
+  return useCallback(async () => await withCache('requestToken', getRequestToken), [getRequestToken]);
 };
 
 const InProgressCache = new Map<string, Promise<unknown>>();

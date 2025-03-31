@@ -25,7 +25,7 @@ export const Header = () => {
           </Button>
         )}
         {!hasBeenOnboarded && (
-          <Link variant="alveus" to="/onboarding">
+          <Link variant="alveus" to="/forms/onboarding">
             <span>want to help?</span>
           </Link>
         )}

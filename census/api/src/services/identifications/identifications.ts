@@ -1,19 +1,53 @@
-import { and, eq, inArray } from 'drizzle-orm';
-import { feedback, identifications } from '../../db/schema/index.js';
-import { useDB } from '../../db/transaction.js';
+import { BadRequestError, NotFoundError } from '@alveusgg/error';
+import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm';
+import { feedback, identifications, observations } from '../../db/schema/index.js';
+import { useDB, withTransaction } from '../../db/transaction.js';
 import { useUser } from '../../utils/env/env.js';
 import { getTaxaInfo } from '../inat/index.js';
+import { recordAchievement } from '../points/achievement.js';
 
 export const suggestIdentification = async (observationId: number, iNatId: number) => {
   const source = await getTaxaInfo(iNatId);
   const parent = await getPossibleParentIdentifications(observationId, source.ancestor_ids);
-  return createIdentification(
-    observationId,
-    iNatId,
-    source.preferred_common_name ?? source.name,
-    source.ancestor_ids,
-    parent?.id
-  );
+  return createIdentification(observationId, iNatId, source.preferred_common_name ?? source.name, source.ancestor_ids, {
+    parentIdentificationId: parent?.id
+  });
+};
+
+export const suggestAccessoryIdentification = async (observationId: number, iNatId: number) => {
+  const source = await getTaxaInfo(iNatId);
+  return createIdentification(observationId, iNatId, source.preferred_common_name ?? source.name, source.ancestor_ids, {
+    isAccessory: true
+  });
+};
+
+export const confirmIdentification = async (identificationId: number, comment: string) => {
+  const db = useDB();
+  const user = useUser();
+  return db.transaction(async tx => {
+    return withTransaction(tx, async () => {
+      const identification = await tx.query.identifications.findFirst({
+        where: eq(identifications.id, identificationId)
+      });
+      if (!identification) throw new NotFoundError('Identification not found');
+      if (identification.confirmedBy) throw new BadRequestError('Identification already confirmed');
+
+      await tx.update(identifications).set({ confirmedBy: user.id }).where(eq(identifications.id, identificationId));
+      await tx.insert(feedback).values({
+        identificationId,
+        userId: user.id,
+        type: 'confirm',
+        comment: comment
+      });
+      await tx
+        .update(observations)
+        .set({ confirmedAs: identification.id })
+        .where(eq(observations.id, identification.observationId));
+
+      await recordAchievement('identify', identification.suggestedBy, { identificationId });
+      user.achievements();
+    });
+  });
 };
 
 export const getPossibleParentIdentifications = async (observationId: number, taxonIds: number[]) => {
@@ -44,12 +78,17 @@ export const getPossibleParentIdentifications = async (observationId: number, ta
   return closestParent;
 };
 
+interface CreateIdentificationOptions {
+  parentIdentificationId?: number;
+  isAccessory?: boolean;
+}
+
 export const createIdentification = async (
   observationId: number,
   iNatId: number,
   name: string,
   sourceAncestorIds: number[],
-  parentIdentificationId?: number
+  options: CreateIdentificationOptions
 ) => {
   const db = useDB();
   const user = useUser();
@@ -63,7 +102,8 @@ export const createIdentification = async (
       sourceAncestorIds,
       observationId,
       suggestedBy: user.id,
-      alternateForId: parentIdentificationId
+      alternateForId: options.parentIdentificationId,
+      isAccessory: options.isAccessory
     })
     .returning();
 
@@ -83,4 +123,42 @@ export const addFeedbackToIdentification = async (
     type,
     comment
   });
+};
+
+export const getIdentification = async (identificationId: number) => {
+  const db = useDB();
+  const identification = await db.query.identifications.findFirst({
+    where: eq(identifications.id, identificationId),
+    with: {
+      shiny: true,
+      confirmer: true,
+      suggester: true,
+      observation: {
+        with: {
+          images: true,
+          observer: true
+        }
+      }
+    }
+  });
+
+  if (!identification) throw new NotFoundError('Identification not found');
+  return identification;
+};
+
+export const getIdentificationsGroupedBySource = async () => {
+  const db = useDB();
+
+  const uniqueIdentificationsBySource = await db
+    .select({
+      sourceId: identifications.sourceId,
+      name: identifications.name,
+      count: sql<number>`count(*)`.mapWith(Number).as('count'),
+      observationIds: sql<number[]>`array_agg(${identifications.observationId})`.as('observationIds')
+    })
+    .from(identifications)
+    .where(and(isNotNull(identifications.confirmedBy), isNotNull(identifications.sourceId)))
+    .groupBy(identifications.sourceId, identifications.name);
+
+  return uniqueIdentificationsBySource;
 };

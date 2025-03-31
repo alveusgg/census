@@ -1,32 +1,33 @@
 import { handleTRPCError } from '@/components/feedback/ErrorBoundary';
 import { OnboardingFormSchema } from '@alveusgg/census-forms';
-import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { key, useAPI } from '../query/hooks';
+import { RouterOutput, TypeFromOutput } from './helpers';
 
-export const usePoints = () => {
+export const usePoints = (from: Date) => {
   const api = useAPI();
-  return useSuspenseQuery({
-    queryKey: key('points'),
-    queryFn: () => api.me.points.query(),
+  return queryOptions({
+    queryKey: key('points', from.toISOString()),
+    queryFn: () => api.me.points.query({ from }),
     refetchOnWindowFocus: true
   });
 };
 
 export const usePermissions = () => {
   const api = useAPI();
-  return useSuspenseQuery({
+  return queryOptions({
     queryKey: key('permissions'),
     queryFn: () => api.me.permissions.query()
   });
 };
 
-export type Permissions = Awaited<ReturnType<typeof usePermissions>>['data'];
+export type Permissions = TypeFromOutput<RouterOutput['me']['permissions']>;
 
 export const usePendingAchievements = () => {
   const api = useAPI();
-  return useSuspenseQuery({
+  return queryOptions({
     queryKey: key('achievements', 'pending'),
     queryFn: () => api.me.achievements.pending.query(),
     refetchOnWindowFocus: true
@@ -35,7 +36,7 @@ export const usePendingAchievements = () => {
 
 export const useAllAchievements = () => {
   const api = useAPI();
-  return useSuspenseQuery({
+  return queryOptions({
     queryKey: key('achievements'),
     queryFn: () => api.me.achievements.all.query()
   });
@@ -76,12 +77,11 @@ export const usePatchAchievement = () => {
 
 export const useOnboardUser = () => {
   const api = useAPI();
-  const queryClient = useQueryClient();
+  const client = useQueryClient();
   return useMutation({
     mutationFn: async (data: OnboardingFormSchema) => {
       try {
         const results = await api.me.onboard.mutate(data);
-        await queryClient.invalidateQueries({ queryKey: key('permissions') });
         return results;
       } catch (error) {
         const custom = handleTRPCError(error);
@@ -92,6 +92,9 @@ export const useOnboardUser = () => {
         }
         throw error;
       }
+    },
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: key('permissions') });
     }
   });
 };

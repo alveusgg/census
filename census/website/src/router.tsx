@@ -1,7 +1,8 @@
 import { createBrowserRouter, RouteObject } from 'react-router-dom';
 import { RouteErrorBoundary } from './components/feedback/ErrorBoundary';
 import { NotFoundErrorBoundary } from './components/feedback/NotFoundError';
-import { Main } from './layouts/Main';
+import { Main, Scrollable } from './layouts/Main';
+import { Users } from './pages/admin/Users';
 import { Authenticated } from './pages/authentication/Authenticated';
 import { Redirect } from './pages/authentication/Redirect';
 import { SignIn } from './pages/authentication/SignIn';
@@ -10,9 +11,12 @@ import { SignOutRedirect } from './pages/authentication/SignOutRedirect';
 import { Capture } from './pages/captures/Capture';
 import { Captures } from './pages/captures/Captures';
 import { Onboarding } from './pages/forms/Onboarding';
+import { Edit } from './pages/guides/Edit';
+import { View } from './pages/guides/View';
 import { Home } from './pages/home/Home';
+import { IdentificationPage } from './pages/identifications/Identification';
+import { Identifications } from './pages/identifications/Identifications';
 import { Observations } from './pages/observations/Observations';
-
 const auth: RouteObject = {
   path: 'auth',
   children: [
@@ -44,36 +48,68 @@ export const router = createBrowserRouter([
         element: <Main />,
         children: [
           {
-            path: '/',
-            element: <Home />
-          },
-          {
-            path: 'observations',
-            element: <Observations />
-          },
-          {
-            path: 'captures',
-
+            path: 'guides',
             children: [
               {
-                index: true,
-                element: <Captures />
+                path: ':slug/edit',
+                element: <Edit />
               },
               {
-                ErrorBoundary: () => (
-                  <NotFoundErrorBoundary>sorry, that capture is not available</NotFoundErrorBoundary>
-                ),
-                path: ':id',
-                element: <Capture />
+                path: ':slug',
+                element: <View />
               }
             ]
           },
           {
-            path: 'forms',
+            element: <Scrollable />,
             children: [
               {
-                path: 'onboarding',
-                element: <Onboarding />
+                path: '/',
+                element: <Home />
+              },
+              {
+                path: 'observations',
+                element: <Observations />
+              },
+              {
+                path: 'identifications',
+                element: <Identifications />,
+                children: [
+                  {
+                    path: ':id',
+                    element: <IdentificationPage />
+                  }
+                ]
+              },
+              {
+                path: 'captures',
+
+                children: [
+                  {
+                    index: true,
+                    element: <Captures />
+                  },
+                  {
+                    ErrorBoundary: () => (
+                      <NotFoundErrorBoundary>sorry, that capture is not available</NotFoundErrorBoundary>
+                    ),
+                    path: ':id',
+                    element: <Capture />
+                  }
+                ]
+              },
+              {
+                path: 'forms',
+                children: [
+                  {
+                    path: 'onboarding',
+                    element: <Onboarding />
+                  }
+                ]
+              },
+              {
+                path: 'users',
+                element: <Users />
               }
             ]
           }

@@ -5,12 +5,13 @@ import { useQuery } from '@tanstack/react-query';
 import { useDebounce, useMeasure } from '@uidotdev/usehooks';
 import { Command } from 'cmdk';
 import { motion } from 'framer-motion';
-import { ComponentProps, FC, useState } from 'react';
+import { ComponentProps, FC, ReactNode, useState } from 'react';
 
 export interface InputProps<T> {
   onSelect: (value: T) => void;
   placeholder?: string;
   autoOpen?: boolean;
+  icon?: ReactNode;
 }
 
 interface TaxaSearchResult {
@@ -21,6 +22,7 @@ interface TaxaSearchResult {
 }
 
 export const INatTaxaInput: FC<InputProps<TaxaSearchResult> & Omit<ComponentProps<'input'>, 'onSelect'>> = ({
+  icon = <SiBinoculars className="text-2xl pt-0.5" />,
   onSelect,
   placeholder,
   autoOpen,
@@ -44,7 +46,7 @@ export const INatTaxaInput: FC<InputProps<TaxaSearchResult> & Omit<ComponentProp
     <div ref={ref} className="group w-full relative flex">
       <button type="button" className="w-full cursor-text" onClick={() => setOpen(true)}>
         <div className="px-3 py-1 flex gap-2 items-center w-full transition-colors duration-100 hover:bg-accent-100">
-          <SiBinoculars className="text-2xl pt-0.5" />
+          {icon}
           <p className="py-1.5 w-full text-sm text-left text-accent-800 opacity-75 outline-none font-medium">
             {placeholder}
           </p>
@@ -59,7 +61,7 @@ export const INatTaxaInput: FC<InputProps<TaxaSearchResult> & Omit<ComponentProp
           >
             <Command loop shouldFilter={false}>
               <div className="px-3 py-1 bg-accent-50 flex cursor-pointer gap-2 items-center w-full transition-colors duration-100 hover:bg-accent-100">
-                <SiBinoculars className="text-2xl pt-0.5" />
+                {icon}
                 <Command.Input
                   {...props}
                   autoFocus
