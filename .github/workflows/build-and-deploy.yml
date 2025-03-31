@@ -190,19 +190,19 @@ jobs:
 
       - name: Build & upload worker
         uses: cloudflare/wrangler-action@v3
+        if: always()
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           workingDirectory: census/sync
-          preCommands: |
+          command: |
             mkdir -p .wrangler
             echo '${{ steps.pulumi.outputs.wranglerConfig }}' > .wrangler/wrangler.generated.jsonc
-          command: |
             deploy --config .wrangler/wrangler.generated.jsonc --env prod
-          postCommands: |
             rm .wrangler/wrangler.generated.jsonc
 
       - name: Upload UI & purge CDN
         uses: azure/CLI@v2
+        if: always()
         with:
           azcliversion: 2.53.0
           inlineScript: |
