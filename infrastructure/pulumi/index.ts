@@ -1,4 +1,3 @@
-import { listRedisKeysOutput, Redis } from '@pulumi/azure-native/cache';
 import { Database } from '@pulumi/azure-native/dbforpostgresql';
 import {
   BlobContainer,
@@ -9,7 +8,7 @@ import {
 } from '@pulumi/azure-native/storage';
 import { ListStorageAccountKeysResult } from '@pulumi/azure-native/storage/v20220901';
 import { getZoneOutput, WorkersSecret } from '@pulumi/cloudflare';
-import { all, Config, getProject, getStack, interpolate } from '@pulumi/pulumi';
+import { Config, getProject, getStack, interpolate } from '@pulumi/pulumi';
 import { RandomPassword } from '@pulumi/random';
 import { API } from './resources/API';
 import { BackstageConfiguration } from './resources/BackstageConfiguration';
@@ -106,16 +105,7 @@ export = async () => {
     accountId: config.require('cf-account-id')
   });
 
-  const redis = new Redis(`${id}-redis`, {
-    resourceGroupName: project.group.name,
-    sku: { name: 'Basic', family: 'C', capacity: 1 }
-  });
-
-  const redisKey = all([redis.name, redis.hostName, project.group.name]).apply(([name, _, resourceGroupName]) =>
-    listRedisKeysOutput({ resourceGroupName, name: name }).apply(r => r.primaryKey)
-  );
-
-  const WorkerApiToken = new RandomPassword(`${id}-worker-api-token`, {
+  const workerAPIToken = new RandomPassword(`${id}-worker-api-token`, {
     length: 32,
     special: true
   });
@@ -138,15 +128,11 @@ export = async () => {
       POSTGRES_SSL: 'true',
       POSTGRES_DB: database.name,
 
-      REDIS_HOST: redis.hostName,
-      REDIS_PORT: redis.sslPort.apply(p => p.toString()),
-      REDIS_PASSWORD: redisKey,
-      REDIS_SSL: 'true',
+      CF_ACCOUNT_ID: config.require('cf-account-id'),
+      CF_KV_NAMESPACE: kv.namespace.id,
+      CF_KV_TOKEN: kv.token.value,
 
-      KV_NAMESPACE_ID: kv.namespace.id,
-      KV_TOKEN: kv.token.value,
-
-      WORKER_API_TOKEN: WorkerApiToken.result,
+      WORKER_API_TOKEN: workerAPIToken.result,
 
       JWT_SECRET: config.require('jwt-secret'),
       TWITCH_CLIENT_ID: config.require('twitch-client-id'),
@@ -221,11 +207,12 @@ export = async () => {
   });
 
   // This might fail on the very first run, but it will work on the second run
+  // Secrets are only created if the associated worker is created
   new WorkersSecret(`${id}-worker-secret`, {
     name: 'WORKER_API_TOKEN',
     accountId: config.require('cf-account-id'),
     scriptName: worker.name,
-    secretText: WorkerApiToken.result
+    secretText: workerAPIToken.result
   });
 
   // MARK: Backstage

@@ -16,15 +16,6 @@ services:
       - -c
       - wal_level=logical
 
-  dragonfly:
-    image: 'docker.dragonflydb.io/dragonflydb/dragonfly'
-    ulimits:
-      memlock: -1
-    ports:
-      - '6379:6379'
-    volumes:
-      - dragonflydata:/data
-
   azurite:
     image: mcr.microsoft.com/azure-storage/azurite
     command: 'azurite --loose --blobHost 0.0.0.0 --blobPort 10000 --location /workspace --debug /workspace/debug.log'
@@ -36,6 +27,5 @@ services:
     volumes:
       - azuritedata:/workspace
 volumes:
-  dragonflydata:
   azuritedata:
   pgdata:

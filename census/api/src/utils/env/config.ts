@@ -5,11 +5,11 @@ import Mux from '@mux/mux-node';
 import { ApiClient } from '@twurple/api';
 import { AppTokenAuthProvider } from '@twurple/auth';
 import { TelemetryClient } from 'applicationinsights';
-import { Redis, RedisOptions } from 'ioredis';
 import z from 'zod';
 
 import { initialise } from '../../db/db.js';
 import { panic } from '../assert.js';
+import { CloudflareKVCache, KVCache, LocalKVCache } from '../cache.js';
 
 export const config = z.object({
   TWITCH_CLIENT_ID: z.string(),
@@ -35,10 +35,9 @@ export const config = z.object({
   MUX_TOKEN_ID: z.string().optional(),
   MUX_TOKEN_SECRET: z.string().optional(),
 
-  REDIS_HOST: z.string(),
-  REDIS_PORT: z.string(),
-  REDIS_PASSWORD: z.string().optional(),
-  REDIS_SSL: z.coerce.boolean().default(false),
+  CF_ACCOUNT_ID: z.string().optional(),
+  CF_KV_NAMESPACE: z.string().optional(),
+  CF_KV_TOKEN: z.string().optional(),
 
   DISCORD_WEBHOOK_URL: z.string().optional(),
   DISCORD_SERVER_ID: z.string().optional(),
@@ -102,15 +101,13 @@ export const services = async (variables: z.infer<typeof config>) => {
     return client;
   })();
 
-  const options: RedisOptions = {};
-  if (variables.REDIS_PASSWORD) {
-    options.password = variables.REDIS_PASSWORD;
-  }
-  if (variables.REDIS_SSL) {
-    options.tls = { rejectUnauthorized: false };
-  }
+  const cache: KVCache = (() => {
+    if (!variables.CF_KV_NAMESPACE || !variables.CF_KV_TOKEN || !variables.CF_ACCOUNT_ID) {
+      return new LocalKVCache();
+    }
 
-  const redis = new Redis(Number(variables.REDIS_PORT), variables.REDIS_HOST, options);
+    return new CloudflareKVCache(variables.CF_ACCOUNT_ID, variables.CF_KV_NAMESPACE, variables.CF_KV_TOKEN);
+  })();
 
   // Required clients
   const database = await initialise(
@@ -134,7 +131,7 @@ export const services = async (variables: z.infer<typeof config>) => {
     storage,
     twitch,
     telemetry,
-    redis,
+    cache,
     mux,
     logs
   };
