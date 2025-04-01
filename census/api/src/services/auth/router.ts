@@ -38,7 +38,7 @@ export type TokenPayload = z.infer<typeof TokenPayload>;
 
 export default async function register(router: FastifyInstance) {
   router.get('/signin', async (request, reply) => {
-    const { redis } = useEnvironment();
+    const { cache } = useEnvironment();
     const key = crypto.randomUUID();
 
     const { from, origin } = SignInRequest.parse(request.query);
@@ -46,17 +46,16 @@ export default async function register(router: FastifyInstance) {
     const state: SignInMeta = { key, expires: new Date(), origin };
     if (from) state.from = from;
 
-    await redis.set(key, JSON.stringify(state));
-
+    await cache.set(key, JSON.stringify(state));
     const url = createSignInRequest('/auth/redirect', key);
     return reply.redirect(url);
   });
 
   router.get('/redirect', async (request, reply) => {
-    const { variables, redis } = useEnvironment();
+    const { variables, cache } = useEnvironment();
     const query = TwitchRedirectResponse.parse(request.query);
 
-    const state = await redis.get(query.state);
+    const state = await cache.get(query.state);
     if (!state) throw new BadRequestError('You are trying to complete a login that was never started.');
     const { from, origin, expires } = SignInMeta.parse(JSON.parse(state));
 
@@ -88,7 +87,7 @@ export default async function register(router: FastifyInstance) {
       params.set('token', jwt);
 
       if (from) params.set('from', from);
-      await redis.del(query.state);
+      await cache.delete(query.state);
 
       return reply.redirect(`${origin}/auth/redirect?${params.toString()}`);
     } catch (error) {
