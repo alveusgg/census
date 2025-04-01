@@ -87,6 +87,7 @@ export interface IWebsite {
   readonly containerName: Input<string>;
   readonly endpointName: Input<string>;
   readonly profileName: Input<string>;
+  readonly resourceGroupName: Input<string>;
 }
 
 export class Website extends ComponentResource implements IWebsite {
@@ -96,6 +97,7 @@ export class Website extends ComponentResource implements IWebsite {
   public readonly endpointName: Output<string>;
   public readonly profileName: Output<string>;
   public readonly blobEndpoint: Output<string>;
+  public readonly resourceGroupName: Output<string>;
 
   constructor(id: string, args: WebsiteArgs, opts?: ResourceOptions) {
     super('sprinkle:index:Website', id, args, opts);
@@ -233,6 +235,7 @@ export class Website extends ComponentResource implements IWebsite {
     this.containerName = staticWebsite.containerName;
     this.endpointName = endpoint.name;
     this.profileName = profile.name;
+    this.resourceGroupName = args.project.group.name;
 
     this.registerOutputs();
   }
