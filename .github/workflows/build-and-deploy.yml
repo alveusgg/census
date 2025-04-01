@@ -173,6 +173,7 @@ jobs:
       - uses: pulumi/actions@v6
         name: Deploy infrastructure
         id: pulumi
+        continue-on-error: true
         with:
           command: up
           stack-name: alveusgg/prod
@@ -188,21 +189,22 @@ jobs:
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
           ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
 
+      - name: Setup wrangler config
+        run: |
+          mkdir -p .wrangler
+          echo '${{ steps.pulumi.outputs.wranglerConfig }}' > .wrangler/wrangler.generated.jsonc
+        working-directory: census/sync
+
       - name: Build & upload worker
         uses: cloudflare/wrangler-action@v3
-        if: always()
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           workingDirectory: census/sync
           command: |
-            mkdir -p .wrangler
-            echo '${{ steps.pulumi.outputs.wranglerConfig }}' > .wrangler/wrangler.generated.jsonc
             deploy --config .wrangler/wrangler.generated.jsonc --env prod
-            rm .wrangler/wrangler.generated.jsonc
 
       - name: Upload UI & purge CDN
         uses: azure/CLI@v2
-        if: always()
         with:
           azcliversion: 2.53.0
           inlineScript: |
