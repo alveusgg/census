@@ -200,6 +200,8 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           workingDirectory: census/sync
+          preCommands: |
+            echo "Current directory: $(pwd)"
           command: |
             deploy --config .wrangler/wrangler.generated.jsonc --env prod
 
