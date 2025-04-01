@@ -189,24 +189,15 @@ jobs:
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
           ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
 
-      - name: Setup wrangler config
-        run: |
-          echo "Current directory: $(pwd)"
-          ls -la
-          mkdir -p .wrangler
-          echo '${{ steps.pulumi.outputs.wranglerConfig }}' > .wrangler/wrangler.generated.jsonc
-        working-directory: census/sync
-
       - name: Build & upload worker
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           workingDirectory: census/sync
           preCommands: |
-            echo "Current directory: $(pwd)"
-            ls -la
+            echo '${{ steps.pulumi.outputs.wranglerConfig }}' > wrangler.generated.jsonc
           command: |
-            deploy --config .wrangler/wrangler.generated.jsonc --env prod
+            deploy --config wrangler.generated.jsonc --env prod
 
       - name: Upload UI & purge CDN
         uses: azure/CLI@v2
