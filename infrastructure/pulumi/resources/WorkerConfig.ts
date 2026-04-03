@@ -23,7 +23,6 @@ export interface WorkerConfigArgs {
   routes?: Input<
     {
       custom_domain: Input<boolean>;
-      override_existing_dns_record?: Input<boolean>;
       pattern: Input<string>;
     }[]
   >;
