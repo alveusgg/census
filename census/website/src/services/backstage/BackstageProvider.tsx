@@ -33,7 +33,7 @@ export const BackstageProvider: FC<PropsWithChildren> = ({ children }) => {
       });
 
       if (import.meta.env.PROD) {
-        const response = await fetch('/backstage.json');
+        const response = await fetch('/backstage');
         const remote = await response.json();
         providers.push({
           priority: 0,
