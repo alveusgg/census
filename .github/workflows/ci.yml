@@ -90,6 +90,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           packageManager: pnpm
+          wranglerVersion: '4.80.0'
           workingDirectory: census/website
           preCommands: |
             echo '${{ steps.pulumi.outputs.wranglerConfig }}' > wrangler.generated.jsonc
