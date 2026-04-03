@@ -11,13 +11,12 @@ import { getZoneOutput } from '@pulumi/cloudflare';
 import { Config, getProject, getStack, interpolate } from '@pulumi/pulumi';
 import { RandomPassword } from '@pulumi/random';
 import { API } from './resources/API';
-import { BackstageConfiguration } from './resources/BackstageConfiguration';
 import { ContainerAppsCluster } from './resources/ContainerAppsCluster';
 import { KV } from './resources/KV';
 import { PostgreSQLFlexibleServer } from './resources/PostgreSQLFlexibleServer';
 import { Project } from './resources/Project';
+import { SPAWorker } from './resources/SPAWorker';
 import { Website } from './resources/Website';
-import { WorkerConfig } from './resources/WorkerConfig';
 
 const stack = getStack();
 const id = `${getProject()}-${stack}`;
@@ -176,31 +175,19 @@ export = async () => {
     port: 3000
   });
 
-  const worker = new WorkerConfig(`${id}-worker-config`, {
+  const workerHostname = `prerelease-census-${stack}.strangecyan.com`;
+
+  const worker = new SPAWorker(`${id}-worker`, {
     account_id: config.require('cf-account-id'),
     name: 'sync',
     env: stack,
-    routes: [
-      {
-        custom_domain: true,
-        pattern: `prerelease-census-${stack}.strangecyan.com`
-      }
-    ],
-    assets: {
-      directory: 'ui',
-      not_found_handling: 'single-page-application'
-    }
-  });
-
-  // MARK: Backstage
-  const backstage = new BackstageConfiguration(`${id}-backstage`, {
-    ...website,
-    resourceGroupName: project.group.name,
-    env: {
+    route: workerHostname,
+    assetsDirectory: 'ui',
+    backstage: {
       variables: {
         apiBaseUrl: api.defaultUrl,
         ipxBaseUrl: imageOptimisation.defaultUrl,
-        syncWorkerUrl: worker.hostname.apply(h => `https://${h}`),
+        syncWorkerUrl: interpolate`https://${workerHostname}`,
         appInsightsConnectionString: project.insights.connectionString
       },
       flags: {}
@@ -210,6 +197,6 @@ export = async () => {
   return {
     ...website,
     ...worker,
-    backstage
+    backstage: worker.hostname.apply(h => `https://${h}/backstage`)
   };
 };
