@@ -86,9 +86,10 @@ jobs:
           ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
 
       - name: Build & upload worker
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@v3.14.1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          packageManager: pnpm
           workingDirectory: census/website
           preCommands: |
             echo '${{ steps.pulumi.outputs.wranglerConfig }}' > wrangler.generated.jsonc
