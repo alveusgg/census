@@ -1,25 +1,34 @@
-name: Deploy to Production
+name: CI
 
 on:
-  workflow_run:
-    workflows:
-      - Build IPX
-      - Build Census API
-      - Build Census UI
+  push:
     branches:
       - main
-    types:
-      - completed
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  build_ipx:
+    name: Build IPX
+    uses: ./.github/workflows/build-ipx.yml
+
+  build_census_api:
+    name: Build Census API
+    uses: ./.github/workflows/build-census-api.yml
+
+  build_census_ui:
+    name: Build Census UI
+    uses: ./.github/workflows/build-census-ui.yml
+
   deploy:
     name: Deploy to production
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    needs:
+      - build_ipx
+      - build_census_api
+      - build_census_ui
     permissions:
       id-token: write
       contents: read

@@ -1,9 +1,7 @@
 name: Build Census API
 
 on:
-  push:
-    branches:
-      - main
+  workflow_call:
 
 env:
   REGISTRY: ghcr.io
