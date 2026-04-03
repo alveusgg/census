@@ -60,6 +60,12 @@ export class CustomError extends Error {
   }
 }
 
+export class InternalServerError extends CustomError {
+  public name: string = 'InternalServerError';
+  public code: number = 500;
+  public category: TRPC_ERROR_CODE_KEY = 'INTERNAL_SERVER_ERROR';
+}
+
 export class NotFoundError extends CustomError {
   public name: string = 'NotFoundError';
   public code: number = 404;

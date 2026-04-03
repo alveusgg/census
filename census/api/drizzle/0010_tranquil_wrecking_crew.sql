@@ -1,1 +1,0 @@
-ALTER TABLE "achievements" ADD COLUMN "payload" json NOT NULL;

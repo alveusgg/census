@@ -8,23 +8,94 @@ import {
 import { initTRPC, TRPCError } from '@trpc/server';
 import { eq } from 'drizzle-orm';
 import { flatten } from 'flat';
-import { validateJWT as originalValidateJWT } from 'oslo/jwt';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 import SuperJSON from 'superjson';
+import { z } from 'zod';
 import { feeds } from '../db/schema/index.js';
 import { useDB } from '../db/transaction.js';
 import { getPermissions, Permissions } from '../services/auth/role.js';
 import { TokenPayload } from '../services/auth/router.js';
-import { useEnvironment, useUser, withUser } from '../utils/env/env.js';
+import { getUserByProviderId } from '../services/users/index.js';
+import { useEnvironment, withUser } from '../utils/env/env.js';
 import { createContext } from './context.js';
 
 const t = initTRPC.context<typeof createContext>().create({ transformer: SuperJSON });
 export const router = t.router;
 
-const validateJWT = async (token: string) => {
+const AlveusAuthProviderMetadata = z.object({
+  issuer: z.string(),
+  jwks_uri: z.string()
+});
+
+const AUTH_PROVIDER_CACHE_MS = 10 * 60 * 1000;
+const AUTH_PROVIDER_TIMEOUT_MS = 5_000;
+
+type AuthProvider = {
+  issuer: string;
+  jwks: ReturnType<typeof createRemoteJWKSet>;
+  expiresAt: number;
+};
+
+let authProviderCache: AuthProvider | undefined;
+let authProviderRequest: Promise<AuthProvider> | undefined;
+
+const fetchAuthProvider = async (configuredIssuer: string): Promise<AuthProvider> => {
+  const response = await fetch(new URL('/.well-known/oauth-authorization-server', configuredIssuer));
+  if (!response.ok) {
+    throw new NotAuthenticatedError('Your token not signed correctly');
+  }
+
+  const data = await response.json();
+  const provider = AlveusAuthProviderMetadata.parse(data);
+
+  return {
+    issuer: provider.issuer,
+    jwks: createRemoteJWKSet(new URL(provider.jwks_uri, provider.issuer), {
+      cacheMaxAge: AUTH_PROVIDER_CACHE_MS,
+      cooldownDuration: 30_000,
+      timeoutDuration: AUTH_PROVIDER_TIMEOUT_MS
+    }),
+    expiresAt: Date.now() + AUTH_PROVIDER_CACHE_MS
+  };
+};
+
+const getAuthProvider = async (): Promise<AuthProvider> => {
   const { variables } = useEnvironment();
+
+  if (
+    authProviderCache &&
+    authProviderCache.issuer === variables.ALVEUS_AUTH_ISSUER &&
+    authProviderCache.expiresAt > Date.now()
+  ) {
+    return authProviderCache;
+  }
+
+  if (!authProviderRequest) {
+    authProviderRequest = fetchAuthProvider(variables.ALVEUS_AUTH_ISSUER);
+  }
+
   try {
-    return originalValidateJWT('HS256', variables.JWT_SECRET, token);
-  } catch {
+    authProviderCache = await authProviderRequest;
+    return authProviderCache;
+  } finally {
+    authProviderRequest = undefined;
+  }
+};
+
+const validateJWT = async (token: string) => {
+  try {
+    const { issuer, jwks } = await getAuthProvider();
+    const { payload } = await jwtVerify(token, jwks, {
+      algorithms: ['RS256'],
+      issuer
+    });
+
+    return {
+      subject: payload.sub,
+      payload
+    };
+  } catch (error) {
+    console.error('error', error);
     throw new NotAuthenticatedError('Your token not signed correctly');
   }
 };
@@ -87,20 +158,24 @@ export const procedure = loggedProcedure.use(async ({ ctx, next }) => {
 
   try {
     const decoded = await validateJWT(token);
-    if (!decoded.subject) throw new NotAuthenticatedError('Your token is malformed.');
-    const payload = TokenPayload.parse(decoded.payload);
-
-    context.active().setValue(Symbol.for('ai.user.authUserId'), payload.id);
-    return withUser({ ...payload, points: ctx.points, achievements: ctx.achievements }, next);
-  } catch {
+    if (!decoded.subject) throw new NotAuthenticatedError('Your token is malformed as it does not have a subject.');
+    const payload = TokenPayload.safeParse(decoded.payload);
+    if (!payload.success)
+      throw new NotAuthenticatedError(
+        `Your token is malformed as it does not have the required payload: ${payload.error.message}`
+      );
+    const user = await getUserByProviderId(payload.data.sub);
+    context.active().setValue(Symbol.for('ai.user.authUserId'), user.id);
+    return withUser({ ...payload.data, ...user, points: ctx.points, achievements: ctx.achievements }, next);
+  } catch (error) {
+    console.error('error', error);
     throw new NotAuthenticatedError('Your token is malformed.');
   }
 });
 
 export const procedureWithPermissions = (required: keyof Permissions) => {
   return procedure.use(async ({ next }) => {
-    const user = useUser();
-    const permissions = await getPermissions(user.id);
+    const permissions = await getPermissions();
     if (!permissions[required]) {
       throw new ForbiddenError('You are not authorized to perform this action.');
     }

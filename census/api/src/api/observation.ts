@@ -4,6 +4,8 @@ import {
   createObservationsFromCapture,
   getObservationCount,
   getObservations,
+  mergeObservations,
+  type Observation,
   ObservationPayload
 } from '../services/observations/observations.js';
 import { procedure, procedureWithPermissions, router } from '../trpc/trpc.js';
@@ -36,10 +38,16 @@ export default router({
       return await notifyDiscordAboutObservation(input.observationId);
     }),
 
+  merge: procedureWithPermissions('capture')
+    .input(z.object({ targetObservationId: z.number(), sourceObservationIds: z.array(z.number()).min(1) }))
+    .mutation(async ({ input }) => {
+      return await mergeObservations(input.targetObservationId, input.sourceObservationIds);
+    }),
+
   list: procedure.input(z.object({ meta: Pagination, query: Query.optional() })).query(async ({ input }) => {
     const user = useUser();
     const count = await getObservationCount();
-    let data = await getObservations(input.meta);
+    let data: Observation[] = await getObservations(input.meta);
 
     // Fog of war: hide feedback from users who haven't given feedback yet
     // in order to avoid existing votes influencing new votes

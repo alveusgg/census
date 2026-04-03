@@ -1,10 +1,15 @@
 import { z } from 'zod';
+import { type User as CoreUser } from '../../db/schema/users.js';
 import { type TokenPayload } from '../../services/auth/router.js';
 import { panic } from '../assert.js';
 import { config, services } from './config.js';
 
-type Env = Awaited<ReturnType<typeof createEnvironment>>;
-export const createEnvironment = async () => {
+type Env = {
+  variables: z.infer<typeof config>;
+  host: string;
+} & Awaited<ReturnType<typeof services>>;
+
+export const createEnvironment = async (): Promise<Env> => {
   const variables = config.parse(process.env);
   const host = getHost(variables);
 
@@ -15,7 +20,7 @@ export const createEnvironment = async () => {
   };
 };
 
-export const getHost = (variables: z.infer<typeof config>) => {
+export const getHost = (variables: z.infer<typeof config>): string => {
   if (variables.NODE_ENV === 'development') {
     return `http://${variables.HOST}:${variables.PORT}`;
   }
@@ -38,7 +43,7 @@ type UserActions = {
   achievements: () => void;
 };
 
-type User = TokenPayload & UserActions;
+type User = TokenPayload & CoreUser & UserActions;
 
 const UserStore = createStore<User>('user');
 export const [withUser, useUser] = UserStore;

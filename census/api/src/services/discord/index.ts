@@ -1,8 +1,9 @@
-import { eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { images, observations } from '../../db/schema/index.js';
+import { eq } from 'drizzle-orm';
+import { observations } from '../../db/schema/index.js';
 import { useDB } from '../../db/transaction.js';
 import { useEnvironment, useUser } from '../../utils/env/env.js';
+import { getImagesForObservationId } from '../observations/observations.js';
 
 const Post = z.object({
   id: z.string()
@@ -33,9 +34,7 @@ export const notifyDiscordAboutObservation = async (observationId: number) => {
   const url = new URL(variables.DISCORD_WEBHOOK_URL);
   url.searchParams.set('wait', 'true');
 
-  const image = await db.query.images.findFirst({
-    where: eq(images.observationId, observationId)
-  });
+  const [image] = await getImagesForObservationId(observationId);
 
   if (!image) {
     console.error(`No image found for observation ${observationId}`);
@@ -43,7 +42,7 @@ export const notifyDiscordAboutObservation = async (observationId: number) => {
   }
 
   const payload: DiscordWebhookPayload = {
-    content: `${user.twitchUsername} has asked for help on this ID`,
+    content: `${user.username} has asked for help on this ID`,
     embeds: [
       {
         url: `https://alveuspollinatorcensus.org/o/${observationId}`,

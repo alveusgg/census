@@ -7,7 +7,7 @@ import {
   StorageAccount
 } from '@pulumi/azure-native/storage';
 import { ListStorageAccountKeysResult } from '@pulumi/azure-native/storage/v20220901';
-import { getZoneOutput, WorkersSecret } from '@pulumi/cloudflare';
+import { getZoneOutput } from '@pulumi/cloudflare';
 import { Config, getProject, getStack, interpolate } from '@pulumi/pulumi';
 import { RandomPassword } from '@pulumi/random';
 import { API } from './resources/API';
@@ -95,7 +95,7 @@ export = async () => {
     }
   });
 
-  const database = new Database(`${id}-db-api`, {
+  const database = new Database(`${id}-db`, {
     resourceGroupName: project.group.name,
     serverName: server.name
   });
@@ -180,39 +180,16 @@ export = async () => {
     account_id: config.require('cf-account-id'),
     name: 'sync',
     env: stack,
-    main: 'worker.ts',
-    vars: {
-      API_BASE_URL: api.defaultUrl
-    },
-    durable_objects: {
-      bindings: [
-        {
-          class_name: 'TldrawDurableObject',
-          name: 'TLDRAW_DURABLE_OBJECT'
-        }
-      ]
-    },
-    migrations: [
-      {
-        tag: 'v1',
-        new_classes: ['TldrawDurableObject']
-      }
-    ],
     routes: [
       {
         custom_domain: true,
-        pattern: interpolate`${id}-sync.strangecyan.com`
+        pattern: 'census.strangecyan.com'
       }
-    ]
-  });
-
-  // This might fail on the very first run, but it will work on the second run
-  // Secrets are only created if the associated worker is created
-  new WorkersSecret(`${id}-worker-secret`, {
-    name: 'WORKER_API_TOKEN',
-    accountId: config.require('cf-account-id'),
-    scriptName: worker.name,
-    secretText: workerAPIToken.result
+    ],
+    assets: {
+      directory: 'ui',
+      not_found_handling: 'single-page-application'
+    }
   });
 
   // MARK: Backstage

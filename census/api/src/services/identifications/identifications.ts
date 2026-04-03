@@ -4,6 +4,7 @@ import { feedback, identifications, observations } from '../../db/schema/index.j
 import { useDB, withTransaction } from '../../db/transaction.js';
 import { useUser } from '../../utils/env/env.js';
 import { getTaxaInfo } from '../inat/index.js';
+import { getObservation } from '../observations/observations.js';
 import { recordAchievement } from '../points/achievement.js';
 
 export const suggestIdentification = async (observationId: number, iNatId: number) => {
@@ -132,18 +133,15 @@ export const getIdentification = async (identificationId: number) => {
     with: {
       shiny: true,
       confirmer: true,
-      suggester: true,
-      observation: {
-        with: {
-          images: true,
-          observer: true
-        }
-      }
+      suggester: true
     }
   });
 
   if (!identification) throw new NotFoundError('Identification not found');
-  return identification;
+  return {
+    ...identification,
+    observation: await getObservation(identification.observationId)
+  };
 };
 
 export const getIdentificationsGroupedBySource = async () => {

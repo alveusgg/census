@@ -8,7 +8,11 @@ export default router({
   current: procedure.query(async () => {
     return getCurrentSeason();
   }),
-  shinies: procedure.input(z.object({ seasonId: z.number() })).query(async ({ input }) => {
+  shinies: procedure.input(z.object({ seasonId: z.number().optional() })).query(async ({ input }) => {
+    if (!input.seasonId) {
+      const season = await getCurrentSeason();
+      return getShiniesForSeason(season.id);
+    }
     return getShiniesForSeason(input.seasonId);
   })
 });

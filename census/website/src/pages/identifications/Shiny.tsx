@@ -1,9 +1,7 @@
 import SiChevronDown from '@/components/icons/SiChevronDown';
 import { useModal } from '@/components/modal/useModal';
-import { Shiny, useCurrentSeason, useShiniesForSeason } from '@/services/api/seasons';
-import { Variables } from '@/services/backstage/config';
+import { Shiny, useShiniesForSeason } from '@/services/api/seasons';
 import { cn } from '@/utils/cn';
-import { useVariable } from '@alveusgg/backstage';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useMeasure } from '@uidotdev/usehooks';
 import { addMonths, format } from 'date-fns';
@@ -12,9 +10,7 @@ import { ComponentProps, FC, useMemo, useState } from 'react';
 import { IdentificationModal, IdentificationProps } from './Identification';
 
 export const ShiniesForSeason = () => {
-  const query = useCurrentSeason();
-  const season = useSuspenseQuery(query);
-  const shiniesQuery = useShiniesForSeason(season.data.id);
+  const shiniesQuery = useShiniesForSeason();
   const shinies = useSuspenseQuery(shiniesQuery);
 
   const [ref, { height }] = useMeasure();
@@ -140,7 +136,6 @@ export const ShinyThumbnail: FC<ShinyThumbnailProps> = ({ shiny }) => {
 };
 
 export const EncryptedImg: FC<ComponentProps<'img'> & { iv: string }> = ({ iv, src, ...props }) => {
-  const imageEncryptionKey = useVariable<Variables>('imageEncryptionKey');
   return (
     <img
       key={src}
@@ -151,7 +146,7 @@ export const EncryptedImg: FC<ComponentProps<'img'> & { iv: string }> = ({ iv, s
         e.currentTarget.setAttribute('data-retried', 'true');
         e.currentTarget.src = e.currentTarget.src;
       }}
-      src={`${src}?key=${imageEncryptionKey}&iv=${iv}`}
+      src={src}
       {...props}
     />
   );

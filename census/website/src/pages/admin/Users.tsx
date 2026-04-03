@@ -2,7 +2,7 @@ import { Button } from '@/components/controls/button/paper';
 import { Checkbox } from '@/components/forms/inputs/CheckboxInput';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/table/Table';
 import { Clipboard } from '@/layouts/Clipboard';
-import { usePromoteUser, useUsers } from '@/services/api/users';
+import { useUsers } from '@/services/api/users';
 import { ColumnDef, RowSelectionState, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { FC, useState } from 'react';
 
@@ -90,7 +90,6 @@ export const Users: FC = () => {
   const selected = table.getFilteredSelectedRowModel();
 
   const confirm = useConfirm();
-  const promoteUser = usePromoteUser();
 
   return (
     <Clipboard className="md:py-20">
@@ -145,10 +144,8 @@ export const Users: FC = () => {
                                 title: 'Change role to expert?',
                                 description: `This will give ${row.original.username} expert permissions.`,
                                 onConfirm: async () => {
-                                  await promoteUser.mutateAsync({
-                                    userId: row.original.id,
-                                    role: 'expert'
-                                  });
+                                  // TODO: promoteUser endpoint not available - needs to be implemented in API
+                                  console.warn('promoteUser endpoint not available');
                                 }
                               });
                             }}

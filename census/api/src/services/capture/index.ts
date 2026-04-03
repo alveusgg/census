@@ -148,9 +148,10 @@ export const getCapture = async (id: number) => {
   const capture = await db.query.captures.findFirst({
     where: eq(captures.id, id),
     with: {
-      observations: {
+      sightings: {
         with: {
-          images: true
+          images: true,
+          observation: true
         }
       }
     }

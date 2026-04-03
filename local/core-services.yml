@@ -1,8 +1,8 @@
-version: '3.8'
-
+name: census-core-services
 services:
   db:
     image: postgres:latest
+    container_name: 'cc-db'
     environment:
       POSTGRES_USER: myuser
       POSTGRES_PASSWORD: mypassword
@@ -10,7 +10,7 @@ services:
     ports:
       - '5432:5432'
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - ccccpgdata:/var/lib/postgresql
     command:
       - postgres
       - -c
@@ -19,13 +19,13 @@ services:
   azurite:
     image: mcr.microsoft.com/azure-storage/azurite
     command: 'azurite --loose --blobHost 0.0.0.0 --blobPort 10000 --location /workspace --debug /workspace/debug.log'
-    container_name: 'azurite'
+    container_name: 'cc-azurite'
     hostname: azurite
     restart: always
     ports:
       - '10000:10000'
     volumes:
-      - azuritedata:/workspace
+      - ccazuritedata:/workspace
 volumes:
-  azuritedata:
-  pgdata:
+  ccazuritedata:
+  ccccpgdata:

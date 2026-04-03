@@ -2,10 +2,26 @@ import { NotFoundError, ProcessingError } from '@alveusgg/error';
 import { RoomSnapshot } from '@tldraw/sync-core';
 import { TLStoreSnapshot } from '@tldraw/tlschema';
 import { randomUUID } from 'crypto';
-import { eq } from 'drizzle-orm';
-import { documents, guides } from '../../db/schema/guides.js';
+import { and, eq, isNotNull } from 'drizzle-orm';
+import { documents, Guide, guides } from '../../db/schema/guides.js';
 import { useDB } from '../../db/transaction.js';
 import { useUser } from '../../utils/env/env.js';
+
+export const getPublishedGuides = async () => {
+  const db = useDB();
+  const published = await db.query.guides.findMany({
+    where: and(eq(guides.available, true), isNotNull(guides.publishedDocumentId))
+  });
+  const guidesByCategory: Record<string, Guide[]> = {};
+  for (const guide of published) {
+    const category = guide.category ?? 'uncategorized';
+    if (!guidesByCategory[category]) {
+      guidesByCategory[category] = [];
+    }
+    guidesByCategory[category].push(guide);
+  }
+  return guidesByCategory;
+};
 
 export const getGuideBySlug = async (slug: string) => {
   const db = useDB();

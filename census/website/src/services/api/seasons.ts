@@ -12,10 +12,10 @@ export const useCurrentSeason = () => {
 
 export type Shiny = TypeFromOutput<RouterOutput['seasons']['shinies']>;
 
-export const useShiniesForSeason = (seasonId: number) => {
+export const useShiniesForSeason = (seasonId?: number) => {
   const trpc = useAPI();
   return queryOptions({
-    queryKey: key('seasons', 'shinies', seasonId.toString()),
+    queryKey: key('seasons', 'shinies', seasonId?.toString() ?? 'current'),
     queryFn: () => trpc.seasons.shinies.query({ seasonId })
   });
 };

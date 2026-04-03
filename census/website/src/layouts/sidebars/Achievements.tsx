@@ -13,7 +13,6 @@ import {
   useRedeemAchievement,
   useRedeemAllAchievements
 } from '@/services/api/me';
-import { useCurrentSeason } from '@/services/api/seasons';
 import { cn } from '@/utils/cn';
 import { levels } from '@alveusgg/census-levels';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -32,9 +31,7 @@ const getLevelForPoints = (points: number) => {
 
 export const Achievements = () => {
   const [open, setOpen] = useAchievements();
-  const query = useCurrentSeason();
-  const season = useSuspenseQuery(query);
-  const pointsQuery = usePoints(season.data.startDate);
+  const pointsQuery = usePoints();
   const points = useSuspenseQuery(pointsQuery);
   const pendingQuery = usePendingAchievements();
   const pending = useSuspenseQuery(pendingQuery);

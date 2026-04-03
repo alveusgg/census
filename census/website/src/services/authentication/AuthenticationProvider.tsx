@@ -4,9 +4,7 @@ import { StoreApi } from 'zustand';
 import { AuthenticationStatus } from './utils';
 
 export const Account = z.object({
-  id: z.coerce.number(),
-  twitchUserId: z.string(),
-  twitchUsername: z.string()
+  id: z.string()
 });
 
 export type Account = z.infer<typeof Account>;

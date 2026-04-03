@@ -40,7 +40,7 @@ export const Scrollable = () => {
           </div>
         }
       >
-        <div className="flex-1 flex flex-col overflow-y-scroll @container py-6 px-8">
+        <div className="flex-1 flex flex-col overflow-y-scroll @container py-6 px-8 relative">
           <Outlet />
         </div>
       </Suspense>

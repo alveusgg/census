@@ -1,7 +1,7 @@
 import { relations } from 'drizzle-orm';
 import { index, integer, json, pgEnum, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
 import { feeds } from './feeds.js';
-import { observations } from './observations.js';
+import { sightings } from './sightings.js';
 import { users } from './users.js';
 
 export const captureStatusEnum = pgEnum('capture_status', ['draft', 'pending', 'processing', 'complete', 'archived']);
@@ -42,5 +42,5 @@ export const capturesRelations = relations(captures, ({ one, many }) => ({
     fields: [captures.capturedBy],
     references: [users.id]
   }),
-  observations: many(observations)
+  sightings: many(sightings)
 }));

@@ -3,7 +3,7 @@ import { Suspense } from 'react';
 import { RouterProvider } from 'react-router-dom';
 import { ComponentErrorBoundary } from './components/feedback/ErrorBoundary';
 import { Toaster } from './components/feedback/Toaster';
-import { router } from './router';
+import { useRouter } from './router';
 import { CritterAuthenticationProvider } from './services/authentication/CritterAuthenticationProvider';
 import { BackstageProvider } from './services/backstage/BackstageProvider';
 import { AppInsightsProvider } from './services/insights/AppInsightsProvider';
@@ -22,7 +22,7 @@ export const App = () => {
                   <ComponentErrorBoundary>
                     <APIProvider>
                       <Toaster />
-                      <RouterProvider router={router} />
+                      <Router />
                     </APIProvider>
                   </ComponentErrorBoundary>
                 </CritterAuthenticationProvider>
@@ -33,4 +33,9 @@ export const App = () => {
       </QueryProvider>
     </Suspense>
   );
+};
+
+export const Router = () => {
+  const router = useRouter();
+  return <RouterProvider router={router} />;
 };

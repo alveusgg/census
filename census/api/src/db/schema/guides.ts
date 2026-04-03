@@ -1,16 +1,22 @@
 import { RoomSnapshot } from '@tldraw/sync-core';
 import { relations } from 'drizzle-orm';
-import { integer, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, integer, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { users } from './users.js';
 
 export const guides = pgTable('guides', {
   id: uuid('id').primaryKey(),
   slug: text('slug').notNull(),
   title: text('title').notNull(),
+  featured: boolean('featured').default(false),
+  available: boolean('available').default(false),
+  category: text('category'),
+  tags: text('tags').array().default([]).notNull(),
   description: text('description').notNull(),
   publishedDocumentId: uuid('published_document_id'),
   draftDocumentId: uuid('draft_document_id').notNull()
 });
+
+export type Guide = typeof guides.$inferSelect;
 
 export const guideRelations = relations(guides, ({ one }) => ({
   published: one(documents, {

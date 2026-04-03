@@ -88,6 +88,9 @@ const Identification: FC<IdentificationProps> = ({ identificationId }) => {
               iNat
             </Link>
           </div>
+          <pre>{JSON.stringify(identification.data.observation.credits, null, 2)}</pre>
+          <pre>{JSON.stringify(identification.data.confirmer, null, 2)}</pre>
+          <pre>{JSON.stringify(identification.data.suggester, null, 2)}</pre>
         </Note>
       </div>
     </div>

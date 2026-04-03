@@ -4,6 +4,7 @@ import {
   getDocumentById,
   getGuideById,
   getGuideBySlug,
+  getPublishedGuides,
   publishGuide,
   updateDocument
 } from '../services/guides/index.js';
@@ -19,6 +20,9 @@ export default router({
     })
   },
   guide: {
+    getPublished: publicProcedure.query(async () => {
+      return await getPublishedGuides();
+    }),
     getBySlug: publicProcedure.input(z.object({ slug: z.string() })).query(async ({ input }) => {
       return await getGuideBySlug(input.slug);
     }),

@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { users } from '../../db/schema/index.js';
-import { useEnvironment } from '../../utils/env/env.js';
+import { useEnvironment, useUser } from '../../utils/env/env.js';
 
 export type Permissions = {
   vote: boolean;
@@ -12,9 +12,11 @@ export type Permissions = {
   moderate: boolean;
 };
 
-export const getPermissions = async (userId: number) => {
+export const getPermissions = async () => {
   const env = useEnvironment();
-  const [user] = await env.db.select().from(users).where(eq(users.id, userId));
+  const { roles, sub } = useUser();
+
+  const [user] = await env.db.select().from(users).where(eq(users.providerId, sub));
 
   const permissions = {
     vote: false,
@@ -28,11 +30,11 @@ export const getPermissions = async (userId: number) => {
 
   if (!user) return permissions;
 
-  if (user.role === 'pending') {
+  if (user.status === 'pending') {
     return permissions;
   }
 
-  if (user.role === 'admin') {
+  if (roles.includes('census_admin')) {
     permissions.vote = true;
     permissions.capture = true;
     permissions.confirm = true;
@@ -43,7 +45,7 @@ export const getPermissions = async (userId: number) => {
     return permissions;
   }
 
-  if (user.role === 'moderator') {
+  if (roles.includes('census_moderator')) {
     permissions.vote = true;
     permissions.capture = true;
     permissions.confirm = true;
@@ -53,34 +55,8 @@ export const getPermissions = async (userId: number) => {
     return permissions;
   }
 
-  if (user.role === 'expert') {
-    permissions.vote = true;
-    permissions.capture = true;
-    permissions.confirm = true;
-    permissions.research = true;
-    permissions.suggest = true;
-    return permissions;
-  }
-
-  if (user.role === 'capturer') {
-    permissions.vote = true;
-    permissions.capture = true;
-    permissions.suggest = true;
-    return permissions;
-  }
-
-  if (user.role === 'researcher') {
-    permissions.vote = true;
-    permissions.suggest = true;
-    permissions.research = true;
-    return permissions;
-  }
-
-  if (user.role === 'member') {
-    permissions.vote = true;
-    permissions.suggest = true;
-    return permissions;
-  }
-
+  permissions.vote = true;
+  permissions.capture = true;
+  permissions.suggest = true;
   return permissions;
 };

@@ -11,26 +11,39 @@ import {
   redeemAll
 } from '../services/points/achievement.js';
 import { getPlaceInLeaderboard, getPointsForUser } from '../services/points/points.js';
+import { getCurrentSeason } from '../services/seasons/season.js';
 import { getUser, onboardUser } from '../services/users/index.js';
 import { procedure, router } from '../trpc/trpc.js';
 import { assert } from '../utils/assert.js';
 import { useEnvironment, useUser } from '../utils/env/env.js';
 
 export default router({
+  me: procedure.query(async () => {
+    const user = useUser();
+    return user;
+  }),
   onboard: procedure.input(OnboardingFormSchema).mutation(async ({ input, ctx }) => {
     const { id } = useUser();
     const user = await getUser(id);
-    if (user.role !== 'pending') throw new BadRequestError(`You have already been onboarded.`);
+    if (user.status !== 'pending') throw new BadRequestError(`You have already been onboarded.`);
     await onboardUser(id, input);
     ctx.points();
     ctx.achievements();
   }),
-  points: procedure.input(z.object({ from: z.date() })).query(async ({ input }) => {
+  points: procedure.input(z.object({ from: z.date().optional() })).query(async ({ input }) => {
     const user = useUser();
+    if (!input.from) {
+      const season = await getCurrentSeason();
+      return getPointsForUser(user.id, season.startDate);
+    }
     return getPointsForUser(user.id, input.from);
   }),
-  place: procedure.input(z.object({ from: z.date() })).query(async ({ input }) => {
+  place: procedure.input(z.object({ from: z.date().optional() })).query(async ({ input }) => {
     const user = useUser();
+    if (!input.from) {
+      const season = await getCurrentSeason();
+      return getPlaceInLeaderboard(user.id, season.startDate);
+    }
     return getPlaceInLeaderboard(user.id, input.from);
   }),
   achievements: {
@@ -55,8 +68,7 @@ export default router({
     })
   },
   permissions: procedure.query(async () => {
-    const user = useUser();
-    return getPermissions(user.id);
+    return getPermissions();
   }),
   logs: procedure.query(async () => {
     const { logs, variables, db } = useEnvironment();

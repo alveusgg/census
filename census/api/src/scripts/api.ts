@@ -17,9 +17,9 @@ const seed = async () => {
   });
 
   await environment.db.insert(users).values({
-    role: 'admin',
+    status: 'active',
     username,
-    twitchUserId
+    providerId: twitchUserId
   });
 
   console.log(`${username} has been added to the admin role.`);
