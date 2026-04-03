@@ -9,15 +9,6 @@ declare module 'react' {
   }
 }
 
-import serviceWorkerUrl from '../service-worker.ts?url';
-
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register(serviceWorkerUrl);
-    console.log('service worker registered');
-  });
-}
-
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
