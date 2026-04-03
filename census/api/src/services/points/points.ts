@@ -33,7 +33,7 @@ export const getLeaderboard = async (from: Date) => {
     .leftJoin(achievements, eq(users.id, achievements.userId))
     .where(
       and(
-        eq(users.banned, false),
+        eq(users.status, 'active'),
         gte(achievements.createdAt, from),
         lte(achievements.createdAt, new Date()),
         eq(achievements.redeemed, true),

@@ -31,3 +31,22 @@ export const useNotifyDiscordAboutObservation = () => {
     }
   });
 };
+
+export const useMergeObservations = () => {
+  const trpc = useAPI();
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      targetObservationId,
+      sourceObservationIds
+    }: {
+      targetObservationId: number;
+      sourceObservationIds: number[];
+    }) => {
+      return await trpc.observation.merge.mutate({ targetObservationId, sourceObservationIds });
+    },
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: key('observations') });
+    }
+  });
+};

@@ -1,13 +1,13 @@
-import { BadRequestError, DownstreamError } from '@alveusgg/error';
+import { BadRequestError, DownstreamError, NotFoundError } from '@alveusgg/error';
 import { randomUUID } from 'crypto';
-import { count, desc, eq, isNull } from 'drizzle-orm';
+import { count, desc, eq, inArray, isNull } from 'drizzle-orm';
 import ffmpeg from 'fluent-ffmpeg';
 import { writeFile } from 'fs/promises';
 import { ReadableStream } from 'node:stream/web';
 import { Readable } from 'stream';
 import { z } from 'zod';
 import { Pagination } from '../../api/observation.js';
-import { BoundingBox, images, observations } from '../../db/schema/index.js';
+import { BoundingBox, identifications, images, observations, sightings } from '../../db/schema/index.js';
 import { useDB, withTransaction } from '../../db/transaction.js';
 import { assert } from '../../utils/assert.js';
 import { useEnvironment, useUser } from '../../utils/env/env.js';
@@ -26,12 +26,70 @@ export const ObservationPayload = z.array(Selection);
 
 export type ObservationPayload = z.infer<typeof ObservationPayload>;
 
-export const getObservation = async (id: number) => {
+const getObservationRecord = async (id: number) => {
   const db = useDB();
   return await db.query.observations.findFirst({
     where: eq(observations.id, id),
-    with: { images: true, capture: true }
+    with: {
+      sightings: {
+        with: {
+          images: true,
+          observer: true,
+          capture: {
+            with: {
+              capturer: true
+            }
+          }
+        }
+      },
+      identifications: {
+        with: {
+          suggester: true,
+          feedback: {
+            with: {
+              submitter: true
+            }
+          },
+          shiny: true
+        }
+      }
+    }
   });
+};
+
+type ObservationRecord = NonNullable<Awaited<ReturnType<typeof getObservationRecord>>>;
+
+const dedupeUsers = <T extends { id: number }>(users: T[]) => {
+  return Array.from(new Map(users.map(user => [user.id, user])).values());
+};
+
+export const shapeObservation = (observation: ObservationRecord) => {
+  const flattenedImages = observation.sightings
+    .flatMap(sighting =>
+      sighting.images.map(image => ({
+        ...image,
+        sightingId: sighting.id
+      }))
+    )
+    .sort((left, right) => Number(left.timestamp) - Number(right.timestamp));
+
+  return {
+    ...observation,
+    sightings: observation.sightings.sort((left, right) => left.observedAt.getTime() - right.observedAt.getTime()),
+    images: flattenedImages,
+    credits: {
+      observedBy: dedupeUsers(observation.sightings.map(sighting => sighting.observer)),
+      capturedBy: dedupeUsers(observation.sightings.map(sighting => sighting.capture.capturer))
+    }
+  };
+};
+
+export type Observation = ReturnType<typeof shapeObservation>;
+
+export const getObservation = async (id: number): Promise<Observation> => {
+  const observation = await getObservationRecord(id);
+  if (!observation) throw new NotFoundError('Observation not found');
+  return shapeObservation(observation);
 };
 
 export const createObservationsFromCapture = async (captureId: number, observations: ObservationPayload[]) => {
@@ -59,12 +117,21 @@ const createObservations = async (captureId: number, selections: Selection[], ni
 
     await new Promise(resolve => setTimeout(resolve, 4000));
 
+    const observedAt = new Date();
     const [observation] = await db
       .insert(observations)
       .values({
+        observedAt
+      })
+      .returning();
+
+    const [sighting] = await db
+      .insert(sightings)
+      .values({
+        observationId: observation.id,
         captureId,
         nickname,
-        observedAt: new Date(),
+        observedAt,
         observedBy: user.id
       })
       .returning();
@@ -80,7 +147,7 @@ const createObservations = async (captureId: number, selections: Selection[], ni
         const url = await getFrameFromVideo(video, stats, timestamp);
 
         await db.insert(images).values({
-          observationId: observation.id,
+          sightingId: sighting.id,
           timestamp: timestamp.toString(),
           url,
           width,
@@ -95,10 +162,8 @@ const createObservations = async (captureId: number, selections: Selection[], ni
 };
 
 export const getImagesForObservationId = async (observationId: number) => {
-  const db = useDB();
-  return await db.query.images.findMany({
-    where: eq(images.observationId, observationId)
-  });
+  const observation = await getObservation(observationId);
+  return observation.images;
 };
 
 export const getObservationCount = async () => {
@@ -107,12 +172,21 @@ export const getObservationCount = async () => {
   return result.count;
 };
 
-export const getObservations = (pagination: Pagination) => {
+export const getObservations = async (pagination: Pagination): Promise<Observation[]> => {
   const db = useDB();
-  return db.query.observations.findMany({
+  const rows = await db.query.observations.findMany({
     with: {
-      images: true,
-      capture: true,
+      sightings: {
+        with: {
+          images: true,
+          observer: true,
+          capture: {
+            with: {
+              capturer: true
+            }
+          }
+        }
+      },
       identifications: {
         with: {
           suggester: true,
@@ -123,17 +197,71 @@ export const getObservations = (pagination: Pagination) => {
           },
           shiny: true
         }
-      },
-      observer: true
+      }
     },
     orderBy: desc(observations.observedAt),
     where: isNull(observations.confirmedAs),
-    columns: {
-      moderated: false
-    },
     limit: pagination.size,
     offset: (pagination.page - 1) * pagination.size
   });
+
+  return rows.map(shapeObservation);
+};
+
+export const mergeObservations = async (
+  targetObservationId: number,
+  sourceObservationIds: number[]
+): Promise<Observation> => {
+  const ids = [...new Set(sourceObservationIds)].filter(id => id !== targetObservationId);
+  if (ids.length === 0) throw new BadRequestError('No source observations selected');
+
+  const db = useDB();
+  return await db.transaction(async tx =>
+    withTransaction(tx, async () => {
+      const target = await tx.query.observations.findFirst({
+        where: eq(observations.id, targetObservationId)
+      });
+
+      if (!target) throw new NotFoundError('Target observation not found');
+
+      const sources = await tx.query.observations.findMany({
+        where: inArray(observations.id, ids)
+      });
+
+      if (sources.length !== ids.length) throw new NotFoundError('One or more source observations were not found');
+
+      await tx
+        .update(sightings)
+        .set({ observationId: targetObservationId })
+        .where(inArray(sightings.observationId, ids));
+
+      await tx
+        .update(identifications)
+        .set({ observationId: targetObservationId })
+        .where(inArray(identifications.observationId, ids));
+
+      const earliestObservedAt = [target.observedAt, ...sources.map(source => source.observedAt)].reduce(
+        (earliest, current) => (current.getTime() < earliest.getTime() ? current : earliest)
+      );
+
+      await tx
+        .update(observations)
+        .set({
+          observedAt: earliestObservedAt,
+          removed: target.removed && sources.every(source => source.removed),
+          confirmedAs:
+            target.confirmedAs ?? sources.map(source => source.confirmedAs).find(value => value != null) ?? null,
+          moderated: [...target.moderated, ...sources.flatMap(source => source.moderated)],
+          discordThreadId:
+            target.discordThreadId ?? sources.map(source => source.discordThreadId).find(value => value != null) ?? null
+        })
+        .where(eq(observations.id, targetObservationId));
+
+      await tx.delete(observations).where(inArray(observations.id, ids));
+
+      return await getObservation(targetObservationId);
+    })
+  );
 };
 
 const scaleBoundingBox = (boundingBox: BoundingBox, width: number, height: number) => {

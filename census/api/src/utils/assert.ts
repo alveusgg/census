@@ -6,12 +6,12 @@ import { report } from './logs.js';
 type Assert = (condition: unknown, message: string) => asserts condition;
 type ShapeAssert = <S extends ZodSchema>(schema: S, data: unknown, message: string) => asserts data is z.infer<S>;
 
-export const panic = (message: string) => {
+export const panic = (message: string): never => {
   const { telemetry } = useEnvironment();
   const error = new AssertionError({ message });
   report(error);
   if (telemetry) {
-    telemetry
+    void telemetry
       .flush()
       .then(() => {
         console.error(error);
@@ -21,7 +21,8 @@ export const panic = (message: string) => {
         console.error(error);
         process.exit(1);
       });
-    return;
+
+    throw error;
   }
 
   console.error(error);

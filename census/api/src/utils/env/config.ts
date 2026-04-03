@@ -14,6 +14,9 @@ import { CloudflareKVCache, KVCache, LocalKVCache } from '../cache.js';
 export const config = z.object({
   TWITCH_CLIENT_ID: z.string(),
   TWITCH_CLIENT_SECRET: z.string(),
+  ALVEUS_AUTH_ISSUER: z.string(),
+  ALVEUS_AUTH_CLIENT_ID: z.string(),
+  ALVEUS_AUTH_CLIENT_SECRET: z.string(),
 
   NODE_ENV: z.enum(['development', 'production']),
   HOST: z.string(),
@@ -44,8 +47,6 @@ export const config = z.object({
   DISCORD_IS_FORUM: z.coerce.boolean().optional().default(false),
   APPLICATIONINSIGHTS_CONNECTION_STRING: z.string().optional(),
   WORKSPACE_ID: z.string().optional(),
-
-  JWT_SECRET: z.string().transform(value => Buffer.from(value, 'hex')),
 
   DEV_FLAG_USE_TWITCH_CLIP_DIRECTLY: z.coerce.boolean().optional().default(false)
 });

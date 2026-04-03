@@ -6,10 +6,20 @@ import { toast } from 'sonner';
 import { key, useAPI } from '../query/hooks';
 import { RouterOutput, TypeFromOutput } from './helpers';
 
-export const usePoints = (from: Date) => {
+export const useMe = () => {
   const api = useAPI();
   return queryOptions({
-    queryKey: key('points', from.toISOString()),
+    queryKey: key('me'),
+    queryFn: () => api.me.me.query()
+  });
+};
+
+export type Me = TypeFromOutput<RouterOutput['me']['me']>;
+
+export const usePoints = (from?: Date) => {
+  const api = useAPI();
+  return queryOptions({
+    queryKey: key('points', from?.toISOString() ?? 'current'),
     queryFn: () => api.me.points.query({ from }),
     refetchOnWindowFocus: true
   });
@@ -95,6 +105,20 @@ export const useOnboardUser = () => {
     },
     onSuccess: () => {
       client.invalidateQueries({ queryKey: key('permissions') });
+    }
+  });
+};
+
+export const useLeaderboard = (from?: Date) => {
+  const trpc = useAPI();
+  return queryOptions({
+    queryKey: key('points', 'leaderboard'),
+    queryFn: async () => {
+      const [leaderboard, place] = await Promise.all([
+        trpc.users.leaderboard.query({ from }),
+        trpc.me.place.query({ from })
+      ]);
+      return { leaderboard, place };
     }
   });
 };

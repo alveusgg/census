@@ -1,0 +1,40 @@
+name: Build Census UI
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build UI
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          run_install: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm i
+
+      - name: Build ui
+        run: |
+          pnpm --filter=@alveusgg/census-website build
+          pnpm --filter=@alveusgg/census-website deploy app
+
+      - name: Publish build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-build
+          path: app/dist

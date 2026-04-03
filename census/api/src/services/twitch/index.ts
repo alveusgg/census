@@ -103,7 +103,7 @@ export const getClosestColor = (color: Color) => {
 };
 
 const regex = /-\d+x\d+/;
-export const getThumbnailUrl = (url: string) => url.replace(regex, '');
+export const getThumbnailUrl = (url: string) => url.replace(regex, '-1920x1080');
 
 export const getEncodedTimestamp = async (url: string) => {
   const thumbnail = await fetch(url);

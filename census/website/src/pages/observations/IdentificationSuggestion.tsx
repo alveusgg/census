@@ -5,9 +5,10 @@ import SiCommentCheck from '@/components/icons/SiCommentCheck';
 import SiMessage from '@/components/icons/SiMessage';
 import { useModal } from '@/components/modal/useModal';
 import { Identification as IdentificationType } from '@/services/api/observations';
-import { useUser } from '@/services/authentication/hooks';
+import { useMe } from '@/services/api/me';
 import { useHasPermission } from '@/services/permissions/hooks';
 import { cn } from '@/utils/cn';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { FC } from 'react';
 import { ConfirmIdentificationModal, ConfirmIdentificationModalProps } from './ConfirmIdentificationModal';
@@ -20,7 +21,7 @@ interface IdentificationSuggestionProps {
 }
 
 export const IdentificationSuggestion: FC<IdentificationSuggestionProps> = ({ tree }) => {
-  const me = useUser();
+  const { data: me } = useSuspenseQuery(useMe());
   const identificationFeedbackModalProps = useModal<IdentificationFeedbackModalProps>();
   const confirmIdentificationModalProps = useModal<ConfirmIdentificationModalProps>();
   const feedbackModalProps = useModal<FeedbackModalProps>();

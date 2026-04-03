@@ -19,7 +19,6 @@ import { Slide } from './gallery/GalleryProvider';
 import { Polaroid } from './gallery/Polaroid';
 import { IdentificationSuggestion } from './IdentificationSuggestion';
 
-import SiCamera from '@/components/icons/SiCamera';
 import SiChevronDown from '@/components/icons/SiChevronDown';
 import SiChevronUp from '@/components/icons/SiChevronUp';
 import SiDiscord from '@/components/icons/SiDiscord';
@@ -98,20 +97,20 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
         <Note className="w-full h-fit">
           <div className="pb-2 pt-4 px-4 flex gap-6 justify-between">
             <div className="font-mono mb-1">
-              <p className="text-lg font-semibold">{observation.observer.username}</p>
               <p className="text-sm">
-                <Timestamp date={new Date(observation.capture.startCaptureAt)}>
-                  {formatInTimeZone(observation.capture.startCaptureAt, 'America/Chicago', 'MM/dd/yyyy hh:mma')}
+                <Timestamp date={new Date(observation.observedAt)}>
+                  {formatInTimeZone(observation.observedAt, 'America/Chicago', 'MM/dd/yyyy hh:mma')}
                 </Timestamp>
+              </p>
+              <p className="text-sm">observed by</p>
+              <p className="text-lg font-semibold">
+                {observation.credits.observedBy.map(user => user.username).join(', ')}
+              </p>
+              <p className="text-sm">
+                captured by {observation.credits.capturedBy.map(user => user.username).join(', ')}
               </p>
             </div>
             <div className="flex gap-2">
-              <Link
-                to={`/captures/${observation.capture.id}`}
-                className="rounded-full w-10 h-10 p-1 flex items-center justify-center"
-              >
-                <SiCamera className="text-2xl" />
-              </Link>
               {observation.discordThreadId && (
                 <Link
                   variant={false}
@@ -137,17 +136,23 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
                   <SiDiscord className="text-2xl" />
                 </Button>
               )}
-              {observation.capture?.clipId && (
+              {Object.entries(
+                Object.groupBy(
+                  observation.sightings.filter(sighting => Boolean(sighting.capture.clipId)),
+                  sighting => sighting.capture.clipId
+                )
+              ).map(([clipId]) => (
                 <Link
+                  key={clipId}
                   target="_blank"
                   rel="noreferrer"
-                  to={`https://clips.twitch.tv/${observation.capture.clipId}`}
+                  to={`https://clips.twitch.tv/${clipId}`}
                   variant={false}
                   className="rounded-full w-10 h-10 p-1 flex items-center justify-center text-purple-800 bg-purple-700 bg-opacity-10 hover:bg-opacity-20"
                 >
                   <SiTwitch className="text-2xl" />
                 </Link>
-              )}
+              ))}
             </div>
           </div>
           {accessoryTree.length > 0 && (

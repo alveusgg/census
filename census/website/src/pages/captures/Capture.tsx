@@ -21,7 +21,7 @@ export const Capture: FC = () => {
   const id = useMemo(() => Number(params.id), [params.id]);
   const capture = useCapture(id);
 
-  if (capture.data.observations.length > 0) return <ReadOnly id={id} />;
+  if (capture.data.sightings.length > 0) return <ReadOnly id={id} />;
   if (!canCreateCapture) throw new Error('Editor permission required');
 
   return (

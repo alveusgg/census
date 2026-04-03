@@ -1,34 +1,17 @@
 import { Counter } from '@/components/animation/Counter';
 import { Link } from '@/components/controls/button/juicy';
 import SiChevronDown from '@/components/icons/SiChevronDown';
-import { useCurrentSeason } from '@/services/api/seasons';
-import { key, useAPI } from '@/services/query/hooks';
+import { useLeaderboard } from '@/services/api/me';
 import { cn } from '@/utils/cn';
-import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { FC } from 'react';
 import { ShiniesForSeason } from '../identifications/Shiny';
 import { Badge } from './leaderboards/Badge';
 import { Podium } from './leaderboards/Podium';
 
-const useLeaderboard = (from: Date) => {
-  const trpc = useAPI();
-  return queryOptions({
-    queryKey: key('points', 'leaderboard'),
-    queryFn: async () => {
-      const [leaderboard, place] = await Promise.all([
-        trpc.users.leaderboard.query({ from }),
-        trpc.me.place.query({ from })
-      ]);
-      return { leaderboard, place };
-    }
-  });
-};
-
 export const Home: FC = () => {
-  const query = useCurrentSeason();
-  const season = useSuspenseQuery(query);
-  const leaderboardQuery = useLeaderboard(season.data.startDate);
+  const leaderboardQuery = useLeaderboard();
   const leaderboard = useSuspenseQuery(leaderboardQuery);
   const [first, second, third] = leaderboard.data.leaderboard;
 
@@ -42,81 +25,85 @@ export const Home: FC = () => {
         <div className="flex justify-between">
           <h2 className="text-white text-2xl font-bold">Leaderboard</h2>
         </div>
-        <div className="flex gap-4 items-end h-32 w-full">
-          {second && (
-            <Podium
-              transition={{ delay: 1 }}
-              badge={
-                <Badge
-                  className="-top-6 absolute left-1/2 -translate-x-1/2"
-                  variant="silver"
-                  transition={{ delay: 1.25 }}
-                >
-                  {places.second}
-                </Badge>
-              }
-            >
-              <p className="text-white text-base leading-tight font-bold font-sans @xl:text-xl">{second.username}</p>
-              <Counter className="text-3xl" duration={1} delay={1.25}>
-                {second.points}
-              </Counter>
-            </Podium>
-          )}
+        <div className="flex flex-1 flex-col justify-between gap-4">
+          <div className="flex gap-4 items-end h-32 w-full">
+            {second && (
+              <Podium
+                transition={{ delay: 1 }}
+                badge={
+                  <Badge
+                    className="-top-6 absolute left-1/2 -translate-x-1/2"
+                    variant="silver"
+                    transition={{ delay: 1.25 }}
+                  >
+                    {places.second}
+                  </Badge>
+                }
+              >
+                <p className="text-white text-base leading-tight font-bold font-sans @xl:text-xl">{second.username}</p>
+                <Counter className="text-3xl" duration={1} delay={1.25}>
+                  {second.points}
+                </Counter>
+              </Podium>
+            )}
 
-          {first && (
-            <Podium
-              className="flex-1"
-              badge={
-                <Badge
-                  className="-top-8 absolute left-1/2 -translate-x-1/2"
-                  variant="gold"
-                  transition={{ delay: 0.25 }}
-                >
-                  {places.first}
-                </Badge>
-              }
-            >
-              <p className="text-white text-lg leading-tight font-bold font-sans @xl:text-xl">{first.username}</p>
-              <Counter className="text-4xl" duration={1} delay={0.5}>
-                {first.points}
-              </Counter>
-            </Podium>
-          )}
+            {first && (
+              <Podium
+                className="flex-1"
+                badge={
+                  <Badge
+                    className="-top-8 absolute left-1/2 -translate-x-1/2"
+                    variant="gold"
+                    transition={{ delay: 0.25 }}
+                  >
+                    {places.first}
+                  </Badge>
+                }
+              >
+                <p className="text-white text-lg leading-tight font-bold font-sans @xl:text-xl">{first.username}</p>
+                <Counter className="text-4xl" duration={1} delay={0.5}>
+                  {first.points}
+                </Counter>
+              </Podium>
+            )}
 
-          {third && (
-            <Podium
-              transition={{ delay: 2 }}
-              badge={
-                <Badge
-                  className="-top-6 absolute left-1/2 -translate-x-1/2"
-                  variant="bronze"
-                  transition={{ delay: 2.25 }}
-                >
-                  {places.third}
-                </Badge>
-              }
-            >
-              <p className="text-white text-base leading-tight font-bold font-sans @xl:text-xl">{third.username}</p>
-              <Counter className="text-3xl" duration={1} delay={2.5}>
-                {third.points}
-              </Counter>
-            </Podium>
-          )}
-        </div>
-        <motion.span className="flex flex-col items-center">
-          <span className="h-1 w-10 rounded-full bg-black my-3 bg-opacity-10" />
-          <div className="w-full text-white text-sm bg-[#A356F0] border shadow-inner border-[#8D40DB] flex items-center gap-4 px-4 py-2 rounded-xl justify-between">
-            <span className="flex items-center gap-4">
-              <span className="font-bold font-mono text-lg">{leaderboard.data.place.place}</span>
-              {leaderboard.data.place.me?.username ?? 'pollinatorcam'}
-            </span>
-            <span className="font-bold font-mono text-xl">{leaderboard.data.place.me?.points ?? 0}</span>
+            {third && (
+              <Podium
+                transition={{ delay: 2 }}
+                badge={
+                  <Badge
+                    className="-top-6 absolute left-1/2 -translate-x-1/2"
+                    variant="bronze"
+                    transition={{ delay: 2.25 }}
+                  >
+                    {places.third}
+                  </Badge>
+                }
+              >
+                <p className="text-white text-base leading-tight font-bold font-sans @xl:text-xl">{third.username}</p>
+                <Counter className="text-3xl" duration={1} delay={2.5}>
+                  {third.points}
+                </Counter>
+              </Podium>
+            )}
           </div>
-        </motion.span>
-        <motion.button className="text-white flex text-sm mx-auto items-center mt-3 py-1 px-3 rounded-lg transition-colors duration-300 hover:bg-white hover:bg-opacity-5 border border-transparent hover:border-white hover:border-opacity-10">
-          <SiChevronDown className={cn('transition-transform duration-300 text-xl -ml-1.5')} />
-          <span>show more</span>
-        </motion.button>
+          {leaderboard.data.place.me && (
+            <motion.span className="flex flex-col items-center">
+              <span className="h-1 w-10 rounded-full bg-black my-3 bg-opacity-10" />
+              <div className="w-full text-white text-sm bg-[#A356F0] border shadow-inner border-[#8D40DB] flex items-center gap-4 px-4 py-2 rounded-xl justify-between">
+                <span className="flex items-center gap-4">
+                  <span className="font-bold font-mono text-lg">{leaderboard.data.place.place}</span>
+                  {leaderboard.data.place.me.username}
+                </span>
+                <span className="font-bold font-mono text-xl">{leaderboard.data.place.me?.points ?? 0}</span>
+              </div>
+            </motion.span>
+          )}
+          <motion.button className="text-white flex text-sm mx-auto items-center mt-3 py-1 px-3 rounded-lg transition-colors duration-300 hover:bg-white hover:bg-opacity-5 border border-transparent hover:border-white hover:border-opacity-10">
+            <SiChevronDown className={cn('transition-transform duration-300 text-xl -ml-1.5')} />
+            <span>show more</span>
+          </motion.button>
+        </div>
       </div>
       <div className="text-accent-900 flex flex-col gap-3 bg-accent-50 border border-accent border-opacity-50 px-8 pb-5 pt-7 rounded-2xl overflow-clip @container">
         <h2 className="text-2xl font-bold text-accent-900">
