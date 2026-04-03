@@ -36,7 +36,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: ui-build
-          path: ui
+          path: census/website/ui
 
       - uses: pnpm/action-setup@v4
         name: Install pnpm
@@ -89,6 +89,7 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          workingDirectory: census/website
           preCommands: |
             echo '${{ steps.pulumi.outputs.wranglerConfig }}' > wrangler.generated.jsonc
           command: |
