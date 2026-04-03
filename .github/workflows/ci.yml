@@ -10,10 +10,6 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build_ipx:
-    name: Build IPX
-    uses: ./.github/workflows/build-ipx.yml
-
   build_census_api:
     name: Build Census API
     uses: ./.github/workflows/build-census-api.yml
@@ -26,7 +22,6 @@ jobs:
     name: Deploy to production
     runs-on: ubuntu-latest
     needs:
-      - build_ipx
       - build_census_api
       - build_census_ui
     permissions:
@@ -36,7 +31,7 @@ jobs:
     environment: production
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - uses: actions/download-artifact@v4
         with:
@@ -82,7 +77,7 @@ jobs:
           config-map: |
             {
               "image": { value: "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main-${{ github.run_id }}-census-api", secret: false },
-              "ipx": { value: "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main-${{ github.run_id }}-ipx", secret: false }
+              "ipx": { value: "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-ipx", secret: false }
             }
         env:
           ARM_USE_OIDC: true
