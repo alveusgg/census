@@ -94,5 +94,6 @@ jobs:
           workingDirectory: census/website
           preCommands: |
             echo '${{ steps.pulumi.outputs.wranglerConfig }}' > wrangler.generated.jsonc
+            printf '%s' '${{ steps.pulumi.outputs.workerSourceBase64 }}' | base64 --decode > worker.generated.js
           command: |
             deploy --config wrangler.generated.jsonc --env prod
