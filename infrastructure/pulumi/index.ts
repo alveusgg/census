@@ -183,6 +183,7 @@ export = async () => {
     routes: [
       {
         custom_domain: true,
+        override_existing_dns_record: true,
         pattern: 'census.strangecyan.com'
       }
     ],
