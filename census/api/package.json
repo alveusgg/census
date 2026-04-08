@@ -36,7 +36,7 @@
     "date-fns": "^3.6.0",
     "debug": "^4.3.6",
     "dotenv": "^16.4.5",
-    "drizzle-orm": "^0.33.0",
+    "drizzle-orm": "^0.45.2",
     "env-paths": "^3.0.0",
     "extract-zip": "^2.0.1",
     "fastify": "^4.28.1",
