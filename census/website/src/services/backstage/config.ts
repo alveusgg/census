@@ -5,9 +5,6 @@ export interface Config extends BackstageConfig {
     apiBaseUrl: string;
     ipxBaseUrl: string;
     appInsightsConnectionString: string;
-    syncWorkerUrl: string;
-
-    docsUrl: string;
   };
   flags: {
     crop: boolean;

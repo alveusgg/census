@@ -59,10 +59,10 @@ export class SPAWorker extends ComponentResource {
           account_id: args.account_id,
           name: this.name,
           routes: [
-            {
-              custom_domain: true,
-              pattern: args.route
-            }
+            // {
+            //   custom_domain: true,
+            //   pattern: args.route
+            // }
           ]
         }
       }

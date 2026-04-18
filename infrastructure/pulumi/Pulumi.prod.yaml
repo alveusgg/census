@@ -1,7 +1,7 @@
 config:
   azure-native:location: northcentralus
   census:cf-account-id: 1f4b83a9106fec33c984912210d93e1b
-  census:cf-zone-id: 68738938a877bb7ceed9bedd8552c33c
+  census:cf-zone-id: 23a2fcb1193af1cca6791f055394e334
   census:image: ghcr.io/alveusgg/census/census-api:14195788780
   census:ipx: ghcr.io/alveusgg/census/ipx:latest
   census:mux-token-id: 2fba08c2-0da0-4898-bf9e-f0bc4dd7e4f0
@@ -16,3 +16,6 @@ config:
     secure: AAABAHfHd42TibSFpVpAion3GXeUDduB+3fnh22Wc3oUwUC592QqL2cZ/w5bBtjWARo/79FPRmTkBhPUW2e0+w==
   census:s3-secret-access-key:
     secure: AAABADfbx08aHKKsT4wbrKVfqOQ+5XGEDbObs/qoWjn10B7LIxCBooWUS1+2qqQ4U9FokHIWSBTCtehBubzBQMzBoCQF3nqOvy8JlLdDMKbb2nMKZLa1FWBBtIZgOFP2
+  census:twitch-client-id: sjj3rcjojtqyeobptmjf3pjukaerkc
+  census:twitch-client-secret:
+    secure: AAABAJY/MAFnmek/sfNPPpPph4UhaaKq1RTH/h9rXTsuAx8iOHyjAKlI1+O3OfsjQAHnru42kBZEQJzmfT4=
