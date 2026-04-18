@@ -1,5 +1,5 @@
 import { BindingType, ContainerApp, ManagedEnvironmentsStorage } from '@pulumi/azure-native/app';
-import { PrincipalType, RoleAssignment, getClientConfig } from '@pulumi/azure-native/authorization';
+import { getClientConfig } from '@pulumi/azure-native/authorization';
 import { Record as CloudflareRecord } from '@pulumi/cloudflare';
 import { ComponentResource, Input, Output, ResourceOptions, interpolate, output } from '@pulumi/pulumi';
 import { ContainerAppsCluster } from './ContainerAppsCluster';
@@ -42,8 +42,6 @@ interface APIArgs {
   image: Image | string;
   command?: Input<string>[];
   size: Size;
-
-  vaults?: Vault[];
 
   port?: number;
   scale: {
@@ -158,15 +156,6 @@ export class API extends ComponentResource {
 
     const subscriptionId = getClientConfig().then(c => c.subscriptionId);
 
-    if (typeof args.image === 'object' && args.image.registry) {
-      registries.push({
-        server: args.image.registry.server,
-        username: args.image.registry.username,
-        passwordSecretRef: `${id}-pwd`
-      });
-      secrets.push({ name: `${id}-pwd`, value: args.image.registry.password });
-    }
-
     if (args.project.zone && args.subdomain) {
       this.validationRecord = new CloudflareRecord(
         `${id}-dns-validation`,
@@ -279,19 +268,6 @@ export class API extends ComponentResource {
       if (!i.principalId) throw new Error('No principal ID found');
       if (!i.tenantId) throw new Error('No tenant ID found');
       return i as SystemAssignedIdentity;
-    });
-
-    args.vaults?.forEach(config => {
-      new RoleAssignment(
-        `${id}-kv-role-assignment`,
-        {
-          principalId: this.identity.principalId,
-          principalType: PrincipalType.ServicePrincipal,
-          roleDefinitionId: '/providers/Microsoft.Authorization/roleDefinitions/4633458b-17de-408a-b874-0445c86b69e6',
-          scope: interpolate`/subscriptions/${subscriptionId}/resourceGroups/${config.resourceGroupName}/providers/Microsoft.KeyVault/vaults/${config.name}`
-        },
-        { parent: this }
-      );
     });
 
     this.registerOutputs();

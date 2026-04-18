@@ -3,7 +3,6 @@ import { getZoneOutput } from '@pulumi/cloudflare';
 import { Config, getProject, getStack } from '@pulumi/pulumi';
 import { API } from './resources/API';
 import { ContainerAppsCluster } from './resources/ContainerAppsCluster';
-import { KV } from './resources/KV';
 import { PostgreSQLFlexibleServer } from './resources/PostgreSQLFlexibleServer';
 import { Project } from './resources/Project';
 import { SPAWorker } from './resources/SPAWorker';
@@ -50,11 +49,6 @@ export = async () => {
     serverName: server.name
   });
 
-  // MARK: Cache
-  const kv = new KV(`${id}-kv`, {
-    accountId: config.require('cf-account-id')
-  });
-
   const s3PublicUrl = config.require('s3-public-url');
 
   // MARK: API
@@ -74,10 +68,6 @@ export = async () => {
       POSTGRES_PASSWORD: server.administratorPassword,
       POSTGRES_SSL: 'true',
       POSTGRES_DB: database.name,
-
-      CF_ACCOUNT_ID: config.require('cf-account-id'),
-      CF_KV_NAMESPACE: kv.namespace.id,
-      CF_KV_TOKEN: kv.token.value,
 
       MUX_TOKEN_ID: config.require('mux-token-id'),
       MUX_TOKEN_SECRET: config.require('mux-token-secret'),
@@ -108,7 +98,7 @@ export = async () => {
     name: 'ipx',
     project,
     cluster,
-    subdomain: 'image-optimisation-census',
+    subdomain: 'census-ipx',
     env: {
       IPX_HTTP_DOMAINS: s3PublicUrl,
       IPX_HTTP_MAX_AGE: '86400'
@@ -123,19 +113,16 @@ export = async () => {
     port: 3000
   });
 
-  const workerHostname = `prerelease-census-${stack}.strangecyan.com`;
-
   const worker = new SPAWorker(`${id}-worker`, {
     account_id: config.require('cf-account-id'),
-    name: 'sync',
+    name: 'site',
     env: stack,
-    route: workerHostname,
+    route: `census.alveussanctuary.org`,
     assetsDirectory: 'ui',
     backstage: {
       variables: {
         apiBaseUrl: api.defaultUrl,
-        ipxBaseUrl: imageOptimisation.defaultUrl,
-        appInsightsConnectionString: project.insights.connectionString
+        ipxBaseUrl: imageOptimisation.defaultUrl
       },
       flags: {}
     }

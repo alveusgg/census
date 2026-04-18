@@ -4,7 +4,6 @@ import { LogsQueryClient } from '@azure/monitor-query';
 import Mux from '@mux/mux-node';
 import { ApiClient } from '@twurple/api';
 import { AppTokenAuthProvider } from '@twurple/auth';
-import { TelemetryClient } from 'applicationinsights';
 import z from 'zod';
 
 import { initialise } from '../../db/db.js';
@@ -63,20 +62,6 @@ export const services = async (variables: z.infer<typeof config>) => {
   */
 
   // Optional clients
-  const telemetry = (() => {
-    if (!variables.APPLICATIONINSIGHTS_CONNECTION_STRING) {
-      if (variables.NODE_ENV === 'production') {
-        panic('App insights is required in production');
-      }
-      return;
-    }
-
-    const client = new TelemetryClient(variables.APPLICATIONINSIGHTS_CONNECTION_STRING);
-    client.initialize();
-
-    return client;
-  })();
-
   const mux = (() => {
     if (!variables.MUX_TOKEN_ID || !variables.MUX_TOKEN_SECRET) {
       if (variables.NODE_ENV === 'production') {
@@ -146,7 +131,6 @@ export const services = async (variables: z.infer<typeof config>) => {
     postgres: database.client,
     storage,
     twitch,
-    telemetry,
     cache,
     mux,
     logs
