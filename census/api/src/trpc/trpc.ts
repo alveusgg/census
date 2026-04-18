@@ -27,17 +27,7 @@ const AlveusAuthProviderMetadata = z.object({
   jwks_uri: z.string()
 });
 
-const AUTH_PROVIDER_CACHE_MS = 10 * 60 * 1000;
-const AUTH_PROVIDER_TIMEOUT_MS = 5_000;
-
-type AuthProvider = {
-  issuer: string;
-  jwks: ReturnType<typeof createRemoteJWKSet>;
-  expiresAt: number;
-};
-
-let authProviderCache: AuthProvider | undefined;
-let authProviderRequest: Promise<AuthProvider> | undefined;
+type AuthProvider = ReturnType<typeof createRemoteJWKSet>;
 
 const fetchAuthProvider = async (configuredIssuer: string): Promise<AuthProvider> => {
   const response = await fetch(new URL('/.well-known/oauth-authorization-server', configuredIssuer));
@@ -48,46 +38,33 @@ const fetchAuthProvider = async (configuredIssuer: string): Promise<AuthProvider
   const data = await response.json();
   const provider = AlveusAuthProviderMetadata.parse(data);
 
-  return {
-    issuer: provider.issuer,
-    jwks: createRemoteJWKSet(new URL(provider.jwks_uri, provider.issuer), {
-      cacheMaxAge: AUTH_PROVIDER_CACHE_MS,
-      cooldownDuration: 30_000,
-      timeoutDuration: AUTH_PROVIDER_TIMEOUT_MS
-    }),
-    expiresAt: Date.now() + AUTH_PROVIDER_CACHE_MS
-  };
+  return createRemoteJWKSet(new URL(provider.jwks_uri, provider.issuer), {
+    cacheMaxAge: 10 * 60 * 1000,
+    cooldownDuration: 30_000,
+    timeoutDuration: 5_000
+  });
 };
+
+let authProvider: AuthProvider | undefined;
 
 const getAuthProvider = async (): Promise<AuthProvider> => {
   const { variables } = useEnvironment();
 
-  if (
-    authProviderCache &&
-    authProviderCache.issuer === variables.ALVEUS_AUTH_ISSUER &&
-    authProviderCache.expiresAt > Date.now()
-  ) {
-    return authProviderCache;
+  if (!authProvider) {
+    authProvider = await fetchAuthProvider(variables.ALVEUS_AUTH_ISSUER);
   }
 
-  if (!authProviderRequest) {
-    authProviderRequest = fetchAuthProvider(variables.ALVEUS_AUTH_ISSUER);
-  }
-
-  try {
-    authProviderCache = await authProviderRequest;
-    return authProviderCache;
-  } finally {
-    authProviderRequest = undefined;
-  }
+  return authProvider;
 };
 
 const validateJWT = async (token: string) => {
+  const { variables } = useEnvironment();
+
   try {
-    const { issuer, jwks } = await getAuthProvider();
+    const jwks = await getAuthProvider();
     const { payload } = await jwtVerify(token, jwks, {
       algorithms: ['RS256'],
-      issuer
+      issuer: variables.ALVEUS_AUTH_ISSUER
     });
 
     return {

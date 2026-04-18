@@ -16,16 +16,39 @@ services:
       - -c
       - wal_level=logical
 
-  azurite:
-    image: mcr.microsoft.com/azure-storage/azurite
-    command: 'azurite --loose --blobHost 0.0.0.0 --blobPort 10000 --location /workspace --debug /workspace/debug.log'
-    container_name: 'cc-azurite'
-    hostname: azurite
+  minio:
+    image: minio/minio
+    container_name: 'cc-minio'
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
     restart: always
     ports:
-      - '10000:10000'
+      # Avoid clashes with other tools on 9000/9001 (e.g. php-fpm, other MinIO)
+      - '19000:9000'
+      - '19001:9001'
     volumes:
-      - ccazuritedata:/workspace
+      - ccminiodata:/data
+
+  # Create bucket `census` + anonymous read (download). Must match S3_BUCKET=census in census/api/.env.
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    restart: 'no'
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -e
+        until mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"; do sleep 1; done
+        mc mb local/census --ignore-existing
+        mc anonymous set download local/census
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+
 volumes:
-  ccazuritedata:
+  ccminiodata:
   ccccpgdata:

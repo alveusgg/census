@@ -36,15 +36,14 @@ export const getShiniesForSeason = async (seasonId: number) => {
     if (shiny.identificationId) return shiny;
     return {
       id: shiny.id,
-      assetId: shiny.assetId,
+      silhouetteUrl: shiny.silhouetteUrl,
       seasonId: shiny.seasonId
     };
   });
 
   return obfuscated.sort((a, b) => {
-    // If has "key", put first
-    if ('key' in a) return -1;
-    if ('key' in b) return 1;
+    if ('revealedUrl' in a) return -1;
+    if ('revealedUrl' in b) return 1;
     return 0;
   });
 };

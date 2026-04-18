@@ -9,6 +9,7 @@ import { useEnvironment, useUser } from '../../utils/env/env.js';
 import { getFeed } from '../feed/index.js';
 import { downloadVideo } from '../observations/observations.js';
 import { getClip } from '../twitch/index.js';
+
 interface ClipAlreadyUsedResult {
   result: 'error';
   type: 'clip_already_used';
@@ -48,8 +49,15 @@ export interface VODNotFoundResult {
   type: 'vod_not_found';
 }
 
-interface SuccessResult {
+interface ClipRequestSuccessResult {
   result: 'success';
+  type: 'retry_clip_capture';
+  capture: Capture;
+}
+
+interface NewClipCaptureResult {
+  result: 'success';
+  type: 'new_clip_capture';
   capture: Capture;
 }
 
@@ -61,7 +69,8 @@ type CreateFromClipResult =
   | ClipNotFoundResult
   | ClipNotProcessedResult
   | VODNotFoundResult
-  | SuccessResult;
+  | ClipRequestSuccessResult
+  | NewClipCaptureResult;
 
 export const createFromClip = async (
   id: string,
@@ -75,6 +84,14 @@ export const createFromClip = async (
   // The clip has already been used in a capture, so we can't use it again
   // The website redirects to the capture included in the error
   if (existing) {
+    if (existing.status === 'failed') {
+      return {
+        result: 'success',
+        type: 'retry_clip_capture',
+        capture: existing
+      };
+    }
+
     return {
       result: 'error',
       type: 'clip_already_used',
@@ -139,6 +156,7 @@ export const createFromClip = async (
 
   return {
     result: 'success',
+    type: 'new_clip_capture',
     capture
   };
 };
@@ -216,11 +234,6 @@ export const getOverlappingCaptures = async (startDate: Date, endDate: Date) => 
   });
 };
 
-export const processingCaptureRequest = async (id: number) => {
-  const db = useDB();
-  await db.update(captures).set({ status: 'processing' }).where(eq(captures.id, id));
-};
-
 export const completeCaptureRequest = async (id: number, videoUrl: string) => {
   const db = useDB();
   const { mux } = useEnvironment();
@@ -262,6 +275,16 @@ export const completeCaptureRequest = async (id: number, videoUrl: string) => {
       throw error;
     });
   return capture;
+};
+
+export const processingCaptureRequest = async (id: number) => {
+  const db = useDB();
+  await db.update(captures).set({ status: 'processing' }).where(eq(captures.id, id));
+};
+
+export const failCaptureRequest = async (id: number) => {
+  const db = useDB();
+  await db.update(captures).set({ status: 'failed' }).where(eq(captures.id, id));
 };
 
 const waitForMuxAsset = async (mux: Mux, assetId: string) => {

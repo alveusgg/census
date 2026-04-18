@@ -32,6 +32,19 @@ export const useNotifyDiscordAboutObservation = () => {
   });
 };
 
+export const useDeleteObservation = () => {
+  const trpc = useAPI();
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (observationId: number) => {
+      return await trpc.observation.delete.mutate({ observationId });
+    },
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: key('observations') });
+    }
+  });
+};
+
 export const useMergeObservations = () => {
   const trpc = useAPI();
   const client = useQueryClient();

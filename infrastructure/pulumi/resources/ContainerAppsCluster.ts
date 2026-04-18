@@ -54,8 +54,7 @@ export class ContainerAppsCluster extends ComponentResource {
           environmentName: this.environment.name,
           certificateName: 'cf-origin',
           properties: {
-            value: args.project.cloudflare.originCertificate,
-            password: args.project.cloudflare.originCertificatePassword
+            value: args.project.cloudflare.originCertificateBundle
           }
         },
         { parent: this }

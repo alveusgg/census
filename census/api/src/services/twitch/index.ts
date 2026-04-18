@@ -12,6 +12,8 @@ import {
 import sharp from 'sharp';
 import { useEnvironment } from '../../utils/env/env.js';
 import { ClipNotFoundResult, ClipNotProcessedResult, VODNotFoundResult } from '../capture/index.js';
+import { getVodInfoFromClip } from './clips.js';
+
 type ClipSuccessResult = {
   result: 'success';
   clip: {
@@ -24,21 +26,24 @@ type ClipSuccessResult = {
     views: number;
   };
 };
+
 type ClipResult = ClipNotFoundResult | ClipNotProcessedResult | VODNotFoundResult | ClipSuccessResult;
 
 export const getClip = async (id: string, latencyFromCamToRecorderInSeconds: number): Promise<ClipResult> => {
   const { twitch } = useEnvironment();
   const clip = await twitch.clips.getClipById(id);
+
   if (!clip || !clip.id || !clip.creationDate) return { result: 'error', type: 'clip_not_found' };
-  if ((!clip.videoId || !clip.vodOffset) && isBefore(clip.creationDate, subMinutes(new Date(), 10))) {
+  const vodInfo = await getVodInfoFromClip(clip.id);
+  if ((!vodInfo.videoId || vodInfo.vodOffset === null) && isBefore(clip.creationDate, subMinutes(new Date(), 10))) {
     return { result: 'error', type: 'vod_not_found' };
   }
 
   const estimatedStartDate = await (async () => {
-    if (!clip.videoId || !clip.vodOffset) return clip.creationDate;
-    const vod = await getVOD(clip.videoId);
+    if (!vodInfo.videoId || vodInfo.vodOffset === null) return clip.creationDate;
+    const vod = await getVOD(vodInfo.videoId);
     const vodStartDate = new Date(vod.publishedAt);
-    return addSeconds(vodStartDate, clip.vodOffset);
+    return addSeconds(vodStartDate, vodInfo.vodOffset);
   })();
 
   const highResThumbnailUrl = getThumbnailUrl(clip.thumbnailUrl);

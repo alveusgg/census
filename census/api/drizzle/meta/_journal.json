@@ -22,6 +22,41 @@
       "when": 1775232661244,
       "tag": "0002_lumpy_the_fallen",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1776190387987,
+      "tag": "0003_neat_frightful_four",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1776369224287,
+      "tag": "0004_lyrical_chat",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1776458786277,
+      "tag": "0005_sturdy_gabe_jones",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1776458883363,
+      "tag": "0006_concerned_captain_marvel",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1776537252798,
+      "tag": "0007_mean_giant_girl",
+      "breakpoints": true
     }
   ]
 }

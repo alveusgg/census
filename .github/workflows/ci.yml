@@ -7,7 +7,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  CENSUS_API_IMAGE: ghcr.io/${{ github.repository }}/api
+  IPX_IMAGE: ghcr.io/${{ github.repository }}/ipx
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
@@ -77,8 +78,8 @@ jobs:
           work-dir: infrastructure/pulumi
           config-map: |
             {
-              "image": { value: "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main-${{ github.run_id }}-census-api", secret: false },
-              "ipx": { value: "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-ipx", secret: false }
+              "image": { value: "${{ env.CENSUS_API_IMAGE }}:${{ github.run_id }}", secret: false },
+              "ipx": { value: "${{ env.IPX_IMAGE }}:latest", secret: false }
             }
         env:
           ARM_USE_OIDC: true

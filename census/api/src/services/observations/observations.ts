@@ -1,7 +1,9 @@
 import { BadRequestError, DownstreamError, NotFoundError } from '@alveusgg/error';
+import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
 import { count, desc, eq, inArray, isNull } from 'drizzle-orm';
 import ffmpeg from 'fluent-ffmpeg';
+import { createReadStream } from 'fs';
 import { writeFile } from 'fs/promises';
 import { ReadableStream } from 'node:stream/web';
 import { Readable } from 'stream';
@@ -10,10 +12,14 @@ import { Pagination } from '../../api/observation.js';
 import { BoundingBox, identifications, images, observations, sightings } from '../../db/schema/index.js';
 import { useDB, withTransaction } from '../../db/transaction.js';
 import { assert } from '../../utils/assert.js';
+import { createConcurrencyLimiter } from '../../utils/concurrency.js';
 import { useEnvironment, useUser } from '../../utils/env/env.js';
+import { buildObjectUrl } from '../../utils/storage.js';
 import { runLongOperation } from '../../utils/teardown.js';
 import { getTemporaryFile, TemporaryFile } from '../../utils/tmp.js';
 import { getCapture } from '../capture/index.js';
+
+const frameUploadLimiter = createConcurrencyLimiter(3);
 
 const Selection = z.object({
   timestamp: z.number(),
@@ -106,6 +112,11 @@ export const createObservationsFromCapture = async (captureId: number, observati
   );
 };
 
+export const deleteObservation = async (observationId: number) => {
+  const db = useDB();
+  return await db.delete(observations).where(eq(observations.id, observationId));
+};
+
 const createObservations = async (captureId: number, selections: Selection[], nickname?: string) => {
   const db = useDB();
   const user = useUser();
@@ -144,6 +155,7 @@ const createObservations = async (captureId: number, selections: Selection[], ni
 
     await Promise.all(
       selections.map(async ({ timestamp, boundingBox }) => {
+        console.log(`Getting frame from video for timestamp ${timestamp}`);
         const url = await getFrameFromVideo(video, stats, timestamp);
 
         await db.insert(images).values({
@@ -275,20 +287,41 @@ const scaleBoundingBox = (boundingBox: BoundingBox, width: number, height: numbe
 };
 
 export const getFrameFromVideo = async (video: TemporaryFile, stats: ffmpeg.FfprobeStream, timestamp: number) => {
-  const { storage } = useEnvironment();
+  const { storage, variables } = useEnvironment();
+  console.log(`Extracting frame from video for timestamp ${timestamp}`);
   const frame = await extractFrameFromVideo(video, timestamp, stats);
-  const blobClient = storage.getBlockBlobClient(frame.name);
-  await blobClient.uploadFile(frame.path);
-  return blobClient.url;
+  return await frameUploadLimiter.run(async () => {
+    console.log(`Uploading frame to S3: ${frame.name}`);
+    try {
+      await storage.send(
+        new PutObjectCommand({
+          Bucket: variables.S3_BUCKET,
+          Key: frame.name,
+          Body: createReadStream(frame.path)
+        })
+      );
+      console.log(`Uploaded frame to S3: ${frame.name}`);
+      return buildObjectUrl(variables, frame.name);
+    } catch (error) {
+      console.error(`Failed to upload frame to S3: ${frame.name}`, error);
+      throw new DownstreamError('s3', `Failed to upload frame to S3: ${frame.name}`);
+    }
+  });
 };
 
+// TODO: This should be promise memoized so videos aren't downloaded multiple times for one process
 export const downloadVideo = async (videoUrl: string) => {
   return runLongOperation(async () => {
     // The container has a limited amount of local storage, so we need to download the video to a temporary file
     // but not keep it around for too long.
     const url = new URL(videoUrl);
+    console.log(`Looking for existing video at ${url.pathname}`);
     const existing = getTemporaryFile(url.pathname);
-    if (existing) return await existing;
+    if (existing) {
+      console.log('Existing video found, returning...');
+      return await existing;
+    }
+    console.log('No existing video found, downloading...');
 
     const response = await fetch(url);
     if (!response.ok || !response.body) throw new DownstreamError('ffmpeg', 'Failed to download video');

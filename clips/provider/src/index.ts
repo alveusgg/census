@@ -1,7 +1,6 @@
 import { config } from 'dotenv';
 config();
 
-import { ContainerClient } from '@azure/storage-blob';
 import { differenceInSeconds } from 'date-fns';
 import { createEnvironment, useEnvironment, withEnvironment } from './utils/env/env';
 const environment = await createEnvironment();
@@ -44,7 +43,7 @@ await withEnvironment(environment, async () => {
           const { request, meta } = value;
           console.log(`Data for ${request.feedId}`, value);
 
-          const storage = new ContainerClient(meta.creds);
+          const { url: uploadUrl, objectUrl } = meta.creds;
           playback
             .recording({
               query: {
@@ -55,17 +54,19 @@ await withEnvironment(environment, async () => {
             })
             .then(async video => {
               if (video.status !== 200) throw new Error('Failed to get recording');
-              const blobClient = storage.getBlockBlobClient(
-                `${request.feedId}-${request.id}-${new Date().toISOString()}.mp4`
-              );
-              await blobClient.uploadData(await video.body.arrayBuffer());
-              console.log(`Uploaded: ${blobClient.url}`);
-
-              const [publicUrl] = blobClient.url.split('?');
+              const body = await video.body.arrayBuffer();
+              const put = await fetch(uploadUrl, {
+                method: 'PUT',
+                body
+              });
+              if (!put.ok) {
+                throw new Error(`S3 upload failed: ${put.status} ${await put.text()}`);
+              }
+              console.log(`Uploaded: ${objectUrl}`);
 
               await api.feed.completeCaptureRequest.mutate({
                 captureId: request.id,
-                videoUrl: publicUrl,
+                videoUrl: objectUrl,
                 key: variables.API_KEY
               });
             })

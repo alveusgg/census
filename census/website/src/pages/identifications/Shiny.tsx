@@ -121,16 +121,16 @@ export const ShinyThumbnail: FC<ShinyThumbnailProps> = ({ shiny }) => {
       {'key' in shiny && (
         <>
           <Shine />
-          <EncryptedImg
+          {/* <EncryptedImg
             src={`/images/${shiny.assetId}.encrypted.png`}
             iv={shiny.key}
             className={cn(
               'absolute inset-0 drop-shadow-md rotate-1 group-hover:scale-[1.1] group-hover:rotate-2 cursor-pointer transition-all duration-300'
             )}
-          />
+          /> */}
         </>
       )}
-      <img src={`/images/${shiny.assetId}.svg`} />
+      {/* <img src={`/images/${shiny.assetId}.svg`} /> */}
     </>
   );
 };

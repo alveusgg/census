@@ -4,7 +4,7 @@ import { subscribeToChanges } from '../db/listen.js';
 import { completeCaptureRequest, getCapture, getPendingCapturesForFeeds } from '../services/capture/index.js';
 import { ensureKeyForFeeds } from '../services/feed/index.js';
 import { publicProcedure, router } from '../trpc/trpc.js';
-import { getCreateOnlySasURL } from '../utils/storage.js';
+import { getPresignedUploadURL } from '../utils/storage.js';
 
 export default router({
   subscribeToRequestsForFeed: publicProcedure
@@ -17,7 +17,7 @@ export default router({
 
         const pendingCaptures = await getPendingCapturesForFeeds(targets);
         for (const request of pendingCaptures) {
-          const creds = await getCreateOnlySasURL();
+          const creds = await getPresignedUploadURL();
           yield { type: 'data' as const, request, meta: { creds } };
         }
 
@@ -28,7 +28,7 @@ export default router({
           const request = await getCapture(change.id);
           if (!targets.includes(request.feedId) || request.status !== 'pending') break;
 
-          const creds = await getCreateOnlySasURL();
+          const creds = await getPresignedUploadURL();
           yield { type: 'data' as const, request, meta: { creds } };
         }
         yield { type: 'complete' as const };

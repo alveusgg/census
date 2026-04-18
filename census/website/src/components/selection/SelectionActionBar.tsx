@@ -15,7 +15,7 @@ export const SelectionActionBar: FC<PropsWithChildren<{ className?: string }>> =
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 24, opacity: 0 }}
           transition={{ duration: 0.18, ease: 'easeOut' }}
-          className="absolute bottom-2 z-40 px-2 left-0 right-0"
+          className="fixed bottom-2 z-40 px-2 left-0 right-0"
         >
           <div
             className={cn(

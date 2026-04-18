@@ -42,7 +42,7 @@ export class TemporaryFile {
         await file.delete();
         throw err;
       });
-    Cache.set(path, promise);
+    Cache.set(filename, promise);
     return promise;
   }
 

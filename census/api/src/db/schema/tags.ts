@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { integer, pgEnum, pgTable, serial, text } from 'drizzle-orm/pg-core';
+import { integer, pgEnum, pgTable, primaryKey, serial, text } from 'drizzle-orm/pg-core';
 import { identifications } from './identifications.js';
 
 export const tagTypeEnum = pgEnum('tag_type', ['generic', 'event', 'campaign']);
@@ -10,14 +10,20 @@ export const tags = pgTable('tags', {
   type: tagTypeEnum('type').notNull()
 });
 
-export const tagAssignments = pgTable('tag_assignments', {
-  tagId: integer('tag_id')
-    .references(() => tags.id)
-    .notNull(),
-  identificationId: integer('identification_id')
-    .references(() => identifications.id)
-    .notNull()
-});
+export const tagAssignments = pgTable(
+  'tag_assignments',
+  {
+    tagId: integer('tag_id')
+      .references(() => tags.id)
+      .notNull(),
+    identificationId: integer('identification_id')
+      .references(() => identifications.id, { onDelete: 'cascade' })
+      .notNull()
+  },
+  table => ({
+    pk: primaryKey({ columns: [table.tagId, table.identificationId] })
+  })
+);
 
 export const tagAssignmentsRelations = relations(tagAssignments, ({ one }) => ({
   tag: one(tags, {

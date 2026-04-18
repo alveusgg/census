@@ -22,6 +22,7 @@ export const ReadOnly: FC<CaptureProps> = ({ id }) => {
               key={image.id}
               className="w-64 h-64"
               src={image.url}
+              image={{ width: image.width, height: image.height }}
               options={{
                 extract: image.boundingBox
               }}

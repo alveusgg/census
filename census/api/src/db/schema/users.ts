@@ -3,7 +3,7 @@ import { index, pgEnum, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-
 export const userStatusEnum = pgEnum('user_status', ['active', 'pending']);
 
 export type Status = (typeof userStatusEnum.enumValues)[number];
-export type Role = 'census_admin' | 'census_moderator';
+export type Role = 'census_admin' | 'census_moderator' | 'ptzControl';
 
 export const users = pgTable(
   'users',

@@ -54,5 +54,5 @@ export const useSignInUp = () => {
 
 export const useSignOut = () => {
   const signOut = useAuthentication(state => state.signOut);
-  return async () => await withCache('signout', signOut);
+  return useCallback(async () => await withCache('signout', signOut), [signOut]);
 };

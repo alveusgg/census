@@ -13,9 +13,9 @@ export const shinies = pgTable(
   {
     id: serial('id').primaryKey(),
     seasonId: integer('season_id').references(() => seasons.id),
-    assetId: text('asset_id').notNull(),
+    revealedUrl: text('revealedUrl').notNull(),
+    silhouetteUrl: text('silhouette_url').notNull(),
     inatId: integer('inat_id').notNull(),
-    key: text('key').notNull(),
     identificationId: integer('identification_id')
   },
   table => ({

@@ -4,7 +4,8 @@ import { StoreApi } from 'zustand';
 import { AuthenticationStatus } from './utils';
 
 export const Account = z.object({
-  id: z.string()
+  id: z.string(),
+  roles: z.array(z.enum(['census_admin', 'census_moderator']).or(z.string()))
 });
 
 export type Account = z.infer<typeof Account>;

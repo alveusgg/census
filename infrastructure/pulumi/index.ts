@@ -1,15 +1,6 @@
 import { Database } from '@pulumi/azure-native/dbforpostgresql';
-import {
-  BlobContainer,
-  Kind,
-  listStorageAccountKeysOutput,
-  SkuName,
-  StorageAccount
-} from '@pulumi/azure-native/storage';
-import { ListStorageAccountKeysResult } from '@pulumi/azure-native/storage/v20220901';
 import { getZoneOutput } from '@pulumi/cloudflare';
-import { Config, getProject, getStack, interpolate } from '@pulumi/pulumi';
-import { RandomPassword } from '@pulumi/random';
+import { Config, getProject, getStack } from '@pulumi/pulumi';
 import { API } from './resources/API';
 import { ContainerAppsCluster } from './resources/ContainerAppsCluster';
 import { KV } from './resources/KV';
@@ -32,11 +23,7 @@ export = async () => {
   });
 
   const project = new Project(id, {
-    cloudflare: {
-      zone,
-      originCertificate: config.require('cloudflare-origin-cert'),
-      originCertificatePassword: config.get('cloudflare-origin-cert-password') ?? ''
-    }
+    cloudflare: { zone }
   });
 
   // MARK: Website
@@ -48,42 +35,6 @@ export = async () => {
 
   const cluster = new ContainerAppsCluster(`${id}-clstr`, {
     project
-  });
-
-  // Create config from incoming
-  // Return config as json in the outputs
-
-  // echo output into "./wrangler.generated.jsonc"
-  // e.g. echo {{ pulumi.output.wrangler.config }} > ./wrangler.generated.jsonc
-  // Run wrangler deploy w/ auth
-  // e.g. wrangler deploy --config ./wrangler.generated.jsonc
-  // CF_API_TOKEN is set in the environment
-  // CF_ACCOUNT_ID is set in the environment
-
-  // MARK: Storage
-  const storage = new StorageAccount(simpleId, {
-    enableHttpsTrafficOnly: true,
-    kind: Kind.StorageV2,
-    resourceGroupName: project.group.name,
-    sku: {
-      name: SkuName.Standard_LRS
-    },
-    allowBlobPublicAccess: true
-  });
-
-  const key = listStorageAccountKeysOutput({
-    resourceGroupName: project.group.name,
-    accountName: storage.name
-  }).apply((r: ListStorageAccountKeysResult) => {
-    if (!r.keys[0].value) throw new Error('Primary key not found');
-    return r.keys[0].value;
-  });
-
-  const container = new BlobContainer(`${simpleId}-assets-blob`, {
-    resourceGroupName: project.group.name,
-    accountName: storage.name,
-    publicAccess: 'Blob',
-    containerName: 'assets'
   });
 
   // MARK: Database
@@ -104,17 +55,14 @@ export = async () => {
     accountId: config.require('cf-account-id')
   });
 
-  const workerAPIToken = new RandomPassword(`${id}-worker-api-token`, {
-    length: 32,
-    special: true
-  });
+  const s3PublicUrl = config.require('s3-public-url');
 
   // MARK: API
   const api = new API(`${id}-api`, {
     name: 'api',
     project,
     cluster,
-    subdomain: 'api-census',
+    subdomain: 'census-api',
     port: 3000,
     size: 'regular',
     env: {
@@ -131,19 +79,19 @@ export = async () => {
       CF_KV_NAMESPACE: kv.namespace.id,
       CF_KV_TOKEN: kv.token.value,
 
-      WORKER_API_TOKEN: workerAPIToken.result,
-
-      JWT_SECRET: config.require('jwt-secret'),
-      TWITCH_CLIENT_ID: config.require('twitch-client-id'),
-      TWITCH_CLIENT_SECRET: config.require('twitch-client-secret'),
-
       MUX_TOKEN_ID: config.require('mux-token-id'),
       MUX_TOKEN_SECRET: config.require('mux-token-secret'),
 
-      DEV_FLAG_USE_TWITCH_CLIP_DIRECTLY: 'true',
+      S3_BUCKET: config.require('s3-bucket'),
+      S3_REGION: 'auto',
+      S3_ACCESS_KEY_ID: config.require('s3-access-key-id'),
+      S3_SECRET_ACCESS_KEY: config.requireSecret('s3-secret-access-key'),
+      S3_ENDPOINT: config.require('s3-endpoint'),
+      S3_PUBLIC_URL: s3PublicUrl,
 
-      STORAGE_CONNECTION_STRING: interpolate`DefaultEndpointsProtocol=https;AccountName=${storage.name};AccountKey=${key};EndpointSuffix=core.windows.net`,
-      CONTAINER_NAME: container.name,
+      ALVEUS_AUTH_ISSUER: 'https://www.alveussanctuary.org',
+      ALVEUS_AUTH_CLIENT_ID: 'census',
+      ALVEUS_AUTH_CLIENT_SECRET: config.requireSecret('alveus-client-secret'),
 
       APPLICATIONINSIGHTS_CONNECTION_STRING: project.insights.connectionString
     },
@@ -162,7 +110,7 @@ export = async () => {
     cluster,
     subdomain: 'image-optimisation-census',
     env: {
-      IPX_HTTP_DOMAINS: interpolate`${storage.name}.blob.core.windows.net`,
+      IPX_HTTP_DOMAINS: s3PublicUrl,
       IPX_HTTP_MAX_AGE: '86400'
     },
     image: config.require('ipx'),
@@ -187,7 +135,6 @@ export = async () => {
       variables: {
         apiBaseUrl: api.defaultUrl,
         ipxBaseUrl: imageOptimisation.defaultUrl,
-        syncWorkerUrl: interpolate`https://${workerHostname}`,
         appInsightsConnectionString: project.insights.connectionString
       },
       flags: {}

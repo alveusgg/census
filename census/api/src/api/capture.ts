@@ -1,15 +1,16 @@
 import { z } from 'zod';
 import { subscribeToChanges } from '../db/listen.js';
+import { requestClipFromCamManager } from '../services/cams/index.js';
 import {
   completeCaptureRequest,
   createFromClip,
+  failCaptureRequest,
   getCapture,
   getCaptureCount,
-  getCaptures
+  getCaptures,
+  processingCaptureRequest
 } from '../services/capture/index.js';
-import { downloadClip } from '../services/twitch/clips.js';
 import { procedure, procedureWithPermissions, router } from '../trpc/trpc.js';
-import { useEnvironment } from '../utils/env/env.js';
 import { Pagination } from './observation.js';
 
 export default router({
@@ -41,19 +42,18 @@ export default router({
   createFromClip: procedureWithPermissions('capture')
     .input(z.object({ id: z.string(), userIsVerySureItIsNeeded: z.boolean().optional() }))
     .mutation(async ({ input }) => {
-      const { variables } = useEnvironment();
       const clip = await createFromClip(input.id, input.userIsVerySureItIsNeeded);
 
-      if (variables.DEV_FLAG_USE_TWITCH_CLIP_DIRECTLY) {
-        if (clip.result === 'success') {
-          downloadClip(input.id)
-            .then(async url => {
-              await completeCaptureRequest(clip.capture.id, url);
-            })
-            .catch(e => {
-              console.error(e);
-            });
-        }
+      if (clip.result === 'success') {
+        await processingCaptureRequest(clip.capture.id);
+        requestClipFromCamManager(clip.capture.startCaptureAt, clip.capture.endCaptureAt)
+          .then(async url => {
+            await completeCaptureRequest(clip.capture.id, url);
+          })
+          .catch(async e => {
+            await failCaptureRequest(clip.capture.id);
+            console.error(e);
+          });
       }
       return clip;
     })
