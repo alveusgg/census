@@ -6,7 +6,6 @@ import { ContainerAppsCluster } from './resources/ContainerAppsCluster';
 import { PostgreSQLFlexibleServer } from './resources/PostgreSQLFlexibleServer';
 import { Project } from './resources/Project';
 import { SPAWorker } from './resources/SPAWorker';
-import { Website } from './resources/Website';
 
 const stack = getStack();
 const id = `${getProject()}-${stack}`;
@@ -25,14 +24,7 @@ export = async () => {
     cloudflare: { zone }
   });
 
-  // MARK: Website
-  const website = new Website(`${simpleId}-web`, {
-    project,
-    type: 'spa',
-    subdomain: 'census'
-  });
-
-  const cluster = new ContainerAppsCluster(`${id}-clstr`, {
+  const cluster = new ContainerAppsCluster(`${id}-clsr`, {
     project
   });
 
@@ -129,7 +121,6 @@ export = async () => {
   });
   // MARK: Outputs
   return {
-    ...website,
     ...worker,
     backstage: worker.hostname.apply(h => `https://${h}/backstage`)
   };
