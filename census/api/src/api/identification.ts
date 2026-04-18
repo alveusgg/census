@@ -25,9 +25,9 @@ export default router({
     .mutation(async ({ ctx, input }) => {
       const user = useUser();
       await addFeedbackToIdentification(input.id, user.id, input.type, input.comment);
-      await recordAchievement('vote', user.id, { identificationId: input.id }, true);
+      await recordAchievement('vote', user.id, { payload: { identificationId: input.id } }, true);
       if (input.comment) {
-        await recordAchievement('comment', user.id, { identificationId: input.id }, true);
+        await recordAchievement('comment', user.id, { payload: { identificationId: input.id } }, true);
       }
       ctx.points();
     }),

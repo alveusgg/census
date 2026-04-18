@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { notifyDiscordAboutObservation } from '../services/discord/index.js';
 import {
   createObservationsFromCapture,
+  deleteObservation,
   getObservationCount,
   getObservations,
   mergeObservations,
@@ -38,7 +39,13 @@ export default router({
       return await notifyDiscordAboutObservation(input.observationId);
     }),
 
-  merge: procedureWithPermissions('capture')
+  delete: procedureWithPermissions('moderate')
+    .input(z.object({ observationId: z.number() }))
+    .mutation(async ({ input }) => {
+      return await deleteObservation(input.observationId);
+    }),
+
+  merge: procedureWithPermissions('moderate')
     .input(z.object({ targetObservationId: z.number(), sourceObservationIds: z.array(z.number()).min(1) }))
     .mutation(async ({ input }) => {
       return await mergeObservations(input.targetObservationId, input.sourceObservationIds);

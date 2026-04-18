@@ -5,7 +5,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IPX_IMAGE: ${{ github.repository }}/ipx
 
 jobs:
   build:
@@ -34,9 +34,9 @@ jobs:
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.IPX_IMAGE }}
           tags: |
-            type=raw,value=latest,enable=true,suffix=-ipx
+            type=raw,value=latest
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v7

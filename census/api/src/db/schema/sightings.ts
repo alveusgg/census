@@ -9,7 +9,7 @@ export const sightings = pgTable('sightings', {
   id: serial('id').primaryKey(),
   nickname: text('nickname'),
   observationId: integer('observation_id')
-    .references(() => observations.id)
+    .references(() => observations.id, { onDelete: 'cascade' })
     .notNull(),
   captureId: integer('capture_id')
     .references(() => captures.id)

@@ -1,6 +1,7 @@
 import { Actions, AnyAchievementPayload } from '@alveusgg/census-levels';
 import { relations } from 'drizzle-orm';
 import { boolean, index, integer, json, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
+import { Sticker } from '../../services/points/achievement.js';
 import { identifications } from './identifications.js';
 import { observations } from './observations.js';
 import { users } from './users.js';
@@ -14,9 +15,10 @@ export const achievements = pgTable(
       .references(() => users.id),
     type: text('type').$type<Actions>().notNull(),
     payload: json('payload').$type<AnyAchievementPayload>().notNull(),
-    identificationId: integer('identification_id').references(() => identifications.id),
-    observationId: integer('observation_id').references(() => observations.id),
+    identificationId: integer('identification_id').references(() => identifications.id, { onDelete: 'set null' }),
+    observationId: integer('observation_id').references(() => observations.id, { onDelete: 'set null' }),
     points: integer('points').notNull(),
+    sticker: json('sticker').$type<Sticker>(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     redeemed: boolean('redeemed').default(false).notNull(),
     revoked: boolean('revoked').default(false).notNull()

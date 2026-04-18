@@ -11,6 +11,10 @@ const ProviderRedirectResponse = z.object({
   state: z.string()
 });
 
+const ProviderEndSessionResponse = z.object({
+  state: z.string()
+});
+
 const SignInRequest = z.object({
   from: z.string().optional(),
   origin: z.string()
@@ -28,6 +32,16 @@ const SignInMeta = z.object({
 
 type SignInMeta = z.infer<typeof SignInMeta>;
 
+const SignOutRequest = z.object({
+  origin: z.string()
+});
+
+const SignOutMeta = z.object({
+  origin: z.string()
+});
+
+type SignOutMeta = z.infer<typeof SignOutMeta>;
+
 export const TokenPayload = z.object({
   sub: z.string(),
   roles: z.array(z.enum(['census_moderator', 'census_admin']).or(z.string()))
@@ -38,7 +52,6 @@ export type TokenPayload = z.infer<typeof TokenPayload>;
 export default async function register(router: FastifyInstance) {
   router.get('/signin', async (request, reply) => {
     const { host } = useEnvironment();
-
     const { from, origin } = SignInRequest.parse(request.query);
 
     const state: SignInMeta = { expires: addMinutes(new Date(), 10), origin };
@@ -51,10 +64,28 @@ export default async function register(router: FastifyInstance) {
     return reply.redirect(url);
   });
 
+  router.get('/signout', async (request, reply) => {
+    const { host } = useEnvironment();
+    const { origin } = SignOutRequest.parse(request.query);
+    const state: SignOutMeta = { origin };
+    const url = await AlveusAuthenticationMethodsProvider.createEndSessionRequest(
+      `${host}/auth/redirect/signout`,
+      JSON.stringify(state)
+    );
+    return reply.redirect(url);
+  });
+
   router.post('/refresh', async (request, reply) => {
     const { refreshToken } = RefreshTokenRequest.parse(request.body);
     const tokens = await AlveusAuthenticationMethodsProvider.refreshToken(refreshToken);
     return reply.status(200).send(tokens);
+  });
+
+  router.get('/redirect/signout', async (request, reply) => {
+    const query = ProviderEndSessionResponse.parse(request.query);
+    const state = await AlveusAuthenticationMethodsProvider.completeEndSessionRequest(query.state);
+    const meta = parseSignOutState(state);
+    return reply.redirect(meta.origin);
   });
 
   router.get('/redirect', async (request, reply) => {
@@ -67,7 +98,7 @@ export default async function register(router: FastifyInstance) {
       query.state
     );
 
-    const meta = parseState(token.state);
+    const meta = parseSignInState(token.state);
     if (isAfter(new Date(), meta.expires)) throw new AuthenticationTimeoutError('Login expired.');
 
     try {
@@ -97,10 +128,18 @@ export default async function register(router: FastifyInstance) {
   });
 }
 
-const parseState = (state: string) => {
+const parseSignInState = (state: string) => {
   try {
     return SignInMeta.parse(JSON.parse(state));
   } catch {
     throw new BadRequestError('You are trying to complete a login that was never started.');
+  }
+};
+
+const parseSignOutState = (state: string) => {
+  try {
+    return SignOutMeta.parse(JSON.parse(state));
+  } catch {
+    throw new BadRequestError('You are trying to complete a sign out that was never started.');
   }
 };

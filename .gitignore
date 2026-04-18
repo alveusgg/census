@@ -72,3 +72,5 @@ dist/
 docker-compose.local.yml
 
 .wrangler/
+
+scratch

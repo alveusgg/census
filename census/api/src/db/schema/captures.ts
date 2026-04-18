@@ -4,7 +4,14 @@ import { feeds } from './feeds.js';
 import { sightings } from './sightings.js';
 import { users } from './users.js';
 
-export const captureStatusEnum = pgEnum('capture_status', ['draft', 'pending', 'processing', 'complete', 'archived']);
+export const captureStatusEnum = pgEnum('capture_status', [
+  'draft',
+  'pending',
+  'processing',
+  'complete',
+  'archived',
+  'failed'
+]);
 
 export const captures = pgTable(
   'captures',

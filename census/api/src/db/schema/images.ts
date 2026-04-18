@@ -21,7 +21,7 @@ export const images = pgTable('images', {
   width: integer('width').notNull(),
   height: integer('height').notNull(),
   sightingId: integer('sighting_id')
-    .references(() => sightings.id)
+    .references(() => sightings.id, { onDelete: 'cascade' })
     .notNull(),
   identificationId: integer('identification_id'),
   boundingBox: json('bounding_box').$type<BoundingBox>().notNull()

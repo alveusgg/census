@@ -49,8 +49,13 @@ export const onboardUser = async (id: number, data: OnboardingFormSchema) => {
   return await db.transaction(async tx => {
     return await withTransaction(tx, async () => {
       await tx.update(users).set({ status: 'active' }).where(eq(users.id, id));
-      await recordAchievement('onboard', id, { message: 'You signed up to the Alveus Pollinator Census!' }, true);
-      await recordAchievement('onboard', id, { message: 'Click to redeem your first achievement!' });
+      await recordAchievement(
+        'onboard',
+        id,
+        { payload: { message: 'You signed up to the Alveus Pollinator Census!' } },
+        true
+      );
+      await recordAchievement('onboard', id, { payload: { message: 'Click to redeem your first achievement!' } });
       await tx.insert(responses).values({ userId: id, type: 'onboarding', payload: data });
     });
   });

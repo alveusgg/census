@@ -1,0 +1,1 @@
+ALTER TABLE "tag_assignments" ADD CONSTRAINT "tag_assignments_tag_id_identification_id_pk" PRIMARY KEY("tag_id","identification_id");

@@ -5,9 +5,20 @@ import { useSelection } from './SelectionProvider';
 interface SelectionContainerProps {
   id: string | number;
   className?: string;
+  /**
+   * When true (default), clicking anywhere on the container toggles selection.
+   * Set to false if the container has interactive children and selection should
+   * only be togglable via the explicit select button.
+   */
+  clickContainer?: boolean;
 }
 
-export const SelectionContainer: FC<PropsWithChildren<SelectionContainerProps>> = ({ id, className, children }) => {
+export const SelectionContainer: FC<PropsWithChildren<SelectionContainerProps>> = ({
+  id,
+  className,
+  clickContainer = true,
+  children
+}) => {
   const key = String(id);
   const { selection, toggleSelection } = useSelection();
   const selected = selection.includes(key);
@@ -16,7 +27,7 @@ export const SelectionContainer: FC<PropsWithChildren<SelectionContainerProps>> 
     <div
       data-selected={selected}
       className={cn('relative rounded-lg ring-accent-500/60 data-[selected=true]:ring-2', className)}
-      onClick={() => toggleSelection(key)}
+      onClick={clickContainer ? () => toggleSelection(key) : undefined}
     >
       <button
         type="button"

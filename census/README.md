@@ -9,18 +9,6 @@
    - MacOS: run `brew install ffmpeg`
 5. Clone `./api/.env.example` and rename as `./api/.env` and configure it as follows.
 
-### Twitch setup
-
-1. Go to the [Twitch Developer Dashboard](https://dev.twitch.tv/console).
-2. Create a new application and add the following as OAuth Redirect URLs.
-   - `http://localhost:35523/auth/redirect`
-   - `http://localhost:35523/admin/redirect`
-3. Copy the generated Client ID and Client Secret
-   - Update the `./api/.env` file with `TWITCH_CLIENT_ID` and `TWITCH_CLIENT_SECRET`.
-
-### `JWT_SECRET` setup
-
-This is the secret that the API uses to sign the JWTs. For local development, you can stick to the default value but know that it makes the token insecure. If you want to generate a new secret, you can run `pnpm --filter=@alveusgg/census-api setup:jwt` to generate a new secret.
 
 ## Seeding the database
 
@@ -28,7 +16,7 @@ You will need to seed the database with the correct data. To add yourself as an 
 
 ## Running the services
 
-1. Start the local services, the database, cache & blob storage.
+1. Start the local services, the database, cache & object storage (MinIO).
    - In the root of the repo, run `pnpm run deps:up`.
 2. Start the API.
    - `pnpm --filter=@alveusgg/census-api start`.
@@ -38,23 +26,13 @@ You will need to seed the database with the correct data. To add yourself as an 
 
 ## Optional & additional setup
 
-### Azure setup
+### S3-compatible object storage
 
-If you want to actually host & store on the internet, you'll need to setup an Azure storage account.
+Local development uses MinIO from `local/core-services.yml` (S3 API on host port **19000**, console on **19001** to avoid conflicts with other services using 9000/9001). A `minio-init` one-shot service creates the `census` bucket and sets **anonymous download** (public read) on it; use `S3_BUCKET=census` in `./api/.env`. You can use the console at `http://localhost:19001` to inspect objects.
 
-1. Go to the Azure Portal.
-2. Create a storage account:
-   - Under Azure services, select Storage accounts and create a new storage account.
-   - Update the `./api/.env` file with `STORAGE_ACCOUNT_NAME`.
-3. Obtain the access key:
-   - From your storage account's page, navigate to Security + networking > Access keys.
-   - Update the `./api/.env` file with `STORAGE_ACCOUNT_KEY` with either `key1` or `key2`.
-4. Create a storage container:
-   - From your storage account's page, go to Data storage > Containers and create a new container.
-   - Update the `./api/.env` file with `CONTAINER_NAME`.
-5. Enable public access for the container
-   - From your storage account's page, go to Configuration and set `Allow Blob anonymous access` to `Enabled`.
-   - From your container's page, select Change access level and set the `anonymous access level` as `Container` or `Blob`.
+For production, set `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, and `S3_PUBLIC_URL` (the HTTPS base URL for public objects, e.g. your bucket website URL or CDN). Omit `S3_ENDPOINT` when using AWS S3.
+
+Objects referenced by `videoUrl` (e.g. for Mux) must be **publicly readable** at `S3_PUBLIC_URL` (or the default virtual-hosted URL). For MinIO dev, set a bucket policy that allows anonymous `s3:GetObject` on the bucket, or use a CDN that signs requests appropriately.
 
 # Getting started with development
 

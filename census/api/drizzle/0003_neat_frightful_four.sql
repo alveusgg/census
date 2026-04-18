@@ -1,0 +1,1 @@
+ALTER TYPE "capture_status" ADD VALUE 'failed';

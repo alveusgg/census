@@ -9,14 +9,12 @@ import { Timestamp } from '@/components/text/Timestamp';
 import { useIdentification } from '@/services/api/identifications';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { formatInTimeZone } from 'date-fns-tz';
-import { motion } from 'framer-motion';
 import { FC, Suspense } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Controls } from '../observations/gallery/Controls';
 import { Slide } from '../observations/gallery/GalleryProvider';
 import { Polaroid } from '../observations/gallery/Polaroid';
 import { Preloader } from '../observations/Observations';
-import { EncryptedImg } from './Shiny';
 
 export interface IdentificationProps {
   identificationId: number;
@@ -34,10 +32,15 @@ const Identification: FC<IdentificationProps> = ({ identificationId }) => {
         <Polaroid>
           <Preloader>
             {identification.data.observation.images.map(image => (
-              <Square key={image.id} src={image.url} options={{ extract: image.boundingBox }} />
+              <Square
+                key={image.id}
+                src={image.url}
+                image={{ width: image.width, height: image.height }}
+                options={{ extract: image.boundingBox }}
+              />
             ))}
           </Preloader>
-          {identification.data.shiny && (
+          {/* {identification.data.shiny && (
             <Slide id="shiny">
               <div className="bg-accent-100 absolute inset-2 rounded-sm">
                 <motion.div initial={{ scale: 1.1, rotate: '-1deg' }} animate={{ scale: 1.15, rotate: '1deg' }}>
@@ -53,7 +56,7 @@ const Identification: FC<IdentificationProps> = ({ identificationId }) => {
                 </p>
               </div>
             </Slide>
-          )}
+          )} */}
           {identification.data.observation.images.map(image => (
             <Slide key={image.id} id={image.id.toString()}>
               <div className="w-full h-full overflow-clip relative">
@@ -61,11 +64,13 @@ const Identification: FC<IdentificationProps> = ({ identificationId }) => {
                   loading="lazy"
                   className="absolute inset-0 w-full h-full z-10"
                   src={image.url}
+                  image={{ width: image.width, height: image.height }}
                   options={{ extract: image.boundingBox }}
                 />
                 <Square
                   className="absolute inset-0 w-full h-full blur-2xl"
                   src={image.url}
+                  image={{ width: image.width, height: image.height }}
                   options={{ extract: image.boundingBox, width: 25, height: 25 }}
                 />
               </div>

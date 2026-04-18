@@ -30,7 +30,12 @@ export const Identifications = () => {
                 <Polaroid className="p-3">
                   <Preloader>
                     {images.data.map(image => (
-                      <Square key={image.id} src={image.url} options={{ extract: image.boundingBox }} />
+                      <Square
+                        key={image.id}
+                        src={image.url}
+                        image={{ width: image.width, height: image.height }}
+                        options={{ extract: image.boundingBox }}
+                      />
                     ))}
                   </Preloader>
                   {images.data.map((image: any) => (
@@ -40,11 +45,13 @@ export const Identifications = () => {
                           loading="lazy"
                           className="absolute inset-0 w-full h-full z-10"
                           src={image.url}
+                          image={{ width: image.width, height: image.height }}
                           options={{ extract: image.boundingBox }}
                         />
                         <Square
                           className="absolute inset-0 w-full h-full blur-2xl"
                           src={image.url}
+                          image={{ width: image.width, height: image.height }}
                           options={{ extract: image.boundingBox, width: 25, height: 25 }}
                         />
                       </div>

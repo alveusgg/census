@@ -31,7 +31,7 @@ export interface CaptureEditorStore {
 export interface CaptureEditorActions {
   createNewSubject: () => void;
   selectSubject: (subjectId: number) => void;
-  updateSelection: (timestamp: Timestamp, selectionId: number, boundingBox: BoundingBox, thumbnail?: string) => void;
+  setSelections: (timestamp: Timestamp, selections: Selection[]) => void;
 }
 
 export const CaptureEditorContext = createContext<StoreApi<CaptureEditorStore & CaptureEditorActions> | null>(null);
@@ -66,17 +66,13 @@ export const CaptureEditorProvider: FC<PropsWithChildren<CaptureEditorProviderPr
             draft.selectedSubjectId = subjectId;
           });
         },
-        updateSelection: (timestamp, selectionId, boundingBox) => {
+        setSelections: (timestamp, selections) => {
           set(draft => {
-            if (!(timestamp in draft.selections)) {
-              draft.selections[timestamp] = [];
-            }
-            const selection = draft.selections[timestamp].findIndex(s => s.subjectId === selectionId);
-            if (selection === -1) {
-              draft.selections[timestamp].push({ subjectId: selectionId, boundingBox });
+            if (selections.length === 0) {
+              delete draft.selections[timestamp];
               return;
             }
-            draft.selections[timestamp][selection].boundingBox = boundingBox;
+            draft.selections[timestamp] = selections;
           });
         }
       }))

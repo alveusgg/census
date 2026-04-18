@@ -20,7 +20,7 @@ export const identifications = pgTable(
     sourceId: text('source_id').notNull(),
     sourceAncestorIds: integer('source_ancestor_ids').array().notNull(),
     observationId: integer('observation_id')
-      .references(() => observations.id)
+      .references(() => observations.id, { onDelete: 'cascade' })
       .notNull(),
     suggestedBy: integer('suggested_by')
       .notNull()
@@ -44,7 +44,7 @@ export const feedback = pgTable(
   {
     id: serial('id').primaryKey(),
     identificationId: integer('identification_id')
-      .references(() => identifications.id)
+      .references(() => identifications.id, { onDelete: 'cascade' })
       .notNull(),
     type: feedbackTypes('type').notNull(),
     userId: integer('user_id')

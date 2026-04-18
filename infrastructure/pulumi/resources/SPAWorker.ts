@@ -1,5 +1,5 @@
-import { Buffer } from 'node:buffer';
 import { ComponentResource, Input, interpolate, jsonStringify, output, Output, ResourceOptions } from '@pulumi/pulumi';
+import { Buffer } from 'node:buffer';
 
 export interface SPAWorkerArgs {
   account_id: Input<string>;
@@ -8,12 +8,7 @@ export interface SPAWorkerArgs {
   route: Input<string>;
   assetsDirectory: Input<string>;
   backstage: {
-    variables: {
-      apiBaseUrl: Input<string>;
-      ipxBaseUrl: Input<string>;
-      syncWorkerUrl: Input<string>;
-      appInsightsConnectionString: Input<string>;
-    };
+    variables: Record<string, Input<string>>;
     flags: Record<string, Input<boolean>>;
   };
 }
@@ -38,13 +33,8 @@ export class SPAWorker extends ComponentResource {
 
     if (url.pathname === '/backstage') {
       return Response.json({
-        variables: {
-          apiBaseUrl: env.API_BASE_URL,
-          ipxBaseUrl: env.IPX_BASE_URL,
-          syncWorkerUrl: env.SYNC_WORKER_URL,
-          appInsightsConnectionString: env.APP_INSIGHTS_CONNECTION_STRING
-        },
-        flags: JSON.parse(env.BACKSTAGE_FLAGS)
+        variables: ${jsonStringify(args.backstage.variables)},
+        flags: ${flags}
       });
     }
 
@@ -73,14 +63,7 @@ export class SPAWorker extends ComponentResource {
               custom_domain: true,
               pattern: args.route
             }
-          ],
-          vars: {
-            API_BASE_URL: args.backstage.variables.apiBaseUrl,
-            IPX_BASE_URL: args.backstage.variables.ipxBaseUrl,
-            SYNC_WORKER_URL: args.backstage.variables.syncWorkerUrl,
-            APP_INSIGHTS_CONNECTION_STRING: args.backstage.variables.appInsightsConnectionString,
-            BACKSTAGE_FLAGS: flags
-          }
+          ]
         }
       }
     });

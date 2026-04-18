@@ -1,6 +1,6 @@
+import { S3Client } from '@aws-sdk/client-s3';
 import { DefaultAzureCredential } from '@azure/identity';
 import { LogsQueryClient } from '@azure/monitor-query';
-import { ContainerClient } from '@azure/storage-blob';
 import Mux from '@mux/mux-node';
 import { ApiClient } from '@twurple/api';
 import { AppTokenAuthProvider } from '@twurple/auth';
@@ -32,8 +32,12 @@ export const config = z.object({
   CONTAINER_APP_NAME: z.string().optional(),
   CONTAINER_APP_ENV_DNS_SUFFIX: z.string().optional(),
 
-  STORAGE_CONNECTION_STRING: z.string(),
-  CONTAINER_NAME: z.string(),
+  S3_BUCKET: z.string(),
+  S3_REGION: z.string(),
+  S3_ACCESS_KEY_ID: z.string(),
+  S3_SECRET_ACCESS_KEY: z.string(),
+  S3_ENDPOINT: z.string().optional(),
+  S3_PUBLIC_URL: z.string().optional(),
 
   MUX_TOKEN_ID: z.string().optional(),
   MUX_TOKEN_SECRET: z.string().optional(),
@@ -81,8 +85,13 @@ export const services = async (variables: z.infer<typeof config>) => {
       return;
     }
 
-    if (variables.STORAGE_CONNECTION_STRING.includes('localhost')) {
-      panic('Mux cannot be used alongside blob storage emulation. Please use a real storage account to continue.');
+    const localEndpoint =
+      variables.S3_ENDPOINT?.includes('localhost') ||
+      variables.S3_ENDPOINT?.includes('127.0.0.1') ||
+      variables.S3_PUBLIC_URL?.includes('localhost') ||
+      variables.S3_PUBLIC_URL?.includes('127.0.0.1');
+    if (localEndpoint) {
+      panic('Mux cannot be used alongside local S3 emulation. Please use real object storage to continue.');
     }
 
     return new Mux({
@@ -119,8 +128,14 @@ export const services = async (variables: z.infer<typeof config>) => {
     variables.POSTGRES_SSL
   );
 
-  const storage = new ContainerClient(variables.STORAGE_CONNECTION_STRING, variables.CONTAINER_NAME, {});
-  await storage.createIfNotExists({ access: 'blob' });
+  const storage = new S3Client({
+    region: variables.S3_REGION,
+    credentials: {
+      accessKeyId: variables.S3_ACCESS_KEY_ID,
+      secretAccessKey: variables.S3_SECRET_ACCESS_KEY
+    },
+    ...(variables.S3_ENDPOINT ? { endpoint: variables.S3_ENDPOINT, forcePathStyle: true } : {})
+  });
 
   const twitch = new ApiClient({
     authProvider: new AppTokenAuthProvider(variables.TWITCH_CLIENT_ID, variables.TWITCH_CLIENT_SECRET)

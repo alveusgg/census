@@ -45,7 +45,7 @@ export const confirmIdentification = async (identificationId: number, comment: s
         .set({ confirmedAs: identification.id })
         .where(eq(observations.id, identification.observationId));
 
-      await recordAchievement('identify', identification.suggestedBy, { identificationId });
+      await recordAchievement('identify', identification.suggestedBy, { payload: { identificationId } });
       user.achievements();
     });
   });

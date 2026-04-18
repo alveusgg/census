@@ -7,18 +7,18 @@ import { useLocation } from 'react-router-dom';
 
 export const SignOut: FC = () => {
   const location = useLocation();
+  const forget = location.state?.forget;
   const signOut = useSignOut();
   const navigate = useNavigate();
   useEffect(() => {
     (async () => {
-      if (location.state?.forget) {
+      if (forget) {
         localStorage.setItem('crumb:forget', 'true');
       }
 
       await signOut();
-      navigate('/');
     })();
-  }, [signOut, navigate, location]);
+  }, [signOut, navigate, forget]);
 
   return (
     <>

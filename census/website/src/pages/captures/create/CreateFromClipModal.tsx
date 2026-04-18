@@ -38,6 +38,17 @@ export const CreateFromClipModal: FC<ModalProps> = props => {
     await createClip.mutateAsync({ id });
   };
 
+  const onComplete = () => {
+    if (!createClip.data) return;
+    if (createClip.data.result !== 'success') {
+      return;
+    }
+    createClip.reset();
+    methods.reset();
+    props.close();
+    navigate(`/captures/${createClip.data.capture.id}`);
+  };
+
   const navigate = useNavigate();
 
   return (
@@ -67,18 +78,7 @@ export const CreateFromClipModal: FC<ModalProps> = props => {
               />
 
               <Suspense>
-                <ClipCreationProgress
-                  id={createClip.data.capture.id}
-                  onComplete={() => {
-                    if (createClip.data.result !== 'success') {
-                      return;
-                    }
-                    createClip.reset();
-                    methods.reset();
-                    props.close();
-                    navigate(`/captures/${createClip.data.capture.id}`);
-                  }}
-                />
+                <ClipCreationProgress id={createClip.data.capture.id} onComplete={onComplete} />
               </Suspense>
             </div>
           )}
@@ -127,6 +127,14 @@ export const ClipCreationProgress: FC<ClipCreationProgressProps> = ({ id, onComp
       onComplete();
     }
   }, [capture]);
+
+  if (capture.data.status === 'failed') {
+    return (
+      <div className="flex justify-center items-center bg-[#6C2A2A] p-4 rounded-md w-full">
+        <p>Sorry, we failed to create a capture from this clip. Please try again.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex justify-between items-center gap-3 bg-alveus p-4 rounded-md w-full">

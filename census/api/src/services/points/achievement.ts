@@ -1,6 +1,6 @@
 import { AchievementPayload, Actions, AnyAchievementPayload, registry } from '@alveusgg/census-levels';
 import { NotFoundError } from '@alveusgg/error';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull } from 'drizzle-orm';
 import { Achievement, achievements, identifications, shinies } from '../../db/schema/index.js';
 import { useDB, withTransaction } from '../../db/transaction.js';
 import { assert } from '../../utils/assert.js';
@@ -8,16 +8,27 @@ import { useUser } from '../../utils/env/env.js';
 import { metric } from '../../utils/logs.js';
 import { getCurrentSeason, getRawShiniesForSeason } from '../seasons/season.js';
 
+interface ImageLocation {
+  type: 'url' | 'assets';
+  path: string;
+}
+
+export interface Sticker {
+  name: string;
+  silhouette: ImageLocation;
+  artwork: ImageLocation;
+}
+
 export const recordAchievement = async <A extends Actions>(
   action: A,
   userId: number,
-  payload: AchievementPayload<A>['payload'],
+  payload: { payload: AchievementPayload<A>['payload']; sticker?: Sticker },
   immediate = false
 ) => {
   const db = useDB();
   return await db.transaction(async tx =>
     withTransaction(tx, async () => {
-      await addAchievement(action, userId, payload, immediate);
+      await addAchievement(action, userId, payload.payload, payload.sticker, immediate);
     })
   );
 };
@@ -119,6 +130,7 @@ const addAchievement = async <A extends Actions>(
   action: A,
   userId: number,
   payload: AchievementPayload<A>['payload'],
+  sticker?: Sticker,
   immediate = false
 ) => {
   const db = useDB();
@@ -132,7 +144,8 @@ const addAchievement = async <A extends Actions>(
     points: details.points,
     payload: { type: action, payload: parsed } as AnyAchievementPayload,
     identificationId: 'identificationId' in parsed ? parsed.identificationId : null,
-    redeemed: immediate
+    redeemed: immediate,
+    sticker: sticker
   });
 };
 
@@ -165,4 +178,16 @@ export const getAllAchievements = async (userId: number) => {
 const removeAchievement = async (id: number) => {
   const db = useDB();
   await db.update(achievements).set({ revoked: true }).where(eq(achievements.id, id));
+};
+
+export const getStickersForUser = async (userId: number) => {
+  const db = useDB();
+  return await db.query.achievements.findMany({
+    where: and(
+      eq(achievements.userId, userId),
+      eq(achievements.redeemed, true),
+      eq(achievements.revoked, false),
+      isNotNull(achievements.sticker)
+    )
+  });
 };

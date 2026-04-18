@@ -1,13 +1,21 @@
 import { Square } from '@/components/assets/images/Square';
 import { Note } from '@/components/containers/Note';
 import { Button, Link } from '@/components/controls/button/paper';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/forms/base/dropdown-menu';
 import { INatTaxaInput } from '@/components/forms/inputs/INatTaxaInput';
 import { Loader } from '@/components/loaders/Loader';
 import { Timestamp } from '@/components/text/Timestamp';
+import { Confirm, useConfirm } from '@/components/modal/Confirm';
 import { useSuggestAccessoryIdentification, useSuggestIdentification } from '@/services/api/identifications';
 import {
   Identification as IdentificationType,
   Observation as ObservationType,
+  useDeleteObservation,
   useNotifyDiscordAboutObservation
 } from '@/services/api/observations';
 import { useHasPermission } from '@/services/permissions/hooks';
@@ -23,6 +31,7 @@ import SiChevronDown from '@/components/icons/SiChevronDown';
 import SiChevronUp from '@/components/icons/SiChevronUp';
 import SiDiscord from '@/components/icons/SiDiscord';
 import SiLeaf from '@/components/icons/SiLeaf';
+import SiTrash from '@/components/icons/SiTrash';
 import SiTwitch from '@/components/icons/SiTwitch';
 import { Controls } from './gallery/Controls';
 import { getMinimizedTree, Node } from './helpers';
@@ -36,8 +45,11 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
   const notifyDiscordAboutObservation = useNotifyDiscordAboutObservation();
   const suggestIdentification = useSuggestIdentification();
   const suggestAccessoryIdentification = useSuggestAccessoryIdentification();
+  const deleteObservation = useDeleteObservation();
   const canSuggest = useHasPermission('suggest');
   const canCapture = useHasPermission('capture');
+  const canModerate = useHasPermission('moderate');
+  const confirmDelete = useConfirm();
 
   const accessoryIdentifications = observation.identifications.filter(identification => identification.isAccessory);
   const identificationIdentifications = observation.identifications.filter(
@@ -68,11 +80,17 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
 
   return (
     <div className="@container">
+      <Confirm {...confirmDelete} />
       <div className="flex gap-4 flex-col @lg:flex-row" key={observation.id}>
         <Polaroid>
           <Preloader>
             {observation.images.map(image => (
-              <Square key={image.id} src={image.url} options={{ extract: image.boundingBox }} />
+              <Square
+                key={image.id}
+                src={image.url}
+                image={{ width: image.width, height: image.height }}
+                options={{ extract: image.boundingBox }}
+              />
             ))}
           </Preloader>
           {observation.images.map(image => (
@@ -82,11 +100,13 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
                   loading="lazy"
                   className="absolute inset-0 w-full h-full z-10"
                   src={image.url}
+                  image={{ width: image.width, height: image.height }}
                   options={{ extract: image.boundingBox }}
                 />
                 <Square
                   className="absolute inset-0 w-full h-full blur-2xl"
                   src={image.url}
+                  image={{ width: image.width, height: image.height }}
                   options={{ extract: image.boundingBox, width: 25, height: 25 }}
                 />
               </div>
@@ -136,23 +156,69 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
                   <SiDiscord className="text-2xl" />
                 </Button>
               )}
-              {Object.entries(
-                Object.groupBy(
-                  observation.sightings.filter(sighting => Boolean(sighting.capture.clipId)),
-                  sighting => sighting.capture.clipId
-                )
-              ).map(([clipId]) => (
-                <Link
-                  key={clipId}
-                  target="_blank"
-                  rel="noreferrer"
-                  to={`https://clips.twitch.tv/${clipId}`}
+              {(() => {
+                const clipIds = Object.keys(
+                  Object.groupBy(
+                    observation.sightings.filter(sighting => Boolean(sighting.capture.clipId)),
+                    sighting => sighting.capture.clipId
+                  )
+                );
+                if (clipIds.length === 0) return null;
+                if (clipIds.length === 1) {
+                  return (
+                    <Link
+                      target="_blank"
+                      rel="noreferrer"
+                      to={`https://clips.twitch.tv/${clipIds[0]}`}
+                      variant={false}
+                      className="rounded-full w-10 h-10 p-1 flex items-center justify-center text-purple-800 bg-purple-700 bg-opacity-10 hover:bg-opacity-20"
+                    >
+                      <SiTwitch className="text-2xl" />
+                    </Link>
+                  );
+                }
+                return (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      aria-label="twitch clips"
+                      className="rounded-full w-10 h-10 p-1 flex items-center justify-center text-purple-800 bg-purple-700 bg-opacity-10 hover:bg-opacity-20"
+                    >
+                      <SiTwitch className="text-2xl" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {clipIds.map((clipId, index) => (
+                        <DropdownMenuItem key={clipId} asChild>
+                          <a href={`https://clips.twitch.tv/${clipId}`} target="_blank" rel="noreferrer">
+                            <SiTwitch className="text-lg" />
+                            Clip #{index + 1}
+                          </a>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                );
+              })()}
+              {canModerate && (
+                <Button
                   variant={false}
-                  className="rounded-full w-10 h-10 p-1 flex items-center justify-center text-purple-800 bg-purple-700 bg-opacity-10 hover:bg-opacity-20"
+                  aria-label="delete observation"
+                  onClick={() =>
+                    confirmDelete.open({
+                      title: 'Delete observation?',
+                      description: 'This will permanently delete this observation. This action cannot be undone.',
+                      onConfirm: async () => {
+                        await deleteObservation.mutateAsync(observation.id);
+                      }
+                    })
+                  }
+                  loading={deleteObservation.isPending}
+                  className={cn(
+                    'rounded-full w-10 h-10 p-1 flex items-center justify-center text-red-800 bg-red-100 hover:bg-red-200'
+                  )}
                 >
-                  <SiTwitch className="text-2xl" />
-                </Link>
-              ))}
+                  <SiTrash className="text-2xl" />
+                </Button>
+              )}
             </div>
           </div>
           {accessoryTree.length > 0 && (

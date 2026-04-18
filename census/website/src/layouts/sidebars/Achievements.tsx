@@ -132,7 +132,7 @@ export const Achievements = () => {
                           <span className="font-bold text-sm">{achievement.points} pts</span>
                         </div>
                         <p className="mt-1 text-left text-sm leading-tight">
-                          You identified one of Dr. Allison's shinies! Well done!{' '}
+                          You identified a shiny! Well done!{' '}
                           <span className="font-bold">{achievement.identification.nickname}</span>
                         </p>
                       </>

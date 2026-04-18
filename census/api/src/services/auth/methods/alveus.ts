@@ -2,13 +2,18 @@ import { AuthenticationTimeoutError, BadRequestError, DownstreamError } from '@a
 import { addMinutes, isAfter } from 'date-fns';
 import { createHash, randomBytes } from 'node:crypto';
 import { z } from 'zod';
+import { type Role } from '../../../db/schema/users.js';
 import { assert } from '../../../utils/assert.js';
 import { useEnvironment } from '../../../utils/env/env.js';
-import type { AuthenticationMethodsProvider } from './index.js';
+import { type AuthenticationMethodsProvider } from './index.js';
 
 const AlveusTokenResponse = z.object({
   access_token: z.string(),
   refresh_token: z.string()
+});
+
+const AlveusClientTokenResponse = z.object({
+  access_token: z.string()
 });
 
 const AlveusUserInformationResponse = z.object({
@@ -31,10 +36,11 @@ const AlveusAuthenticationRequest = z.object({
 
 const exchangeToken = async (body: URLSearchParams) => {
   const { variables } = useEnvironment();
+  const authorization = `Basic ${Buffer.from(`${variables.ALVEUS_AUTH_CLIENT_ID}:${variables.ALVEUS_AUTH_CLIENT_SECRET}`).toString('base64')}`;
   const response = await fetch(new URL('/api/oauth/token', variables.ALVEUS_AUTH_ISSUER), {
     method: 'POST',
     headers: {
-      Authorization: `Basic ${Buffer.from(`${variables.ALVEUS_AUTH_CLIENT_ID}:${variables.ALVEUS_AUTH_CLIENT_SECRET}`).toString('base64')}`,
+      Authorization: authorization,
       'Content-Type': 'application/x-www-form-urlencoded'
     },
     body
@@ -67,6 +73,22 @@ const getAlveusAuthenticationRequest = async (requestId: string) => {
   }
 };
 
+const getAlveusEndSessionRequest = async (requestId: string) => {
+  const { cache } = useEnvironment();
+  const payload = await cache.get(requestId);
+
+  if (!payload) {
+    throw new BadRequestError('You are trying to complete a sign out that was never started.');
+  }
+
+  try {
+    return payload;
+  } catch {
+    await cache.delete(requestId);
+    throw new BadRequestError('You are trying to complete a sign out that was never started.');
+  }
+};
+
 export const AlveusAuthenticationMethodsProvider: AuthenticationMethodsProvider = {
   createSignInRequest: async (redirectUri: string, state: string) => {
     const { variables, cache } = useEnvironment();
@@ -94,12 +116,29 @@ export const AlveusAuthenticationMethodsProvider: AuthenticationMethodsProvider 
 
     return url.toString();
   },
-  exchangeCodeForToken: async (redirectUri: string, code: string, state: string) => {
+  createEndSessionRequest: async (redirectUri: string, state: string) => {
+    const { variables, cache } = useEnvironment();
+    const requestId = crypto.randomUUID();
+
+    await cache.set(requestId, state, 60 * 60 * 24 * 7);
+
+    const url = new URL('/oauth/end-session', variables.ALVEUS_AUTH_ISSUER);
+    url.searchParams.set('client_id', variables.ALVEUS_AUTH_CLIENT_ID);
+    url.searchParams.set('post_logout_redirect_uri', redirectUri);
+
+    url.searchParams.set('state', requestId);
+    return url.toString();
+  },
+  completeEndSessionRequest: async (requestId: string) => {
+    const state = await getAlveusEndSessionRequest(requestId);
+    return state;
+  },
+  exchangeCodeForToken: async (redirectUri: string, code: string, requestId: string) => {
     const { cache } = useEnvironment();
-    const request = await getAlveusAuthenticationRequest(state);
+    const request = await getAlveusAuthenticationRequest(requestId);
 
     if (isAfter(new Date(), request.expires)) {
-      await cache.delete(state);
+      await cache.delete(requestId);
       throw new AuthenticationTimeoutError('Login expired.');
     }
 
@@ -110,7 +149,7 @@ export const AlveusAuthenticationMethodsProvider: AuthenticationMethodsProvider 
     body.set('code_verifier', request.codeVerifier);
 
     const token = await exchangeToken(body);
-    await cache.delete(state);
+    await cache.delete(requestId);
 
     return {
       accessToken: token.access_token,
@@ -128,6 +167,33 @@ export const AlveusAuthenticationMethodsProvider: AuthenticationMethodsProvider 
       accessToken: token.access_token,
       refreshToken: token.refresh_token
     };
+  },
+  acquireClientTokenForRoles: async (roles: Role[]) => {
+    const body = new URLSearchParams();
+    body.set('grant_type', 'client_credentials');
+
+    if (roles.length > 0) {
+      body.set('scope', roles.join(' '));
+    }
+
+    const { variables } = useEnvironment();
+    const authorization = `Basic ${Buffer.from(`${variables.ALVEUS_AUTH_CLIENT_ID}:${variables.ALVEUS_AUTH_CLIENT_SECRET}`).toString('base64')}`;
+    const response = await fetch(new URL('/api/oauth/token', variables.ALVEUS_AUTH_ISSUER), {
+      method: 'POST',
+      headers: {
+        Authorization: authorization,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body
+    });
+
+    if (!response.ok) {
+      throw new DownstreamError('alveus', `Client token exchange failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    assert.shape(AlveusClientTokenResponse, data, 'Invalid Alveus client token response');
+    return data.access_token;
   },
   getUserInformation: async (token: string) => {
     const { variables } = useEnvironment();
