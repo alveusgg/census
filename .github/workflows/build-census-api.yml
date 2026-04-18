@@ -5,7 +5,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  CENSUS_API_IMAGE: ${{ github.repository }}/census-api
+  CENSUS_API_IMAGE: ${{ github.repository }}/api
 
 jobs:
   build:
@@ -35,8 +35,8 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.CENSUS_API_IMAGE }}
-          flavor: |
-            suffix=-${{ github.run_id }}-census-api
+          tags: |
+            type=raw,value=${{ github.run_id }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v7
