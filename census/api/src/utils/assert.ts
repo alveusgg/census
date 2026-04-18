@@ -1,29 +1,13 @@
 import { AssertionError } from 'assert';
 import { ZodSchema, z } from 'zod';
-import { useEnvironment } from './env/env.js';
 import { report } from './logs.js';
 
 type Assert = (condition: unknown, message: string) => asserts condition;
 type ShapeAssert = <S extends ZodSchema>(schema: S, data: unknown, message: string) => asserts data is z.infer<S>;
 
 export const panic = (message: string): never => {
-  const { telemetry } = useEnvironment();
   const error = new AssertionError({ message });
   report(error);
-  if (telemetry) {
-    void telemetry
-      .flush()
-      .then(() => {
-        console.error(error);
-        process.exit(1);
-      })
-      .catch(error => {
-        console.error(error);
-        process.exit(1);
-      });
-
-    throw error;
-  }
 
   console.error(error);
   process.exit(1);

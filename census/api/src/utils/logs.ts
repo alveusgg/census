@@ -1,21 +1,8 @@
-import { context, metrics, trace } from '@opentelemetry/api';
+import { context, metrics } from '@opentelemetry/api';
 import { LogRecord, logs } from '@opentelemetry/api-logs';
-import { useEnvironment, useUser } from './env/env.js';
+import { useUser } from './env/env.js';
 
-export const report = (error: Error) => {
-  const { telemetry } = useEnvironment();
-  const user = useUser();
-  const span = trace.getActiveSpan();
-  if (span) {
-    span.setAttribute('ai.user.authUserId', user.id);
-    span.recordException(error);
-    return;
-  }
-
-  telemetry?.trackException({
-    exception: error
-  });
-};
+export const report = (_: Error) => {};
 
 export const metric = (name: string, value: number, properties: Record<string, string> = {}) => {
   const user = useUser();
