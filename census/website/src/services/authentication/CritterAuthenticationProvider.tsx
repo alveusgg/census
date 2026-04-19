@@ -6,7 +6,6 @@ import { FC, PropsWithChildren, useMemo } from 'react';
 import { z } from 'zod';
 import { createStore } from 'zustand';
 import { Variables } from '../backstage/config';
-import { useAddAuthenticatedContext } from '../insights/hooks';
 import {
   Account,
   AuthenticationContext,
@@ -74,13 +73,9 @@ const restoreAuthentication = (): AuthenticationInformation => {
 
 export const CritterAuthenticationProvider: FC<PropsWithChildren> = ({ children }) => {
   const apiBaseUrl = useVariable<Variables>('apiBaseUrl');
-  const addAuthenticatedUserContext = useAddAuthenticatedContext();
   const performTokenRefresh = usePerformTokenRefresh();
   const store = useMemo(() => {
     const restoredAuthentication = restoreAuthentication();
-    if (restoredAuthentication.account) {
-      addAuthenticatedUserContext(restoredAuthentication.account.id.toString());
-    }
 
     return createStore<AuthenticationStore>((set, get) => ({
       ...restoredAuthentication,
