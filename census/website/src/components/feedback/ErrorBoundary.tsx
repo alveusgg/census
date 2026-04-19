@@ -1,18 +1,13 @@
-import { useAppInsights } from '@/services/insights/hooks';
 import { cn } from '@/utils/cn';
 import { CustomError } from '@alveusgg/error';
 import { TRPCClientError } from '@trpc/client';
 import ErrorStackParser from 'error-stack-parser';
-import { ComponentProps, FC, PropsWithChildren, useEffect, useState } from 'react';
+import { ComponentProps, FC, PropsWithChildren, useState } from 'react';
 import { ErrorBoundary as CoreErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { isRouteErrorResponse } from 'react-router';
 import { Link, useLocation, useRevalidator, useRouteError } from 'react-router-dom';
 import { ZodError, ZodIssue } from 'zod';
-import { build } from '~build/meta';
-import now from '~build/time';
 import { Button } from '../controls/button/juicy';
-import SiCheck from '../icons/SiCheck';
-import SiCopy from '../icons/SiCopy';
 import { NotFoundPage } from './NotFoundError';
 
 interface ErrorProps {
@@ -117,43 +112,6 @@ export const ValidationErrorExplanation: FC<ValidationErrorProps> = ({ error }) 
   );
 };
 
-export const SessionReference: FC = () => {
-  const { getSessionId } = useAppInsights(state => state);
-  const [clipboardStatus, setClipboardStatus] = useState<'idle' | 'copied'>('idle');
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setClipboardStatus('copied');
-    setTimeout(() => setClipboardStatus('idle'), 2000);
-  };
-
-  const sessionId = getSessionId();
-  if (!sessionId) {
-    return null;
-  }
-
-  const buildId = build ?? 'Unknown';
-  const builtAt = now ?? new Date();
-
-  const reference = `${sessionId} • ${buildId} • ${builtAt.toISOString()}`;
-
-  return (
-    <button
-      onClick={() => copyToClipboard(reference)}
-      className="bg-accent-50 text-accent-800 relative flex items-center gap-2 overflow-clip rounded-md px-3 py-2 text-sm shadow-sm"
-    >
-      <span>{reference}</span>
-      <SiCopy />
-      {clipboardStatus === 'copied' && (
-        <span className="bg-accent-100 text-accent-800 absolute inset-0 flex items-center justify-center gap-1 text-sm font-medium">
-          <SiCheck />
-          <span>Copied!</span>
-        </span>
-      )}
-    </button>
-  );
-};
-
 const getExplanationForError = (error: unknown) => {
   if (error instanceof TRPCClientError) {
     const custom = CustomError.from(error.message);
@@ -170,14 +128,7 @@ const getExplanationForError = (error: unknown) => {
 };
 
 export const CriticalErrorBoundary: FC<FallbackProps> = ({ error, resetErrorBoundary }) => {
-  const trackException = useAppInsights(state => state.trackException);
   const location = useLocation();
-
-  useEffect(() => {
-    if (error && error instanceof Error) {
-      trackException(error);
-    }
-  }, [error]);
 
   return (
     <div
@@ -200,12 +151,6 @@ export const CriticalErrorBoundary: FC<FallbackProps> = ({ error, resetErrorBoun
             <Button className="mx-auto">Sign out & try again</Button>
           </Link>
         </div>
-        <div className="flex flex-col items-center gap-3">
-          <p className="leading-5 text-balance">
-            If you continue to encounter a problem please contact support with the session reference below.
-          </p>
-          <SessionReference />
-        </div>
       </div>
     </div>
   );
@@ -223,17 +168,7 @@ export const RouteErrorBoundary: FC<PropsWithChildren> = () => {
 };
 
 export const ComponentErrorBoundary: FC<PropsWithChildren> = ({ children }) => {
-  const trackException = useAppInsights(state => state.trackException);
-  return (
-    <CoreErrorBoundary
-      onError={error => {
-        trackException(error);
-      }}
-      FallbackComponent={CriticalErrorBoundary}
-    >
-      {children}
-    </CoreErrorBoundary>
-  );
+  return <CoreErrorBoundary FallbackComponent={CriticalErrorBoundary}>{children}</CoreErrorBoundary>;
 };
 
 export const ErrorBoundary: FC<PropsWithChildren<ComponentProps<'div'> & { for: number }>> = ({
