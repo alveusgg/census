@@ -54,6 +54,7 @@ export = async () => {
     env: {
       HOST: '0.0.0.0',
       PORT: '3000',
+      API_URL: 'https://census-api.alveus.gg',
 
       TWITCH_CLIENT_ID: config.require('twitch-client-id'),
       TWITCH_CLIENT_SECRET: config.requireSecret('twitch-client-secret'),
