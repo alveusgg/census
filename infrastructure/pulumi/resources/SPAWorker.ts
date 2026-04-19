@@ -27,14 +27,14 @@ export class SPAWorker extends ComponentResource {
 
     const flags = jsonStringify(args.backstage.flags);
     const workerSource = flags.apply(
-      () => `export default {
+      () => interpolate`export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
     if (url.pathname === '/backstage') {
       return Response.json({
         variables: ${jsonStringify(args.backstage.variables)},
-        flags: ${flags}
+        flags: ${jsonStringify(flags)}
       });
     }
 
