@@ -55,6 +55,9 @@ export = async () => {
       HOST: '0.0.0.0',
       PORT: '3000',
 
+      TWITCH_CLIENT_ID: config.require('twitch-client-id'),
+      TWITCH_CLIENT_SECRET: config.requireSecret('twitch-client-secret'),
+
       POSTGRES_HOST: server.host,
       POSTGRES_USER: server.administratorUsername,
       POSTGRES_PASSWORD: server.administratorPassword,
