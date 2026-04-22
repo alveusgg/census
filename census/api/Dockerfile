@@ -49,4 +49,6 @@ RUN apt-get update \
 RUN npm i -g corepack@latest && corepack enable
 WORKDIR /prod/api
 COPY --from=builder /prod/api ./
+ARG SENTRY_RELEASE
+ENV SENTRY_RELEASE=$SENTRY_RELEASE
 CMD ["pnpm", "start"]

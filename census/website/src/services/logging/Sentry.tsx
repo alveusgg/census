@@ -1,6 +1,7 @@
 import { useVariable } from '@alveusgg/backstage';
 import * as Sentry from '@sentry/react';
 import { FC, PropsWithChildren, useEffect } from 'react';
+import { build } from '~build/meta';
 import { Variables } from '../backstage/config';
 
 export const SentryProvider: FC<PropsWithChildren> = ({ children }) => {
@@ -11,6 +12,7 @@ export const SentryProvider: FC<PropsWithChildren> = ({ children }) => {
   useEffect(() => {
     Sentry.init({
       dsn: sentryDSN,
+      release: build,
       sendDefaultPii: false,
 
       enableLogs: true,
