@@ -1,41 +1,13 @@
-import { context, metrics } from '@opentelemetry/api';
-import { LogRecord, logs } from '@opentelemetry/api-logs';
-import { useUser } from './env/env.js';
+import * as Sentry from '@sentry/node';
+import { useEnvironment } from './env/env.js';
 
-export const report = (_: Error) => {};
-
-export const metric = (name: string, value: number, properties: Record<string, string> = {}) => {
-  const user = useUser();
-  const meter = metrics.getMeterProvider().getMeter('ApplicationInsightsMetrics');
-  const histogram = meter.createHistogram(name);
-
-  const ctx = context.active();
-
-  histogram.record(
-    value,
-    {
-      ...properties,
-      'ai.user.authUserId': user.id
-    },
-    ctx
-  );
+export const report = (error: Error) => {
+  const { sentry } = useEnvironment();
+  if (sentry) {
+    sentry.captureException(error);
+  }
 };
 
-export const event = (name: string, properties: Record<string, string>) => {
-  const logger = logs.getLoggerProvider().getLogger('ApplicationInsightsLogs');
-  const user = useUser();
-
-  const record: LogRecord = {
-    attributes: {
-      ...properties,
-      '_MS.baseType': 'EventData',
-      'ai.user.authUserId': user.id
-    },
-    body: {
-      name,
-      version: 2
-    }
-  };
-
-  logger.emit(record);
+export const metric = (name: string, value: number, attributes: Record<string, string> = {}) => {
+  Sentry.metrics.count(name, value, { attributes });
 };

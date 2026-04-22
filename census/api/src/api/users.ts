@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { getRecentRedeemedAchievements } from '../services/points/achievement.js';
 import { getLeaderboard } from '../services/points/points.js';
 import { getCurrentSeason } from '../services/seasons/season.js';
 import { getUsers } from '../services/users/index.js';
@@ -15,5 +16,8 @@ export default router({
       return await getLeaderboard(season.startDate);
     }
     return await getLeaderboard(input.from);
+  }),
+  recentAchievements: procedure.query(async () => {
+    return await getRecentRedeemedAchievements(7);
   })
 });

@@ -79,7 +79,7 @@ export = async () => {
       ALVEUS_AUTH_CLIENT_ID: 'census',
       ALVEUS_AUTH_CLIENT_SECRET: config.requireSecret('alveus-client-secret'),
 
-      APPLICATIONINSIGHTS_CONNECTION_STRING: project.insights.connectionString
+      SENTRY_DSN: config.require('sentry-dsn')
     },
     image: config.require('image'),
     scale: {
@@ -118,7 +118,8 @@ export = async () => {
     backstage: {
       variables: {
         apiBaseUrl: api.defaultUrl,
-        ipxBaseUrl: imageOptimisation.defaultUrl
+        ipxBaseUrl: imageOptimisation.defaultUrl,
+        sentryDSN: config.require('sentry-dsn')
       },
       flags: {}
     }

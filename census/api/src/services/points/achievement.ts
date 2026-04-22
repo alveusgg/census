@@ -175,6 +175,25 @@ export const getAllAchievements = async (userId: number) => {
   return await db.query.achievements.findMany({ where: eq(achievements.userId, userId) });
 };
 
+export const getRecentRedeemedAchievements = async (limit: number) => {
+  const db = useDB();
+  const rows = await db.query.achievements.findMany({
+    where: and(eq(achievements.redeemed, true), eq(achievements.revoked, false)),
+    orderBy: (a, { desc }) => [desc(a.createdAt)],
+    limit,
+    with: {
+      user: {
+        columns: {
+          id: true,
+          username: true
+        }
+      },
+      identification: true
+    }
+  });
+  return rows;
+};
+
 const removeAchievement = async (id: number) => {
   const db = useDB();
   await db.update(achievements).set({ revoked: true }).where(eq(achievements.id, id));

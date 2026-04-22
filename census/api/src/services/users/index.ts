@@ -5,6 +5,7 @@ import { NotAuthenticatedError } from '@alveusgg/error';
 import { users } from '../../db/schema/index.js';
 import { responses } from '../../db/schema/responses.js';
 import { useDB, withTransaction } from '../../db/transaction.js';
+import { withCoalescing } from '../../utils/cache.js';
 import { recordAchievement } from '../points/achievement.js';
 
 export const getUsers = async () => {
@@ -19,12 +20,15 @@ export const getUser = async (id: number) => {
   return user;
 };
 
-export const getUserByProviderId = async (providerId: string) => {
-  const db = useDB();
-  const [user] = await db.select().from(users).where(eq(users.providerId, providerId));
-  if (!user) throw new NotAuthenticatedError('User not found');
-  return user;
-};
+export const getUserByProviderId = withCoalescing(
+  async (providerId: string) => {
+    const db = useDB();
+    const [user] = await db.select().from(users).where(eq(users.providerId, providerId));
+    if (!user) throw new NotAuthenticatedError('User not found');
+    return user;
+  },
+  { key: (providerId: string) => providerId }
+);
 
 export const getOrCreateUserFromAuthProviderIdentity = async (providerId: string, username: string) => {
   const db = useDB();

@@ -6,6 +6,7 @@ import { Toaster } from './components/feedback/Toaster';
 import { useRouter } from './router';
 import { CritterAuthenticationProvider } from './services/authentication/CritterAuthenticationProvider';
 import { BackstageProvider } from './services/backstage/BackstageProvider';
+import { SentryProvider } from './services/logging/Sentry';
 import { APIProvider } from './services/query/APIProvider';
 import { QueryProvider } from './services/query/QueryProvider';
 
@@ -16,14 +17,16 @@ export const App = () => {
         <Suspense fallback={<Loading />}>
           <BackstageProvider>
             <Suspense fallback={<Loading />}>
-              <CritterAuthenticationProvider>
-                <ComponentErrorBoundary>
-                  <APIProvider>
-                    <Toaster />
-                    <Router />
-                  </APIProvider>
-                </ComponentErrorBoundary>
-              </CritterAuthenticationProvider>
+              <SentryProvider>
+                <CritterAuthenticationProvider>
+                  <ComponentErrorBoundary>
+                    <APIProvider>
+                      <Toaster />
+                      <Router />
+                    </APIProvider>
+                  </ComponentErrorBoundary>
+                </CritterAuthenticationProvider>
+              </SentryProvider>
             </Suspense>
           </BackstageProvider>
         </Suspense>

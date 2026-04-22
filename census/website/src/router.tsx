@@ -19,6 +19,7 @@ import { Identifications } from './pages/identifications/Identifications';
 import { Observations } from './pages/observations/Observations';
 import { useLeaderboard, usePendingAchievements, usePermissions, usePoints } from './services/api/me';
 import { useCurrentSeason, useShiniesForSeason } from './services/api/seasons';
+import { useRecentAchievements } from './services/api/users';
 const auth: RouteObject = {
   path: 'auth',
   children: [
@@ -50,6 +51,7 @@ export const useRouter = () => {
   const pendingAchievements = usePendingAchievements();
   const leaderboard = useLeaderboard();
   const shinies = useShiniesForSeason();
+  const recentAchievements = useRecentAchievements();
 
   return createBrowserRouter([
     {
@@ -79,7 +81,8 @@ export const useRouter = () => {
                       client.prefetchQuery(leaderboard),
                       client.prefetchQuery(shinies),
                       client.prefetchQuery(leaderboard),
-                      client.prefetchQuery(shinies)
+                      client.prefetchQuery(shinies),
+                      client.prefetchQuery(recentAchievements)
                     ]);
 
                     return null;

@@ -4,7 +4,7 @@ export interface Config extends BackstageConfig {
   variables: {
     apiBaseUrl: string;
     ipxBaseUrl: string;
-    appInsightsConnectionString: string;
+    sentryDSN: string;
   };
   flags: {
     crop: boolean;

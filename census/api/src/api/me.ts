@@ -1,8 +1,6 @@
 import { OnboardingFormSchema } from '@alveusgg/census-forms';
-import { BadRequestError, DownstreamError } from '@alveusgg/error';
-import { LogsQueryResultStatus } from '@azure/monitor-query';
+import { BadRequestError } from '@alveusgg/error';
 import { z } from 'zod';
-import { metrics } from '../db/schema/metrics.js';
 import { getPermissions } from '../services/auth/role.js';
 import {
   getAllAchievements,
@@ -14,8 +12,7 @@ import { getPlaceInLeaderboard, getPointsForUser } from '../services/points/poin
 import { getCurrentSeason } from '../services/seasons/season.js';
 import { getUser, onboardUser } from '../services/users/index.js';
 import { procedure, router } from '../trpc/trpc.js';
-import { assert } from '../utils/assert.js';
-import { useEnvironment, useUser } from '../utils/env/env.js';
+import { useUser } from '../utils/env/env.js';
 
 export default router({
   me: procedure.query(async () => {
@@ -69,43 +66,5 @@ export default router({
   },
   permissions: procedure.query(async () => {
     return getPermissions();
-  }),
-  logs: procedure.query(async () => {
-    const { logs, variables, db } = useEnvironment();
-    assert(variables.WORKSPACE_ID, 'WORKSPACE_ID is not set');
-    assert(logs, 'Logs client is not set');
-
-    const result = await logs.queryWorkspace(
-      variables.WORKSPACE_ID,
-      `AppMetrics
-        | extend UserId = toint(case(isnotempty(UserAuthenticatedId), UserAuthenticatedId, Properties['ai.user.authUserId']))
-        | where isnotempty(UserId)
-        | summarize Value = sum(Sum) by UserId, Name, bin(TimeGenerated, 1h)
-      `,
-      {
-        startTime: new Date(Date.now() - 1000 * 60 * 60 * 24),
-        endTime: new Date()
-      }
-    );
-
-    if (result.status !== LogsQueryResultStatus.Success) throw new DownstreamError('monitor', 'Failed to fetch logs');
-    if (result.tables.length === 0) throw new BadRequestError('No logs found');
-    if (result.tables.length > 1) throw new BadRequestError('Multiple logs found');
-
-    const table = result.tables[0];
-    const rows = table.rows;
-    await db
-      .insert(metrics)
-      .values(
-        rows.map(([userId, name, timestamp, value]) => Event.parse({ userId, name, value, createdAt: timestamp }))
-      )
-      .onConflictDoNothing();
   })
-});
-
-const Event = z.object({
-  userId: z.number(),
-  name: z.string(),
-  value: z.number(),
-  createdAt: z.coerce.date()
 });

@@ -87,3 +87,21 @@ export class LocalKVCache implements KVCache {
     this.cache.set(key, { value, ttl, setAt: Date.now() });
   }
 }
+
+export function withCoalescing<Args extends unknown[], R>(
+  fn: (...args: Args) => Promise<R>,
+  options: { key: (...args: Args) => string }
+): (...args: Args) => Promise<R> {
+  const inFlight = new Map<string, Promise<R>>();
+  return (...args: Args): Promise<R> => {
+    const key = options.key(...args);
+    const existing = inFlight.get(key);
+    if (existing) return existing;
+
+    const promise = fn(...args).finally(() => {
+      inFlight.delete(key);
+    });
+    inFlight.set(key, promise);
+    return promise;
+  };
+}

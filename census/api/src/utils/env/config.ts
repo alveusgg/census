@@ -1,7 +1,8 @@
 import { S3Client } from '@aws-sdk/client-s3';
-import { DefaultAzureCredential } from '@azure/identity';
-import { LogsQueryClient } from '@azure/monitor-query';
 import Mux from '@mux/mux-node';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+import { BatchSpanProcessor, SpanProcessor } from '@opentelemetry/sdk-trace-base';
+import * as Sentry from '@sentry/node';
 import { ApiClient } from '@twurple/api';
 import { AppTokenAuthProvider } from '@twurple/auth';
 import z from 'zod';
@@ -48,10 +49,11 @@ export const config = z.object({
   DISCORD_WEBHOOK_URL: z.string().optional(),
   DISCORD_SERVER_ID: z.string().optional(),
   DISCORD_IS_FORUM: z.coerce.boolean().optional().default(false),
-  APPLICATIONINSIGHTS_CONNECTION_STRING: z.string().optional(),
-  WORKSPACE_ID: z.string().optional(),
 
-  DEV_FLAG_USE_TWITCH_CLIP_DIRECTLY: z.coerce.boolean().optional().default(false)
+  DEV_FLAG_USE_TWITCH_CLIP_DIRECTLY: z.coerce.boolean().optional().default(false),
+
+  SENTRY_DSN: z.string().optional(),
+  LOCAL_OTEL_COLLECTOR_URL: z.string().optional()
 });
 
 export const services = async (variables: z.infer<typeof config>) => {
@@ -60,6 +62,33 @@ export const services = async (variables: z.infer<typeof config>) => {
     This is useful because we can fail fast, not initialise clients that are not needed and
     ensure we make only one client for each service.
   */
+
+  const sentry = (() => {
+    // For local development, we use a valid-enough DSN so that the
+    // telemetry is properly initialised. This is forwarded to
+    // a local collector not to Sentry.
+    const dsn =
+      variables.SENTRY_DSN ??
+      'https://xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx@o0000000000000000.ingest.us.sentry.io/0000000000000000';
+
+    const additionalProcessors: SpanProcessor[] = [];
+
+    if (variables.NODE_ENV === 'development' && variables.LOCAL_OTEL_COLLECTOR_URL) {
+      const processor = new BatchSpanProcessor(new OTLPTraceExporter({ url: variables.LOCAL_OTEL_COLLECTOR_URL }));
+      additionalProcessors.push(processor);
+    }
+
+    return Sentry.init({
+      enableLogs: true,
+      enableMetrics: true,
+      sendDefaultPii: false,
+      tracesSampleRate: 1.0,
+      dsn,
+
+      integrations: [Sentry.consoleLoggingIntegration({ levels: ['log', 'warn', 'error'] })],
+      openTelemetrySpanProcessors: additionalProcessors
+    });
+  })();
 
   // Optional clients
   const mux = (() => {
@@ -83,17 +112,6 @@ export const services = async (variables: z.infer<typeof config>) => {
       tokenId: variables.MUX_TOKEN_ID,
       tokenSecret: variables.MUX_TOKEN_SECRET
     });
-  })();
-
-  const logs = (() => {
-    if (!variables.WORKSPACE_ID) {
-      return;
-    }
-
-    const creds = new DefaultAzureCredential();
-    const client = new LogsQueryClient(creds);
-
-    return client;
   })();
 
   const cache: KVCache = (() => {
@@ -133,6 +151,6 @@ export const services = async (variables: z.infer<typeof config>) => {
     twitch,
     cache,
     mux,
-    logs
+    sentry
   };
 };

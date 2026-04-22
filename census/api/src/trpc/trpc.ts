@@ -1,10 +1,11 @@
 import { CustomError, ForbiddenError, NotAuthenticatedError } from '@alveusgg/error';
-import { context, propagation, SpanKind, SpanStatusCode, trace } from '@opentelemetry/api';
+import { context } from '@opentelemetry/api';
 import {
   SEMATTRS_HTTP_METHOD,
   SEMATTRS_HTTP_STATUS_CODE,
   SEMATTRS_HTTP_URL
 } from '@opentelemetry/semantic-conventions';
+import * as Sentry from '@sentry/node';
 import { initTRPC, TRPCError } from '@trpc/server';
 import { eq } from 'drizzle-orm';
 import { flatten } from 'flat';
@@ -45,16 +46,16 @@ const fetchAuthProvider = async (configuredIssuer: string): Promise<AuthProvider
   });
 };
 
-let authProvider: AuthProvider | undefined;
+let authProvider: Promise<AuthProvider> | undefined;
 
 const getAuthProvider = async (): Promise<AuthProvider> => {
   const { variables } = useEnvironment();
 
   if (!authProvider) {
-    authProvider = await fetchAuthProvider(variables.ALVEUS_AUTH_ISSUER);
+    authProvider = fetchAuthProvider(variables.ALVEUS_AUTH_ISSUER);
   }
 
-  return authProvider;
+  return await authProvider;
 };
 
 const validateJWT = async (token: string) => {
@@ -78,49 +79,62 @@ const validateJWT = async (token: string) => {
 };
 
 const loggedProcedure = t.procedure.use(async opts => {
-  const tracer = trace.getTracer('ApplicationInsightsTracer');
-  const input = {
-    traceparent: opts.ctx.req.headers['traceparent'] as string,
-    tracestate: opts.ctx.req.headers['tracestate'] as string
-  };
+  const sentryTrace = opts.ctx.req.headers['sentry-trace'] as string | undefined;
+  const baggage = opts.ctx.req.headers['baggage'] as string | undefined;
 
-  const ctx = propagation.extract(context.active(), input);
-
-  return tracer.startActiveSpan(`TRPC ${opts.type}`, { kind: SpanKind.SERVER }, ctx, async span => {
-    const result = await opts.next();
-    const input = await opts.getRawInput();
-    if (typeof input === 'object') {
-      span.setAttributes(flatten({ input: SuperJSON.serialize(input).json }));
-    }
-    const meta = { path: opts.path, type: opts.type, ok: result.ok };
-    span.setAttributes({
-      ...meta,
-      [SEMATTRS_HTTP_METHOD]: 'HTTP',
-      [SEMATTRS_HTTP_URL]: opts.path,
-      [SEMATTRS_HTTP_STATUS_CODE]: result.ok ? 200 : 500
-    });
-    span.setStatus({ code: result.ok ? SpanStatusCode.OK : SpanStatusCode.ERROR });
-
-    if (!result.ok && result.error) {
-      if (result.error.cause instanceof CustomError) {
-        result.error = new TRPCError({
-          code: result.error.cause.category,
-          message: JSON.stringify(result.error.cause.toJSON()),
-          cause: result.error.cause
+  return Sentry.continueTrace({ sentryTrace, baggage }, () =>
+    Sentry.startSpan(
+      {
+        name: opts.path,
+        op: `trpc.${opts.type}`,
+        forceTransaction: true,
+        attributes: {
+          [SEMATTRS_HTTP_METHOD]: 'HTTP',
+          [SEMATTRS_HTTP_URL]: opts.path,
+          path: opts.path,
+          type: opts.type
+        }
+      },
+      async span => {
+        const result = await opts.next();
+        const rawInput = await opts.getRawInput();
+        if (typeof rawInput === 'object' && (opts.type === 'query' || opts.type === 'subscription')) {
+          span.setAttributes(flatten({ input: SuperJSON.serialize(rawInput).json }));
+        }
+        span.setAttributes({
+          ok: result.ok,
+          [SEMATTRS_HTTP_STATUS_CODE]: result.ok ? 200 : 500
         });
+        // 1 = OK, 2 = ERROR (OpenTelemetry status codes used by Sentry).
+        span.setStatus({ code: result.ok ? 1 : 2, message: result.ok ? 'ok' : 'internal_error' });
+
+        if (!result.ok && result.error) {
+          if (result.error.cause instanceof CustomError) {
+            result.error = new TRPCError({
+              code: result.error.cause.category,
+              message: JSON.stringify(result.error.cause.toJSON()),
+              cause: result.error.cause
+            });
+          }
+
+          Sentry.captureException(result.error, {
+            mechanism: { type: 'trpc', handled: false },
+            captureContext: {
+              contexts: {
+                trpc: {
+                  path: opts.path,
+                  type: opts.type,
+                  code: result.error.code
+                }
+              }
+            }
+          });
+        }
+
+        return result;
       }
-
-      span.recordException({
-        code: result.error.code,
-        message: result.error.message,
-        name: result.error.name,
-        stack: result.error.stack
-      });
-    }
-
-    span.end();
-    return result;
-  });
+    )
+  );
 });
 export const publicProcedure = loggedProcedure;
 
