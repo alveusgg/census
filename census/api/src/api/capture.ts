@@ -11,6 +11,7 @@ import {
   processingCaptureRequest
 } from '../services/capture/index.js';
 import { procedure, procedureWithPermissions, router } from '../trpc/trpc.js';
+import { report } from '../utils/logs.js';
 import { Pagination } from './observation.js';
 
 export default router({
@@ -52,6 +53,7 @@ export default router({
           })
           .catch(async e => {
             await failCaptureRequest(clip.capture.id);
+            report(e);
             console.error(e);
           });
       }
