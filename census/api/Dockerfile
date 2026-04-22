@@ -15,12 +15,10 @@ WORKDIR /ws
 # every workspace package.json are unchanged - even when source code changes.
 FROM base AS deps
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
-COPY clips/provider/package.json ./clips/provider/
 COPY census/api/package.json ./census/api/
 COPY census/website/package.json ./census/website/
 COPY census/website/ipx/package.json ./census/website/ipx/
 COPY census/levels/package.json ./census/levels/
-COPY census/sync/package.json ./census/sync/
 COPY census/forms/package.json ./census/forms/
 COPY infrastructure/pulumi/package.json ./infrastructure/pulumi/
 COPY shared/node/package.json ./shared/node/
