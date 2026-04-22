@@ -19,3 +19,5 @@ config:
   census:twitch-client-id: sjj3rcjojtqyeobptmjf3pjukaerkc
   census:twitch-client-secret:
     secure: AAABAJY/MAFnmek/sfNPPpPph4UhaaKq1RTH/h9rXTsuAx8iOHyjAKlI1+O3OfsjQAHnru42kBZEQJzmfT4=
+  census:sentry-dsn:
+    secure: AAABAMIdsVNssTOl+sgOvUvziT84Ih1jSxlaagUNOX0F8LLQldRC3jA0B+xykC2z9SUhFJ2b76DrgvOgWfqsY3Rei0DDtJ5GOun2ZDbZHPV15YJobGzVJYfiW9GR+0t2ZkxcBnTEdgG48G6NTQJD5C03vYX90Euaj7h8pI1Mlw==

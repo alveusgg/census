@@ -1,34 +1,35 @@
 import { Counter } from '@/components/animation/Counter';
 import { Link } from '@/components/controls/button/juicy';
 import SiChevronDown from '@/components/icons/SiChevronDown';
-import { StickerStage, StickerValueMap, createStickerValueMap } from '@/components/stickers';
+// import { StickerStage, StickerValueMap, createStickerValueMap } from '@/components/stickers';
 import { useLeaderboard } from '@/services/api/me';
 import { cn } from '@/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { FC, useState } from 'react';
+import { FC } from 'react';
 import { ShiniesForSeason } from '../identifications/Shiny';
+import { ActivityFeed } from './ActivityFeed';
 import { Badge } from './leaderboards/Badge';
 import { Podium } from './leaderboards/Podium';
 
-import { Button } from '@/components/controls/button/blueprint';
-import SiCheckCircle from '@/components/icons/SiCheckCircle';
-import SiSticker from '@/components/icons/SiSticker';
-import { useMeasure } from '@uidotdev/usehooks';
+// import { Button } from '@/components/controls/button/blueprint';
+// import SiCheckCircle from '@/components/icons/SiCheckCircle';
+// import SiSticker from '@/components/icons/SiSticker';
+// import { useMeasure } from '@uidotdev/usehooks';
 
 export const Home: FC = () => {
   const leaderboardQuery = useLeaderboard();
   const leaderboard = useSuspenseQuery(leaderboardQuery);
   const [first, second, third] = leaderboard.data.leaderboard;
 
-  const [value, setValue] = useState<StickerValueMap<string>>(createStickerValueMap<string>([]));
-  const [mode, setMode] = useState<'interactive' | 'static'>('static');
+  // const [value, setValue] = useState<StickerValueMap<string>>(createStickerValueMap<string>([]));
+  // const [mode, setMode] = useState<'interactive' | 'static'>('static');
 
-  const [ref, { width }] = useMeasure();
+  // const [ref, { width }] = useMeasure();
 
   return (
     <>
-      <div ref={ref} className="w-full h-full relative">
+      {/* <div ref={ref} className="w-full h-full relative">
         <StickerStage
           stickers={[]}
           mode={mode}
@@ -50,11 +51,27 @@ export const Home: FC = () => {
       >
         {mode === 'static' ? <SiSticker className="text-xl" /> : <SiCheckCircle className="text-xl" />}
         <span>{mode === 'static' ? 'rearrange your stickers' : 'lock your stickers in place'}</span>
-      </Button>
+      </Button> */}
       <div className="grid grid-cols-1 @5xl:grid-cols-2 gap-8 mx-auto max-w-5xl w-full">
         <div className="col-span-1 @5xl:col-span-2 flex flex-col p-4 items-center justify-center text-center py-4 text-accent-900">
           <h1 className="text-3xl font-semibold">welcome to the</h1>
           <h2 className="text-5xl font-bold">alveus pollinator census</h2>
+        </div>
+        <div className="text-accent-900 col-span-2 flex flex-col gap-3 bg-accent-50 border border-accent border-opacity-50 px-8 pb-5 pt-7 rounded-2xl overflow-clip @container">
+          <h2 className="text-2xl font-bold text-accent-900">
+            <span>Get started</span>
+          </h2>
+          <p className="">
+            Welcome to the Alveus Pollinator Census! This is a community-driven project to identify and document all the
+            pollinators found in the garden.
+          </p>
+          <p>
+            Have a look around and see what's been identified already! If you'd like to contribute, you can sign up
+            below by completing a quick questionnaire.
+          </p>
+          <Link to="/forms/onboarding" variant="alveus" className="mt-4 text-center w-full">
+            Sign up to help out!
+          </Link>
         </div>
         <div className="flex flex-col bg-[#B068F8] border border-[#8D40DB] px-8 pb-5 pt-7 rounded-2xl overflow-clip @container">
           <div className="flex justify-between">
@@ -142,22 +159,8 @@ export const Home: FC = () => {
             </motion.button>
           </div>
         </div>
-        <div className="text-accent-900 flex flex-col gap-3 bg-accent-50 border border-accent border-opacity-50 px-8 pb-5 pt-7 rounded-2xl overflow-clip @container">
-          <h2 className="text-2xl font-bold text-accent-900">
-            <span>Get started</span>
-          </h2>
-          <p className="">
-            Welcome to the Alveus Pollinator Census! This is a community-driven project to identify and document all the
-            pollinators found in the garden.
-          </p>
-          <p>
-            Have a look around and see what's been identified already! If you'd like to contribute, you can sign up
-            below by completing a quick questionnaire.
-          </p>
-          <Link to="/forms/onboarding" variant="alveus" className="mt-4 text-center w-full">
-            Sign up to help out!
-          </Link>
-        </div>
+        <ActivityFeed />
+
         <div className="col-span-1 @5xl:col-span-2">
           <ShiniesForSeason />
         </div>

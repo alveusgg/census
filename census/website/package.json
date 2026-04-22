@@ -31,6 +31,7 @@
     "@react-av/controls": "^0.0.5",
     "@react-av/core": "^0.0.4",
     "@react-av/sliders": "^0.0.4",
+    "@sentry/react": "^10.49.0",
     "@tailwindcss/container-queries": "^0.1.1",
     "@tanstack/react-query": "^5.52.2",
     "@tanstack/react-table": "8.20.6",
@@ -59,6 +60,7 @@
     "superjson": "^2.2.2",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
+    "three": "^0.184.0",
     "vite-plugin-info": "^0.4.1",
     "zod": "3.23.8",
     "zustand": "^4.5.5"
@@ -68,6 +70,7 @@
     "@types/potrace": "^2.1.5",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
+    "@types/three": "^0.184.0",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.20",
     "concurrently": "^9.0.1",

@@ -1,6 +1,4 @@
-import { eq } from 'drizzle-orm';
-import { users } from '../../db/schema/index.js';
-import { useEnvironment, useUser } from '../../utils/env/env.js';
+import { useUser } from '../../utils/env/env.js';
 
 export type Permissions = {
   vote: boolean;
@@ -13,10 +11,7 @@ export type Permissions = {
 };
 
 export const getPermissions = async () => {
-  const env = useEnvironment();
-  const { roles, sub } = useUser();
-
-  const [user] = await env.db.select().from(users).where(eq(users.providerId, sub));
+  const { roles, status } = useUser();
 
   const permissions = {
     vote: false,
@@ -28,9 +23,7 @@ export const getPermissions = async () => {
     moderate: false
   };
 
-  if (!user) return permissions;
-
-  if (user.status === 'pending') {
+  if (status === 'pending') {
     return permissions;
   }
 

@@ -1,0 +1,118 @@
+import { RecentAchievement, useRecentAchievements } from '@/services/api/users';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { formatDistanceToNowStrict } from 'date-fns';
+import { AnimatePresence, motion } from 'framer-motion';
+import { FC } from 'react';
+
+const describe = (achievement: RecentAchievement): { emoji: string; message: React.ReactNode } => {
+  const username = <span className="font-bold">{achievement.user.username}</span>;
+  const target = achievement.identification?.nickname;
+
+  switch (achievement.payload.type) {
+    case 'onboard':
+      return { emoji: '🎉', message: <>{username} joined the census</> };
+    case 'identify':
+      return {
+        emoji: '🔬',
+        message: target ? (
+          <>
+            {username} identified <span className="font-bold">{target}</span>
+          </>
+        ) : (
+          <>{username} made an identification</>
+        )
+      };
+    case 'shiny':
+      return {
+        emoji: '🌟',
+        message: target ? (
+          <>
+            {username} found a shiny <span className="font-bold">{target}</span>
+          </>
+        ) : (
+          <>{username} found a shiny</>
+        )
+      };
+    case 'vote':
+      return {
+        emoji: '👍',
+        message: target ? (
+          <>
+            {username} voted on <span className="font-bold">{target}</span>
+          </>
+        ) : (
+          <>{username} voted on an identification</>
+        )
+      };
+    case 'comment':
+      return {
+        emoji: '💬',
+        message: target ? (
+          <>
+            {username} commented on <span className="font-bold">{target}</span>
+          </>
+        ) : (
+          <>{username} commented on an identification</>
+        )
+      };
+    default:
+      return { emoji: '✨', message: <>{username} earned an achievement</> };
+  }
+};
+
+const MAX_ITEMS = 5;
+const ITEM_HEIGHT = 46;
+const GAP = 8;
+const LIST_HEIGHT = MAX_ITEMS * ITEM_HEIGHT + (MAX_ITEMS - 1) * GAP;
+
+export const ActivityFeed: FC = () => {
+  const query = useRecentAchievements();
+  const achievements = useSuspenseQuery(query);
+
+  return (
+    <div className="flex flex-col bg-[#B068F8] border border-[#8D40DB] px-4 pt-4 rounded-2xl overflow-clip @container relative">
+      <ul className="flex flex-col gap-2 list-none" style={{ height: LIST_HEIGHT }}>
+        <AnimatePresence mode="popLayout" initial={false}>
+          {achievements.data.map((achievement, index) => (
+            <ActivityItem key={achievement.id.toString()} achievement={achievement} index={index} />
+          ))}
+        </AnimatePresence>
+      </ul>
+      <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-b from-transparent to-[#B068F8]"></div>
+    </div>
+  );
+};
+
+interface ActivityItemProps {
+  achievement: RecentAchievement;
+  index: number;
+}
+
+const ActivityItem: FC<ActivityItemProps> = ({ achievement, index }) => {
+  const { emoji, message } = describe(achievement);
+
+  return (
+    <motion.li
+      layout="position"
+      initial={{ opacity: 0, y: -ITEM_HEIGHT }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        layout: { type: 'spring', stiffness: 420, damping: 40, mass: 0.8, delay: 0.3 - index * 0.05 },
+        delay: 0.4
+      }}
+      style={{ height: ITEM_HEIGHT }}
+      className="bg-[#A356F0] border border-[#8D40DB] shadow-inner rounded-lg px-4 text-white flex items-center gap-3 shrink-0"
+    >
+      <span className="text-xl leading-none shrink-0" aria-hidden>
+        {emoji}
+      </span>
+      <div className="flex-1 min-w-0 flex flex-col">
+        <p className="text-sm leading-tight truncate">{message}</p>
+      </div>
+      <div className="flex flex-col justify-end items-end">
+        <p className="text-xs opacity-70">{formatDistanceToNowStrict(achievement.createdAt, { addSuffix: true })}</p>
+        <span className="font-bold font-mono text-sm shrink-0">+{achievement.points}</span>
+      </div>
+    </motion.li>
+  );
+};

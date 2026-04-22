@@ -20,8 +20,9 @@ export type AppRouter = typeof router;
 await withEnvironment(environment, async () => {
   const options = { maxParamLength: 5000 };
   const server = fastify(options);
+
   await server.register(cors, {
-    allowedHeaders: ['authorization', 'content-type', 'traceparent', 'tracestate'],
+    allowedHeaders: ['authorization', 'content-type', 'sentry-trace', 'baggage'],
     exposedHeaders: ['X-Census-Points', 'X-Census-Achievements']
   });
   await server.register(websocket);
