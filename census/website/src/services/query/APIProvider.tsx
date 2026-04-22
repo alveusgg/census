@@ -1,7 +1,7 @@
 import { useVariable } from '@alveusgg/backstage';
 import type { AppRouter } from '@alveusgg/census-api';
 import { useQueryClient } from '@tanstack/react-query';
-import { createTRPCClient, httpBatchLink, splitLink, TRPCLink, unstable_httpSubscriptionLink } from '@trpc/client';
+import { createTRPCClient, httpBatchLink, httpSubscriptionLink, splitLink, TRPCLink } from '@trpc/client';
 import { observable } from '@trpc/server/observable';
 import { createContext, FC, PropsWithChildren, useRef } from 'react';
 import SuperJSON from 'superjson';
@@ -68,7 +68,7 @@ export const APIProvider: FC<PropsWithChildren> = ({ children }) => {
         splitLink({
           // uses the httpSubscriptionLink for subscriptions
           condition: op => op.type === 'subscription',
-          true: unstable_httpSubscriptionLink({
+          true: httpSubscriptionLink({
             url,
             transformer: SuperJSON,
             connectionParams: async () => ({ authorization: `Bearer ${await requestToken()}` })

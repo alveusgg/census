@@ -27,7 +27,7 @@
     "@sentry/node": "^10.49.0",
     "@tldraw/sync-core": "^3.10.3",
     "@tldraw/tlschema": "^3.11.0",
-    "@trpc/server": "11.0.0-rc.633",
+    "@trpc/server": "catalog:",
     "@twurple/api": "^7.2.0",
     "@twurple/auth": "^7.1.0",
     "applicationinsights": "^3.4.0",
