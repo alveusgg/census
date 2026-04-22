@@ -9,7 +9,7 @@ import * as Sentry from '@sentry/node';
 import { initTRPC, TRPCError } from '@trpc/server';
 import { eq } from 'drizzle-orm';
 import { flatten } from 'flat';
-import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { createRemoteJWKSet, errors as joseErrors, jwtVerify } from 'jose';
 import SuperJSON from 'superjson';
 import { z } from 'zod';
 import { feeds } from '../db/schema/index.js';
@@ -33,7 +33,7 @@ type AuthProvider = ReturnType<typeof createRemoteJWKSet>;
 const fetchAuthProvider = async (configuredIssuer: string): Promise<AuthProvider> => {
   const response = await fetch(new URL('/.well-known/oauth-authorization-server', configuredIssuer));
   if (!response.ok) {
-    throw new NotAuthenticatedError('Your token not signed correctly');
+    throw new NotAuthenticatedError('Could not reach the authentication provider to verify your token.');
   }
 
   const data = await response.json();
@@ -65,7 +65,10 @@ const validateJWT = async (token: string) => {
     const jwks = await getAuthProvider();
     const { payload } = await jwtVerify(token, jwks, {
       algorithms: ['RS256'],
-      issuer: variables.ALVEUS_AUTH_ISSUER
+      issuer: variables.ALVEUS_AUTH_ISSUER,
+      // Absorb small clock drift between the client that minted/checked the
+      // token and this server; anything larger is a real expiry and should fail.
+      clockTolerance: '30s'
     });
 
     return {
@@ -74,7 +77,22 @@ const validateJWT = async (token: string) => {
     };
   } catch (error) {
     console.error('error', error);
-    throw new NotAuthenticatedError('Your token not signed correctly');
+    if (error instanceof joseErrors.JWTExpired) {
+      throw new NotAuthenticatedError('Your token has expired.');
+    }
+    if (error instanceof joseErrors.JWTClaimValidationFailed) {
+      throw new NotAuthenticatedError(`Your token has an invalid claim: ${error.claim} (${error.reason}).`);
+    }
+    if (error instanceof joseErrors.JWSSignatureVerificationFailed) {
+      throw new NotAuthenticatedError('Your token signature could not be verified.');
+    }
+    if (error instanceof joseErrors.JWKSNoMatchingKey) {
+      throw new NotAuthenticatedError('Your token was signed with an unknown key.');
+    }
+    if (error instanceof joseErrors.JOSEError) {
+      throw new NotAuthenticatedError(`Your token could not be verified: ${error.code}.`);
+    }
+    throw new NotAuthenticatedError('Your token could not be verified.');
   }
 };
 
@@ -160,7 +178,10 @@ export const procedure = loggedProcedure.use(async ({ ctx, next }) => {
     return withUser({ ...payload.data, ...user, points: ctx.points, achievements: ctx.achievements }, next);
   } catch (error) {
     console.error('error', error);
-    throw new NotAuthenticatedError('Your token is malformed.');
+    // Preserve the specific auth failure reason; only wrap unexpected errors
+    // (e.g. downstream user lookup failures) as a generic auth error.
+    if (error instanceof NotAuthenticatedError) throw error;
+    throw new NotAuthenticatedError('Your token could not be authenticated.');
   }
 });
 

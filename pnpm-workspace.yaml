@@ -8,3 +8,7 @@ packages:
   - 'census/forms'
   - 'infrastructure/pulumi'
   - 'shared/*'
+
+catalog:
+  '@trpc/client': ^11.16.0
+  '@trpc/server': ^11.16.0

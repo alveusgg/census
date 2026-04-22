@@ -12,7 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@trpc/server": "11.0.0-rc.660",
+    "@trpc/server": "catalog:",
     "fastify": "^4.28.1",
     "fastify-plugin": "^4.5.1",
     "zod": "^3.23.8"
