@@ -100,3 +100,13 @@ jobs:
             printf '%s' '${{ steps.pulumi.outputs.workerSourceBase64 }}' | base64 --decode > worker.generated.js
           command: |
             deploy --config wrangler.generated.jsonc --env prod
+
+      - name: Create Sentry release
+        uses: getsentry/action-release@v3
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: alveus-sanctuary
+          SENTRY_PROJECT: census
+        with:
+          environment: production
+          version: ${{ github.sha }}

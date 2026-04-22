@@ -51,6 +51,8 @@ jobs:
           context: .
           file: census/api/Dockerfile
           target: runtime
+          build-args: |
+            SENTRY_RELEASE=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           # Skip provenance attestation - it adds extra build time and is not

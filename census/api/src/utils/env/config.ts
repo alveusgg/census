@@ -53,6 +53,7 @@ export const config = z.object({
   DEV_FLAG_USE_TWITCH_CLIP_DIRECTLY: z.coerce.boolean().optional().default(false),
 
   SENTRY_DSN: z.string().optional(),
+  SENTRY_RELEASE: z.string().optional(),
   LOCAL_OTEL_COLLECTOR_URL: z.string().optional()
 });
 
@@ -84,6 +85,7 @@ export const services = async (variables: z.infer<typeof config>) => {
       sendDefaultPii: false,
       tracesSampleRate: 1.0,
       dsn,
+      release: variables.SENTRY_RELEASE,
 
       integrations: [Sentry.consoleLoggingIntegration({ levels: ['log', 'warn', 'error'] })],
       openTelemetrySpanProcessors: additionalProcessors
