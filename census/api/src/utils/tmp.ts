@@ -2,6 +2,7 @@ import { mkdirSync } from 'fs';
 import { unlink } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
+import { report } from './logs.js';
 
 const Cache = new Map<string, Promise<TemporaryFile>>();
 
@@ -101,6 +102,7 @@ setInterval(() => {
         }
       })
       .catch(err => {
+        report(err);
         console.error(err);
       });
   });

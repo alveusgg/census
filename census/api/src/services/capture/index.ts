@@ -6,6 +6,7 @@ import { Capture, captures } from '../../db/schema/index.js';
 import { useDB } from '../../db/transaction.js';
 import { assert } from '../../utils/assert.js';
 import { useEnvironment, useUser } from '../../utils/env/env.js';
+import { report } from '../../utils/logs.js';
 import { getFeed } from '../feed/index.js';
 import { downloadVideo } from '../observations/observations.js';
 import { getClip } from '../twitch/index.js';
@@ -272,7 +273,7 @@ export const completeCaptureRequest = async (id: number, videoUrl: string) => {
     })
     .catch(error => {
       console.error(`Failed to download video for capture ${capture.id}`, error);
-      throw error;
+      report(error);
     });
   return capture;
 };

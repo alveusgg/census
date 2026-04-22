@@ -1,8 +1,10 @@
+import { DownstreamError } from '@alveusgg/error';
 import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 import { observations } from '../../db/schema/index.js';
 import { useDB } from '../../db/transaction.js';
 import { useEnvironment, useUser } from '../../utils/env/env.js';
+import { report } from '../../utils/logs.js';
 import { getImagesForObservationId } from '../observations/observations.js';
 
 const Post = z.object({
@@ -37,7 +39,9 @@ export const notifyDiscordAboutObservation = async (observationId: number) => {
   const [image] = await getImagesForObservationId(observationId);
 
   if (!image) {
-    console.error(`No image found for observation ${observationId}`);
+    const error = new Error(`No image found for observation ${observationId}`);
+    report(error);
+    console.error(error);
     return;
   }
 
@@ -69,8 +73,13 @@ export const notifyDiscordAboutObservation = async (observationId: number) => {
   });
 
   if (!response.ok) {
-    console.error(`Failed to create forum post: ${response.statusText}`);
-    console.error(await response.text());
+    const body = await response.text();
+    const error = new DownstreamError(
+      'discord',
+      `Failed to create forum post: ${response.status} ${response.statusText} ${body}`
+    );
+    report(error);
+    console.error(error);
     return;
   }
 
