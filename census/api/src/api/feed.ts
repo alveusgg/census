@@ -4,6 +4,7 @@ import { subscribeToChanges } from '../db/listen.js';
 import { completeCaptureRequest, getCapture, getPendingCapturesForFeeds } from '../services/capture/index.js';
 import { ensureKeyForFeeds } from '../services/feed/index.js';
 import { publicProcedure, router } from '../trpc/trpc.js';
+import { report } from '../utils/logs.js';
 import { getPresignedUploadURL } from '../utils/storage.js';
 
 export default router({
@@ -33,6 +34,7 @@ export default router({
         }
         yield { type: 'complete' as const };
       } catch (error) {
+        if (error instanceof Error) report(error);
         yield { type: 'error' as const, error };
       }
     }),
