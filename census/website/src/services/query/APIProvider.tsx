@@ -1,11 +1,12 @@
 import { useVariable } from '@alveusgg/backstage';
 import type { AppRouter } from '@alveusgg/census-api';
+import * as Sentry from '@sentry/react';
 import { useQueryClient } from '@tanstack/react-query';
-import { createTRPCClient, httpBatchLink, httpSubscriptionLink, splitLink, TRPCLink } from '@trpc/client';
+import { createTRPCClient, httpBatchLink, httpSubscriptionLink, retryLink, splitLink, TRPCLink } from '@trpc/client';
 import { observable } from '@trpc/server/observable';
 import { createContext, FC, PropsWithChildren, useRef } from 'react';
 import SuperJSON from 'superjson';
-import { useRequestToken } from '../authentication/hooks';
+import { useInvalidateRequestToken, useRequestToken } from '../authentication/hooks';
 import { Variables } from '../backstage/config';
 import { key } from './hooks';
 interface PointsLinkOptions {
@@ -48,6 +49,7 @@ export const APIContext = createContext<ReturnType<typeof createTRPCClient<AppRo
 export const APIProvider: FC<PropsWithChildren> = ({ children }) => {
   const url = useVariable<Variables>('apiBaseUrl');
   const requestToken = useRequestToken();
+  const invalidateRequestToken = useInvalidateRequestToken();
   if (!url) throw new Error('Missing apiBaseUrl');
 
   const queryClient = useQueryClient();
@@ -55,6 +57,34 @@ export const APIProvider: FC<PropsWithChildren> = ({ children }) => {
   const client = useRef(
     createTRPCClient<AppRouter>({
       links: [
+        // On UNAUTHORIZED, drop the cached access token and retry once. The
+        // next pass through the link chain will see the missing token and
+        // refresh via the refresh token before re-sending the request.
+        //
+        // This papers over a disagreement between the client's pre-flight
+        // `isTokenExpired` check and the server's `jwtVerify`. Report each
+        // hit to Sentry so we can keep an eye on how often it's happening
+        // and whether the underlying cause (clock skew, suspended tabs,
+        // key rotation, etc.) warrants a more targeted fix.
+        retryLink<AppRouter>({
+          retry: ({ error, op, attempts }) => {
+            if (attempts > 1) return false;
+            if (error.data?.code !== 'UNAUTHORIZED') return false;
+            Sentry.captureMessage('tRPC UNAUTHORIZED retry: invalidating access token', {
+              level: 'warning',
+              tags: { subsystem: 'auth', action: 'trpc-unauthorized-retry' },
+              contexts: {
+                trpc: {
+                  path: op.path,
+                  type: op.type,
+                  attempts
+                }
+              }
+            });
+            invalidateRequestToken();
+            return true;
+          }
+        }),
         pointsLink({
           invalidate: {
             achievements: () => {

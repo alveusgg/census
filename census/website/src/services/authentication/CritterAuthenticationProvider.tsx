@@ -83,25 +83,21 @@ export const CritterAuthenticationProvider: FC<PropsWithChildren> = ({ children 
         const { signInUp } = get();
         try {
           const token = localStorage.getItem(TOKEN_KEY);
-          if (!token) throw new Error('No token found');
+          if (token && !isTokenExpired(token)) return token;
 
-          if (isTokenExpired(token)) {
-            const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
-            if (!refreshToken) throw new Error('No refresh token found');
-            if (isTokenExpired(refreshToken)) {
-              throw new Error('Token and refresh token are expired');
-            }
-            const tokens = await performTokenRefresh.mutateAsync(refreshToken);
-            localStorage.setItem(TOKEN_KEY, tokens.accessToken);
-            localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
-            return tokens.accessToken;
-          }
-
-          return token;
+          const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+          if (!refreshToken) throw new Error('No refresh token found');
+          if (isTokenExpired(refreshToken)) throw new Error('Token and refresh token are expired');
+          const tokens = await performTokenRefresh.mutateAsync(refreshToken);
+          localStorage.setItem(TOKEN_KEY, tokens.accessToken);
+          localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
+          return tokens.accessToken;
         } catch (e) {
-          await signInUp();
-          throw e;
+          return await signInUp();
         }
+      },
+      invalidateRequestToken: () => {
+        localStorage.removeItem(TOKEN_KEY);
       },
       onRedirect: async () => {
         try {
@@ -134,6 +130,11 @@ export const CritterAuthenticationProvider: FC<PropsWithChildren> = ({ children 
         if (from) params.set('from', from);
         params.set('origin', window.location.origin);
         window.location.href = `${apiBaseUrl}/auth/signin?${params.toString()}`;
+        // Never resolve: the page is navigating away and we don't want
+        // callers (e.g. `getRequestToken`'s catch branch) to continue as if
+        // auth succeeded. A rejection here would surface as an unhandled
+        // error during the unload window, so we simply hold the promise.
+        return await new Promise<never>(() => {});
       },
       signOut: async () => {
         localStorage.removeItem(TOKEN_KEY);

@@ -31,6 +31,8 @@
     "@react-av/controls": "^0.0.5",
     "@react-av/core": "^0.0.4",
     "@react-av/sliders": "^0.0.4",
+    "@react-three/drei": "^9.122.0",
+    "@react-three/fiber": "^8.17.14",
     "@sentry/react": "^10.49.0",
     "@tailwindcss/container-queries": "^0.1.1",
     "@tanstack/react-query": "^5.52.2",

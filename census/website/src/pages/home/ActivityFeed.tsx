@@ -1,6 +1,5 @@
 import { RecentAchievement, useRecentAchievements } from '@/services/api/users';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { formatDistanceToNowStrict } from 'date-fns';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FC } from 'react';
 
@@ -61,7 +60,7 @@ const describe = (achievement: RecentAchievement): { emoji: string; message: Rea
 };
 
 const MAX_ITEMS = 5;
-const ITEM_HEIGHT = 46;
+const ITEM_HEIGHT = 36;
 const GAP = 8;
 const LIST_HEIGHT = MAX_ITEMS * ITEM_HEIGHT + (MAX_ITEMS - 1) * GAP;
 
@@ -70,7 +69,7 @@ export const ActivityFeed: FC = () => {
   const achievements = useSuspenseQuery(query);
 
   return (
-    <div className="flex flex-col bg-[#B068F8] border border-[#8D40DB] px-4 pt-4 rounded-2xl overflow-clip @container relative">
+    <div className="flex flex-col h-full bg-[#B068F8] border border-[#8D40DB] px-4 pt-4 rounded-2xl overflow-clip @container relative">
       <ul className="flex flex-col gap-2 list-none" style={{ height: LIST_HEIGHT }}>
         <AnimatePresence mode="popLayout" initial={false}>
           {achievements.data.map((achievement, index) => (
@@ -110,7 +109,6 @@ const ActivityItem: FC<ActivityItemProps> = ({ achievement, index }) => {
         <p className="text-sm leading-tight truncate">{message}</p>
       </div>
       <div className="flex flex-col justify-end items-end">
-        <p className="text-xs opacity-70">{formatDistanceToNowStrict(achievement.createdAt, { addSuffix: true })}</p>
         <span className="font-bold font-mono text-sm shrink-0">+{achievement.points}</span>
       </div>
     </motion.li>

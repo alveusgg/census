@@ -46,7 +46,7 @@ export interface ImgProps {
   options: IpxOptions;
 }
 
-const constructIpxUrl = (options: IpxOptions, base: string, src: string) => {
+export const constructIpxUrl = (options: IpxOptions, base: string, src: string) => {
   const flags: string[] = [];
 
   if (options.quality) {
