@@ -20,61 +20,108 @@ html {
   --accent-color-800: 143 66 17;
   --accent-color-900: 120 55 12;
   --accent-color-950: 75 39 12;
+
+  /* Leaderboard / points / achievements purple ramp. 400-700 are the brand
+     hex codes that already existed (#B877F9, #B068F8, #A356F0, #8D40DB);
+     the 50-300 / 800-950 stops are extrapolated for completeness. */
+  --leaderboard-color-50: 248 242 254;
+  --leaderboard-color-100: 241 228 253;
+  --leaderboard-color-200: 226 201 251;
+  --leaderboard-color-300: 207 167 249;
+  --leaderboard-color-400: 184 119 249;
+  --leaderboard-color-500: 176 104 248;
+  --leaderboard-color-600: 163 86 240;
+  --leaderboard-color-700: 141 64 219;
+  --leaderboard-color-800: 111 46 176;
+  --leaderboard-color-900: 83 30 131;
+  --leaderboard-color-950: 49 16 69;
 }
 
+/*
+ * shadcn/ui tokens are wired to the Alveus warm cream/brown ramp so any
+ * component installed via `pnpm dlx shadcn add ...` inherits the project
+ * look automatically. The HSL values mirror the RGB --accent-color-* ramp
+ * above; keep them in sync if the brand palette ever shifts.
+ *
+ *   --background       = accent-50    (cream surface)
+ *   --foreground       = accent-900   (deep brown ink)
+ *   --primary          = accent-700   (burnt orange)
+ *   --secondary/muted  = accent-100   (very light cream)
+ *   --accent           = accent-200   (warm hover surface)
+ *   --border/--input   = accent-200
+ *   --ring             = accent-700
+ */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
+    --background: 54 100% 98%;
+    --foreground: 24 82% 26%;
+    --card: 54 100% 98%;
+    --card-foreground: 24 82% 26%;
+    --popover: 54 100% 98%;
+    --popover-foreground: 24 82% 26%;
+    --primary: 26 86% 37%;
+    --primary-foreground: 54 100% 98%;
+    --secondary: 52 80% 96%;
+    --secondary-foreground: 24 82% 26%;
+    --muted: 52 80% 96%;
+    --muted-foreground: 26 86% 37%;
+    --accent: 48 74% 91%;
+    --accent-foreground: 24 82% 26%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --destructive-foreground: 54 100% 98%;
+    --border: 48 74% 91%;
+    --input: 48 74% 91%;
+    --ring: 26 86% 37%;
+    --chart-1: 26 86% 37%;
+    --chart-2: 38 87% 50%;
+    --chart-3: 44 91% 56%;
+    --chart-4: 23 79% 31%;
+    --chart-5: 42 79% 85%;
     --radius: 0.5rem;
+
+    --sidebar-background: 52 80% 96%;
+    --sidebar-foreground: 24 82% 26%;
+    --sidebar-primary: 26 86% 37%;
+    --sidebar-primary-foreground: 54 100% 98%;
+    --sidebar-accent: 48 74% 91%;
+    --sidebar-accent-foreground: 24 82% 26%;
+    --sidebar-border: 48 74% 91%;
+    --sidebar-ring: 26 86% 37%;
   }
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
+    --background: 26 72% 17%;
+    --foreground: 54 100% 98%;
+    --card: 26 72% 17%;
+    --card-foreground: 54 100% 98%;
+    --popover: 26 72% 17%;
+    --popover-foreground: 54 100% 98%;
+    --primary: 46 92% 62%;
+    --primary-foreground: 26 72% 17%;
+    --secondary: 24 82% 26%;
+    --secondary-foreground: 54 100% 98%;
+    --muted: 24 82% 26%;
+    --muted-foreground: 42 79% 85%;
+    --accent: 23 79% 31%;
+    --accent-foreground: 54 100% 98%;
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --destructive-foreground: 54 100% 98%;
+    --border: 23 79% 31%;
+    --input: 23 79% 31%;
+    --ring: 46 92% 62%;
+    --chart-1: 46 92% 62%;
+    --chart-2: 38 87% 50%;
+    --chart-3: 26 86% 37%;
+    --chart-4: 42 79% 85%;
+    --chart-5: 23 79% 31%;
+
+    --sidebar-background: 24 82% 26%;
+    --sidebar-foreground: 54 100% 98%;
+    --sidebar-primary: 46 92% 62%;
+    --sidebar-primary-foreground: 26 72% 17%;
+    --sidebar-accent: 23 79% 31%;
+    --sidebar-accent-foreground: 54 100% 98%;
+    --sidebar-border: 23 79% 31%;
+    --sidebar-ring: 46 92% 62%;
   }
 }
 

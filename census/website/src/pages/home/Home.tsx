@@ -79,7 +79,7 @@ export const Home: FC = () => {
             Sign up to help out!
           </Link>
         </div>
-        <div className="@4xl:col-span-5 col-span-8 flex flex-col bg-[#B068F8] border border-[#8D40DB] px-8 pb-5 pt-7 rounded-2xl overflow-clip @container">
+        <div className="@4xl:col-span-5 col-span-8 flex flex-col bg-leaderboard-500 border border-leaderboard-700 px-8 pb-5 pt-7 rounded-2xl overflow-clip @container">
           <div className="flex justify-between">
             <h2 className="text-white text-2xl font-bold">Leaderboard</h2>
           </div>
@@ -156,7 +156,7 @@ export const Home: FC = () => {
             {leaderboard.data.place.me && (
               <motion.span className="flex flex-col items-center">
                 <span className="h-1 w-10 rounded-full bg-black my-3 bg-opacity-10" />
-                <div className="w-full text-white text-sm bg-[#A356F0] border shadow-inner border-[#8D40DB] flex items-center gap-4 px-4 py-2 rounded-xl justify-between">
+                <div className="w-full text-white text-sm bg-leaderboard-600 border shadow-inner border-leaderboard-700 flex items-center gap-4 px-4 py-2 rounded-xl justify-between">
                   <span className="flex items-center gap-4">
                     <span className="font-bold font-mono text-lg">{leaderboard.data.place.place}</span>
                     {leaderboard.data.place.me.username}
