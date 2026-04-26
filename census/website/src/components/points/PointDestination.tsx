@@ -11,7 +11,7 @@ export const PointDestination = () => {
         <motion.div
           key={action.id}
           className={cn(
-            'text-white bg-[#B877F9] min-w-12 w-fit px-3 py-1 rounded-full font-bold flex justify-center items-center z-10',
+            'text-white bg-leaderboard-400 min-w-12 w-fit px-3 py-1 rounded-full font-bold flex justify-center items-center z-10',
             'shadow-[inset_0_-1px_6px_4px_rgba(0,0,0,0.08)]'
           )}
           layout="position"

@@ -2,11 +2,12 @@ import { Counter } from '@/components/animation/Counter';
 import { Link } from '@/components/controls/button/juicy';
 import SiChevronDown from '@/components/icons/SiChevronDown';
 // import { StickerStage, StickerValueMap, createStickerValueMap } from '@/components/stickers';
+import { EquirectangularView } from '@/components/pano/EquirectangularView';
 import { useLeaderboard } from '@/services/api/me';
 import { cn } from '@/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { FC } from 'react';
+import { FC, useState } from 'react';
 import { ShiniesForSeason } from '../identifications/Shiny';
 import { ActivityFeed } from './ActivityFeed';
 import { Badge } from './leaderboards/Badge';
@@ -21,6 +22,8 @@ export const Home: FC = () => {
   const leaderboardQuery = useLeaderboard();
   const leaderboard = useSuspenseQuery(leaderboardQuery);
   const [first, second, third] = leaderboard.data.leaderboard;
+
+  const [panoSim, setPanoSim] = useState<{ x: number; y: number; fov: number }>({ x: 0.1, y: Math.PI / 2, fov: 40 });
 
   // const [value, setValue] = useState<StickerValueMap<string>>(createStickerValueMap<string>([]));
   // const [mode, setMode] = useState<'interactive' | 'static'>('static');
@@ -52,12 +55,15 @@ export const Home: FC = () => {
         {mode === 'static' ? <SiSticker className="text-xl" /> : <SiCheckCircle className="text-xl" />}
         <span>{mode === 'static' ? 'rearrange your stickers' : 'lock your stickers in place'}</span>
       </Button> */}
-      <div className="grid grid-cols-1 @5xl:grid-cols-2 gap-8 mx-auto max-w-5xl w-full">
-        <div className="col-span-1 @5xl:col-span-2 flex flex-col p-4 items-center justify-center text-center py-4 text-accent-900">
+      <div className="grid grid-cols-8 gap-6 mx-auto max-w-6xl w-full">
+        <div className="col-span-8 h-96 flex">
+          <EquirectangularView sim={panoSim} onSimChange={setPanoSim} />
+        </div>
+        <div className="col-span-2 flex flex-col p-4 items-center justify-center text-center py-4 text-accent-900">
           <h1 className="text-3xl font-semibold">welcome to the</h1>
           <h2 className="text-5xl font-bold">alveus pollinator census</h2>
         </div>
-        <div className="text-accent-900 col-span-2 flex flex-col gap-3 bg-accent-50 border border-accent border-opacity-50 px-8 pb-5 pt-7 rounded-2xl overflow-clip @container">
+        <div className="text-accent-900 col-span-8 flex flex-col gap-3 bg-accent-50 border border-accent border-opacity-50 px-8 pb-5 pt-7 rounded-2xl overflow-clip @container">
           <h2 className="text-2xl font-bold text-accent-900">
             <span>Get started</span>
           </h2>
@@ -73,12 +79,12 @@ export const Home: FC = () => {
             Sign up to help out!
           </Link>
         </div>
-        <div className="flex flex-col bg-[#B068F8] border border-[#8D40DB] px-8 pb-5 pt-7 rounded-2xl overflow-clip @container">
+        <div className="@4xl:col-span-5 col-span-8 flex flex-col bg-leaderboard-500 border border-leaderboard-700 px-8 pb-5 pt-7 rounded-2xl overflow-clip @container">
           <div className="flex justify-between">
             <h2 className="text-white text-2xl font-bold">Leaderboard</h2>
           </div>
           <div className="flex flex-1 flex-col justify-between gap-4">
-            <div className="flex gap-4 items-end h-32 w-full">
+            <div className="grid grid-cols-3 gap-2 items-end h-32 w-full">
               {second && (
                 <Podium
                   transition={{ delay: 1 }}
@@ -92,7 +98,10 @@ export const Home: FC = () => {
                     </Badge>
                   }
                 >
-                  <p className="text-white text-base leading-tight font-bold font-sans @xl:text-xl">
+                  <p
+                    className="text-white text-base leading-tight font-bold font-sans truncate"
+                    title={second.username}
+                  >
                     {second.username}
                   </p>
                   <Counter className="text-3xl" duration={1} delay={1.25}>
@@ -103,7 +112,6 @@ export const Home: FC = () => {
 
               {first && (
                 <Podium
-                  className="flex-1"
                   badge={
                     <Badge
                       className="-top-8 absolute left-1/2 -translate-x-1/2"
@@ -114,7 +122,9 @@ export const Home: FC = () => {
                     </Badge>
                   }
                 >
-                  <p className="text-white text-lg leading-tight font-bold font-sans @xl:text-xl">{first.username}</p>
+                  <p className="text-white text-lg leading-tight font-bold font-sans truncate" title={first.username}>
+                    {first.username}
+                  </p>
                   <Counter className="text-4xl" duration={1} delay={0.5}>
                     {first.points}
                   </Counter>
@@ -134,7 +144,9 @@ export const Home: FC = () => {
                     </Badge>
                   }
                 >
-                  <p className="text-white text-base leading-tight font-bold font-sans @xl:text-xl">{third.username}</p>
+                  <p className="text-white text-base leading-tight font-bold font-sans truncate" title={third.username}>
+                    {third.username}
+                  </p>
                   <Counter className="text-3xl" duration={1} delay={2.5}>
                     {third.points}
                   </Counter>
@@ -144,7 +156,7 @@ export const Home: FC = () => {
             {leaderboard.data.place.me && (
               <motion.span className="flex flex-col items-center">
                 <span className="h-1 w-10 rounded-full bg-black my-3 bg-opacity-10" />
-                <div className="w-full text-white text-sm bg-[#A356F0] border shadow-inner border-[#8D40DB] flex items-center gap-4 px-4 py-2 rounded-xl justify-between">
+                <div className="w-full text-white text-sm bg-leaderboard-600 border shadow-inner border-leaderboard-700 flex items-center gap-4 px-4 py-2 rounded-xl justify-between">
                   <span className="flex items-center gap-4">
                     <span className="font-bold font-mono text-lg">{leaderboard.data.place.place}</span>
                     {leaderboard.data.place.me.username}
@@ -159,9 +171,11 @@ export const Home: FC = () => {
             </motion.button>
           </div>
         </div>
-        <ActivityFeed />
+        <div className="@4xl:col-span-3 col-span-8 h-full">
+          <ActivityFeed />
+        </div>
 
-        <div className="col-span-1 @5xl:col-span-2">
+        <div className="col-span-8">
           <ShiniesForSeason />
         </div>
       </div>

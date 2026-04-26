@@ -22,6 +22,10 @@ export const useRequestToken = () => {
   return useCallback(async () => await withCache('requestToken', getRequestToken), [getRequestToken]);
 };
 
+export const useInvalidateRequestToken = () => {
+  return useAuthentication(state => state.invalidateRequestToken);
+};
+
 const InProgressCache = new Map<string, Promise<unknown>>();
 
 const withCache = async <T>(key: string, func: () => Promise<T>): Promise<T> => {

@@ -63,10 +63,10 @@ export const Achievements = () => {
         animate={{ width: open ? '16rem' : '0' }}
         transition={{ ease: 'backInOut', duration: 0.4 }}
       >
-        <div className="absolute left-2 bottom-0 drop-shadow-xl md:drop-shadow-none top-0 flex flex-col min-w-[15.5rem] w-[15.5rem] rounded-md bg-[#B068F8] flex-1 border border-[#9C51E7]">
+        <div className="absolute left-2 bottom-0 drop-shadow-xl md:drop-shadow-none top-0 flex flex-col min-w-[15.5rem] w-[15.5rem] rounded-md bg-leaderboard-500 flex-1 border border-leaderboard-600">
           <Button
             onClick={() => setOpen(value => !value)}
-            className="absolute overflow-visible -left-12 top-1 h-14 w-12 pr-3 text-white font-bold text-lg bg-[#B068F8] hover:bg-[#9d51e8] rounded-r-none"
+            className="absolute overflow-visible -left-12 top-1 h-14 w-12 pr-3 text-white font-bold text-lg bg-leaderboard-500 hover:bg-leaderboard-600 rounded-r-none"
           >
             <div className="flex relative -top-[0.050rem] items-center flex-col justify-center leading-4">
               <AnimatePresence>
@@ -86,7 +86,7 @@ export const Achievements = () => {
           </Button>
           <div className="m-4 relative h-16">
             <PointDestination />
-            <div className="bg-[#A356F0] absolute left-0 right-0 top-0 h-16 border flex items-center justify-center shadow-inner border-[#8D40DB] rounded-xl z-20 p-3 text-center text-white font-bold text-4xl font-mono">
+            <div className="bg-leaderboard-600 absolute left-0 right-0 top-0 h-16 border flex items-center justify-center shadow-inner border-leaderboard-700 rounded-xl z-20 p-3 text-center text-white font-bold text-4xl font-mono">
               <Counter duration={1} delay={2}>
                 {points.data}
               </Counter>
@@ -98,7 +98,7 @@ export const Achievements = () => {
                 <p className="font-semibold text-sm">achievements</p>
 
                 <button
-                  className="font-semibold opacity-80 text-xs py-1 px-2 hover:bg-[#A356F0] rounded-md"
+                  className="font-semibold opacity-80 text-xs py-1 px-2 hover:bg-leaderboard-600 rounded-md"
                   onClick={() => redeemAll.mutate()}
                 >
                   redeem all
@@ -110,7 +110,7 @@ export const Achievements = () => {
                 pending.data.map(achievement => (
                   <Achievement
                     type={achievement.payload.type}
-                    className="bg-[#A356F0] hover:bg-[#9346e0] border border-[#8D40DB] rounded-md flex font-medium px-3 py-2.5 text-white"
+                    className="bg-leaderboard-600 hover:bg-leaderboard-700 border border-leaderboard-700 rounded-md flex font-medium px-3 py-2.5 text-white"
                     key={achievement.id}
                     id={achievement.id}
                     points={achievement.points}
@@ -215,7 +215,7 @@ const Achievement: FC<PropsWithChildren<AchievementProps & Omit<HTMLMotionProps<
         ref={redeemedRef}
         initial={{ opacity: 0, top: 5, rotate: 0, zIndex: 10 }}
         animate={{ opacity: 0, top: 5, rotate: 0, zIndex: 10 }}
-        className="bg-white px-2 py-1.5 rounded-lg absolute -right-2 text-[#A356F0] text-sm shadow-lg font-semibold"
+        className="bg-white px-2 py-1.5 rounded-lg absolute -right-2 text-leaderboard-600 text-sm shadow-lg font-semibold"
       >
         redeemed
       </motion.span>

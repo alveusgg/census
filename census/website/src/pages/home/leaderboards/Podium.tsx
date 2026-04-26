@@ -17,11 +17,11 @@ export const Podium: FC<PropsWithChildren<PodiumProps & HTMLMotionProps<'div'>>>
   const delay = transition?.delay ?? 0;
   const [ref, { height }] = useMeasure();
   return (
-    <div className={cn('mt-8 flex flex-col justify-end', className)} style={{ height: height ?? 0 }}>
+    <div className={cn('mt-8 flex flex-col justify-end min-w-0', className)} style={{ height: height ?? 0 }}>
       <motion.div
         initial={{ height: 0, opacity: 0 }}
         animate={{ height: height ?? 0, opacity: 1 }}
-        className="bg-[#A356F0] h-fit w-full relative border shadow-inner border-[#8D40DB] rounded-xl z-20 text-center text-white font-bold text-2xl font-mono"
+        className="bg-leaderboard-600 h-fit w-full relative border shadow-inner border-leaderboard-700 rounded-xl z-20 text-center text-white font-bold text-2xl font-mono"
         transition={{ delay, type: 'spring', stiffness: 120, damping: 10 }}
         {...props}
       >
