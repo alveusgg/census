@@ -4,6 +4,7 @@ import { RouteErrorBoundary } from './components/feedback/ErrorBoundary';
 import { NotFoundErrorBoundary } from './components/feedback/NotFoundError';
 import { SelectionProvider } from './components/selection/SelectionProvider';
 import { Main, Scrollable } from './layouts/Main';
+import { Components } from './pages/admin/Components';
 import { Users } from './pages/admin/Users';
 import { Authenticated } from './pages/authentication/Authenticated';
 import { Redirect } from './pages/authentication/Redirect';
@@ -135,6 +136,10 @@ export const useRouter = () => {
                 {
                   path: 'users',
                   element: <Users />
+                },
+                {
+                  path: 'admin/components',
+                  element: <Components />
                 }
               ]
             }

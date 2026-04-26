@@ -1,4 +1,5 @@
 import theme from 'tailwindcss/defaultTheme';
+import { cursors } from './tailwind.cursors.mjs';
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -10,16 +11,7 @@ export default {
         sans: ['Nunito', ...theme.fontFamily.sans],
         mono: ['Fira Code', ...theme.fontFamily.mono]
       },
-
-      cursor: {
-        ['editor-#5383E3']: `url('/editor-cursor-5383E3.svg') 8 6, pointer`,
-        ['editor-#CB5DE7']: `url('/editor-cursor-CB5DE7.svg') 8 6, pointer`,
-        ['editor-#E15D5D']: `url('/editor-cursor-E15D5D.svg') 8 6, pointer`,
-        ['editor-#E79446']: `url('/editor-cursor-E79446.svg') 8 6, pointer`,
-        ['editor-#9FB035']: `url('/editor-cursor-9FB035.svg') 8 6, pointer`,
-        ['editor-#37AD6D']: `url('/editor-cursor-37AD6D.svg') 8 6, pointer`,
-        ['editor-#39A0B6']: `url('/editor-cursor-39A0B6.svg') 8 6, pointer`
-      },
+      cursor: cursors,
       borderColor: {
         accent: {
           DEFAULT: '#D4C0AC'
@@ -48,6 +40,19 @@ export default {
         alveus: {
           DEFAULT: '#646A61',
           darker: '#535C4E'
+        },
+        leaderboard: {
+          50: 'rgba(var(--leaderboard-color-50) / <alpha-value>)',
+          100: 'rgba(var(--leaderboard-color-100) / <alpha-value>)',
+          200: 'rgba(var(--leaderboard-color-200) / <alpha-value>)',
+          300: 'rgba(var(--leaderboard-color-300) / <alpha-value>)',
+          400: 'rgba(var(--leaderboard-color-400) / <alpha-value>)',
+          500: 'rgba(var(--leaderboard-color-500) / <alpha-value>)',
+          600: 'rgba(var(--leaderboard-color-600) / <alpha-value>)',
+          700: 'rgba(var(--leaderboard-color-700) / <alpha-value>)',
+          800: 'rgba(var(--leaderboard-color-800) / <alpha-value>)',
+          900: 'rgba(var(--leaderboard-color-900) / <alpha-value>)',
+          950: 'rgba(var(--leaderboard-color-950) / <alpha-value>)'
         },
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
@@ -84,12 +89,44 @@ export default {
           3: 'hsl(var(--chart-3))',
           4: 'hsl(var(--chart-4))',
           5: 'hsl(var(--chart-5))'
+        },
+        sidebar: {
+          DEFAULT: 'hsl(var(--sidebar-background))',
+          foreground: 'hsl(var(--sidebar-foreground))',
+          primary: 'hsl(var(--sidebar-primary))',
+          'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
+          accent: 'hsl(var(--sidebar-accent))',
+          'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
+          border: 'hsl(var(--sidebar-border))',
+          ring: 'hsl(var(--sidebar-ring))'
         }
       },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)'
+      },
+      keyframes: {
+        'accordion-down': {
+          from: {
+            height: '0'
+          },
+          to: {
+            height: 'var(--radix-accordion-content-height)'
+          }
+        },
+        'accordion-up': {
+          from: {
+            height: 'var(--radix-accordion-content-height)'
+          },
+          to: {
+            height: '0'
+          }
+        }
+      },
+      animation: {
+        'accordion-down': 'accordion-down 0.2s ease-out',
+        'accordion-up': 'accordion-up 0.2s ease-out'
       }
     }
   },

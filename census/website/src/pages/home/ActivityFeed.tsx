@@ -1,6 +1,5 @@
 import { RecentAchievement, useRecentAchievements } from '@/services/api/users';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { formatDistanceToNowStrict } from 'date-fns';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FC } from 'react';
 
@@ -61,7 +60,7 @@ const describe = (achievement: RecentAchievement): { emoji: string; message: Rea
 };
 
 const MAX_ITEMS = 5;
-const ITEM_HEIGHT = 46;
+const ITEM_HEIGHT = 36;
 const GAP = 8;
 const LIST_HEIGHT = MAX_ITEMS * ITEM_HEIGHT + (MAX_ITEMS - 1) * GAP;
 
@@ -70,7 +69,7 @@ export const ActivityFeed: FC = () => {
   const achievements = useSuspenseQuery(query);
 
   return (
-    <div className="flex flex-col bg-[#B068F8] border border-[#8D40DB] px-4 pt-4 rounded-2xl overflow-clip @container relative">
+    <div className="flex flex-col h-full bg-leaderboard-500 border border-leaderboard-700 px-4 pt-4 rounded-2xl overflow-clip @container relative">
       <ul className="flex flex-col gap-2 list-none" style={{ height: LIST_HEIGHT }}>
         <AnimatePresence mode="popLayout" initial={false}>
           {achievements.data.map((achievement, index) => (
@@ -78,7 +77,7 @@ export const ActivityFeed: FC = () => {
           ))}
         </AnimatePresence>
       </ul>
-      <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-b from-transparent to-[#B068F8]"></div>
+      <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-b from-transparent to-leaderboard-500"></div>
     </div>
   );
 };
@@ -101,7 +100,7 @@ const ActivityItem: FC<ActivityItemProps> = ({ achievement, index }) => {
         delay: 0.4
       }}
       style={{ height: ITEM_HEIGHT }}
-      className="bg-[#A356F0] border border-[#8D40DB] shadow-inner rounded-lg px-4 text-white flex items-center gap-3 shrink-0"
+      className="bg-leaderboard-600 border border-leaderboard-700 shadow-inner rounded-lg px-4 text-white flex items-center gap-3 shrink-0"
     >
       <span className="text-xl leading-none shrink-0" aria-hidden>
         {emoji}
@@ -110,7 +109,6 @@ const ActivityItem: FC<ActivityItemProps> = ({ achievement, index }) => {
         <p className="text-sm leading-tight truncate">{message}</p>
       </div>
       <div className="flex flex-col justify-end items-end">
-        <p className="text-xs opacity-70">{formatDistanceToNowStrict(achievement.createdAt, { addSuffix: true })}</p>
         <span className="font-bold font-mono text-sm shrink-0">+{achievement.points}</span>
       </div>
     </motion.li>
