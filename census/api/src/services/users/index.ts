@@ -1,7 +1,7 @@
 import { desc, eq } from 'drizzle-orm';
 
 import { OnboardingFormSchema } from '@alveusgg/census-forms';
-import { NotAuthenticatedError } from '@alveusgg/error';
+import { NotAuthenticatedError, NotFoundError } from '@alveusgg/error';
 import { users } from '../../db/schema/index.js';
 import { responses } from '../../db/schema/responses.js';
 import { useDB, withTransaction } from '../../db/transaction.js';
@@ -46,6 +46,16 @@ export const getOrCreateUserFromAuthProviderIdentity = async (providerId: string
 export const updateUsername = async (id: number, username: string) => {
   const db = useDB();
   await db.update(users).set({ username }).where(eq(users.id, id));
+};
+
+export const getUserPublicProfile = async (id: number) => {
+  const db = useDB();
+  const [user] = await db
+    .select({ id: users.id, username: users.username, createdAt: users.createdAt })
+    .from(users)
+    .where(eq(users.id, id));
+  if (!user) throw new NotFoundError(`User not found: ${id}`);
+  return user;
 };
 
 export const onboardUser = async (id: number, data: OnboardingFormSchema) => {
