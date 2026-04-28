@@ -1,17 +1,22 @@
-import { Counter } from '@/components/animation/Counter';
-import { Link } from '@/components/controls/button/juicy';
-import SiChevronDown from '@/components/icons/SiChevronDown';
+import { Counter } from "@/components/animation/Counter";
+import { Link } from "@/components/controls/button/juicy";
+import SiChevronDown from "@/components/icons/SiChevronDown";
 // import { StickerStage, StickerValueMap, createStickerValueMap } from '@/components/stickers';
-import { EquirectangularView } from '@/components/pano/EquirectangularView';
-import { useLeaderboard } from '@/services/api/me';
-import { cn } from '@/utils/cn';
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
-import { FC, useState } from 'react';
-import { ShiniesForSeason } from '../identifications/Shiny';
-import { ActivityFeed } from './ActivityFeed';
-import { Badge } from './leaderboards/Badge';
-import { Podium } from './leaderboards/Podium';
+import { useLeaderboard } from "@/services/api/me";
+import { cn } from "@/utils/cn";
+import { useQuery } from "@tanstack/react-query";
+import { motion } from "framer-motion";
+import { FC, startTransition, useState } from "react";
+import { ShiniesForSeason } from "../identifications/Shiny";
+import { ActivityFeed } from "./ActivityFeed";
+import { Badge } from "./leaderboards/Badge";
+import { LeaderboardTimeframeSelect } from "./leaderboards/LeaderboardTimeframeSelect";
+import { Podium } from "./leaderboards/Podium";
+import {
+  defaultLeaderboardTimeframe,
+  getLeaderboardFromDate,
+  type LeaderboardTimeframe,
+} from "./leaderboards/timeframes";
 
 // import { Button } from '@/components/controls/button/blueprint';
 // import SiCheckCircle from '@/components/icons/SiCheckCircle';
@@ -19,11 +24,15 @@ import { Podium } from './leaderboards/Podium';
 // import { useMeasure } from '@uidotdev/usehooks';
 
 export const Home: FC = () => {
-  const leaderboardQuery = useLeaderboard();
-  const leaderboard = useSuspenseQuery(leaderboardQuery);
-  const [first, second, third] = leaderboard.data.leaderboard;
+  const [timeframe, setTimeframe] = useState<LeaderboardTimeframe>(defaultLeaderboardTimeframe);
+  const leaderboard = useQuery({
+    ...useLeaderboard(getLeaderboardFromDate(timeframe)),
+    placeholderData: (previous) => previous,
+  });
 
-  const [panoSim, setPanoSim] = useState<{ x: number; y: number; fov: number }>({ x: 0.1, y: Math.PI / 2, fov: 40 });
+  if (!leaderboard.data) return null;
+
+  const [first, second, third] = leaderboard.data.leaderboard;
 
   // const [value, setValue] = useState<StickerValueMap<string>>(createStickerValueMap<string>([]));
   // const [mode, setMode] = useState<'interactive' | 'static'>('static');
@@ -32,65 +41,50 @@ export const Home: FC = () => {
 
   return (
     <>
-      {/* <div ref={ref} className="w-full h-full relative">
-        <StickerStage
-          stickers={[]}
-          mode={mode}
-          style={{ width: width ?? 0, height: 400 }}
-          referenceSize={{ width: 800, height: 400 }}
-          peel={{ hover: 0.2, drag: 0.3 }}
-          value={value}
-          onChange={setValue}
-        />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <h2 className="bg-accent-50 px-8 py-6 rounded-lg text-accent-900 text-6xl font-bold">strangecyan</h2>
-        </div>
-      </div>
-      <Button
-        variant="primary"
-        onClick={() => {
-          setMode(mode => (mode === 'interactive' ? 'static' : 'interactive'));
-        }}
-      >
-        {mode === 'static' ? <SiSticker className="text-xl" /> : <SiCheckCircle className="text-xl" />}
-        <span>{mode === 'static' ? 'rearrange your stickers' : 'lock your stickers in place'}</span>
-      </Button> */}
       <div className="grid grid-cols-8 gap-6 mx-auto max-w-6xl w-full">
-        <div className="col-span-8 h-96 flex">
-          <EquirectangularView sim={panoSim} onSimChange={setPanoSim} />
-        </div>
         <div className="col-span-2 flex flex-col p-4 items-center justify-center text-center py-4 text-accent-900">
           <h1 className="text-3xl font-semibold">welcome to the</h1>
           <h2 className="text-5xl font-bold">alveus pollinator census</h2>
         </div>
-        <div className="text-accent-900 col-span-8 flex flex-col gap-3 bg-accent-50 border border-accent border-opacity-50 px-8 pb-5 pt-7 rounded-2xl overflow-clip @container">
+        <div className="text-accent-900 col-span-8 flex flex-col gap-3 bg-accent-100 border border-accent border-opacity-50 px-8 pb-5 pt-7 rounded-2xl overflow-clip @container">
           <h2 className="text-2xl font-bold text-accent-900">
             <span>Get started</span>
           </h2>
           <p className="">
-            Welcome to the Alveus Pollinator Census! This is a community-driven project to identify and document all the
-            pollinators found in the garden.
+            Welcome to the Alveus Pollinator Census! This is a community-driven project to identify
+            and document all the pollinators found in the garden.
           </p>
           <p>
-            Have a look around and see what's been identified already! If you'd like to contribute, you can sign up
-            below by completing a quick questionnaire.
+            Have a look around and see what's been identified already! If you'd like to contribute,
+            you can sign up below by completing a quick questionnaire.
           </p>
           <Link to="/forms/onboarding" variant="alveus" className="mt-4 text-center w-full">
             Sign up to help out!
           </Link>
         </div>
-        <div className="@4xl:col-span-5 col-span-8 flex flex-col bg-leaderboard-500 border border-leaderboard-700 px-8 pb-5 pt-7 rounded-2xl overflow-clip @container">
-          <div className="flex justify-between">
-            <h2 className="text-white text-2xl font-bold">Leaderboard</h2>
+        <div className="@4xl:col-span-4 col-span-8 flex flex-col rounded-2xl border border-leaderboard-700 bg-leaderboard-500 px-5 pb-4 pt-5 @container sm:px-6 sm:pt-6">
+          <div className="flex items-center gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="size-7 shrink-0 rounded-sm bg-white/80 shadow-sm" />
+              <h2 className="text-2xl font-bold text-white">Leaderboard</h2>
+            </div>
+            <div className="ml-auto shrink-0">
+              <LeaderboardTimeframeSelect
+                value={timeframe}
+                onValueChange={(next) => {
+                  startTransition(() => setTimeframe(next));
+                }}
+              />
+            </div>
           </div>
-          <div className="flex flex-1 flex-col justify-between gap-4">
-            <div className="grid grid-cols-3 gap-2 items-end h-32 w-full">
+          <div className="flex flex-1 flex-col justify-between gap-3 pt-4">
+            <div className="grid h-32 w-full grid-cols-3 items-end gap-2.5">
               {second && (
                 <Podium
                   transition={{ delay: 1 }}
                   badge={
                     <Badge
-                      className="-top-6 absolute left-1/2 -translate-x-1/2"
+                      className="absolute left-1/2 -top-6 -translate-x-1/2"
                       variant="silver"
                       transition={{ delay: 1.25 }}
                     >
@@ -99,7 +93,7 @@ export const Home: FC = () => {
                   }
                 >
                   <p
-                    className="text-white text-base leading-tight font-bold font-sans truncate"
+                    className="truncate font-sans text-base font-bold leading-tight text-white"
                     title={second.username}
                   >
                     {second.username}
@@ -114,7 +108,7 @@ export const Home: FC = () => {
                 <Podium
                   badge={
                     <Badge
-                      className="-top-8 absolute left-1/2 -translate-x-1/2"
+                      className="absolute left-1/2 -top-8 -translate-x-1/2"
                       variant="gold"
                       transition={{ delay: 0.25 }}
                     >
@@ -122,7 +116,10 @@ export const Home: FC = () => {
                     </Badge>
                   }
                 >
-                  <p className="text-white text-lg leading-tight font-bold font-sans truncate" title={first.username}>
+                  <p
+                    className="truncate font-sans text-base font-bold leading-tight text-white"
+                    title={first.username}
+                  >
                     {first.username}
                   </p>
                   <Counter className="text-4xl" duration={1} delay={0.5}>
@@ -136,7 +133,7 @@ export const Home: FC = () => {
                   transition={{ delay: 2 }}
                   badge={
                     <Badge
-                      className="-top-6 absolute left-1/2 -translate-x-1/2"
+                      className="absolute left-1/2 -top-6 -translate-x-1/2"
                       variant="bronze"
                       transition={{ delay: 2.25 }}
                     >
@@ -144,7 +141,10 @@ export const Home: FC = () => {
                     </Badge>
                   }
                 >
-                  <p className="text-white text-base leading-tight font-bold font-sans truncate" title={third.username}>
+                  <p
+                    className="truncate font-sans text-base font-bold leading-tight text-white"
+                    title={third.username}
+                  >
                     {third.username}
                   </p>
                   <Counter className="text-3xl" duration={1} delay={2.5}>
@@ -153,25 +153,33 @@ export const Home: FC = () => {
                 </Podium>
               )}
             </div>
+            <div className="flex items-center justify-center gap-1.5 py-0.5">
+              <span className="size-1.5 rounded-full bg-leaderboard-700/50" />
+              <span className="size-1.5 rounded-full bg-leaderboard-700/30" />
+              <span className="size-1.5 rounded-full bg-leaderboard-700/30" />
+            </div>
             {leaderboard.data.place.me && (
               <motion.span className="flex flex-col items-center">
-                <span className="h-1 w-10 rounded-full bg-black my-3 bg-opacity-10" />
-                <div className="w-full text-white text-sm bg-leaderboard-600 border shadow-inner border-leaderboard-700 flex items-center gap-4 px-4 py-2 rounded-xl justify-between">
-                  <span className="flex items-center gap-4">
-                    <span className="font-bold font-mono text-lg">{leaderboard.data.place.place}</span>
+                <div className="flex w-full items-center justify-between gap-3 rounded-lg border border-leaderboard-700 bg-leaderboard-600 px-4 py-2.5 text-base text-white shadow-inner">
+                  <span className="flex min-w-0 items-center gap-3">
+                    <span className="font-mono text-lg font-bold">
+                      {leaderboard.data.place.place}
+                    </span>
                     {leaderboard.data.place.me.username}
                   </span>
-                  <span className="font-bold font-mono text-xl">{leaderboard.data.place.me?.points ?? 0}</span>
+                  <span className="font-mono text-xl font-bold">
+                    {leaderboard.data.place.me?.points ?? 0}
+                  </span>
                 </div>
               </motion.span>
             )}
-            <motion.button className="text-white flex text-sm mx-auto items-center mt-3 py-1 px-3 rounded-lg transition-colors duration-300 hover:bg-white hover:bg-opacity-5 border border-transparent hover:border-white hover:border-opacity-10">
-              <SiChevronDown className={cn('transition-transform duration-300 text-xl -ml-1.5')} />
-              <span>show more</span>
+            <motion.button className="mx-auto flex items-center rounded-lg border border-transparent px-3 py-1 text-base text-white transition-colors duration-300 hover:border-white/10 hover:bg-white/5">
+              <SiChevronDown className={cn("transition-transform duration-300 text-xl -ml-1.5")} />
+              <span>see all</span>
             </motion.button>
           </div>
         </div>
-        <div className="@4xl:col-span-3 col-span-8 h-full">
+        <div className="@4xl:col-span-4 col-span-8 h-full">
           <ActivityFeed />
         </div>
 
@@ -187,7 +195,14 @@ const places = {
   first: (
     <svg width={34} className="z-10" viewBox="0 0 92.12 125">
       <defs>
-        <linearGradient id="linear-gradient" x1="46.06" y1="2.33" x2="46.06" y2="123.49" gradientUnits="userSpaceOnUse">
+        <linearGradient
+          id="linear-gradient"
+          x1="46.06"
+          y1="2.33"
+          x2="46.06"
+          y2="123.49"
+          gradientUnits="userSpaceOnUse"
+        >
           <stop offset="0" stop-color="#e6b433" />
           <stop offset=".32" stop-color="#ecc354" />
           <stop offset=".41" stop-color="#fff6c5" />
@@ -231,5 +246,5 @@ const places = {
         fill="#FFAB52"
       />
     </svg>
-  )
+  ),
 };
