@@ -9,8 +9,8 @@ import {
 } from '@/components/forms/base/dropdown-menu';
 import { INatTaxaInput } from '@/components/forms/inputs/INatTaxaInput';
 import { Loader } from '@/components/loaders/Loader';
-import { Timestamp } from '@/components/text/Timestamp';
 import { Confirm, useConfirm } from '@/components/modal/Confirm';
+import { Timestamp } from '@/components/text/Timestamp';
 import { useSuggestAccessoryIdentification, useSuggestIdentification } from '@/services/api/identifications';
 import {
   Identification as IdentificationType,
@@ -27,10 +27,15 @@ import { Slide } from './gallery/GalleryProvider';
 import { Polaroid } from './gallery/Polaroid';
 import { IdentificationSuggestion } from './IdentificationSuggestion';
 
+import { useModal } from '@/components/modal/useModal';
+import type { PanoLocationModalProps } from '@/components/pano/PanoLocationModal';
+import { PanoLocationModal } from '@/components/pano/PanoLocationModal';
+
 import SiChevronDown from '@/components/icons/SiChevronDown';
 import SiChevronUp from '@/components/icons/SiChevronUp';
 import SiDiscord from '@/components/icons/SiDiscord';
 import SiLeaf from '@/components/icons/SiLeaf';
+import SiPin from '@/components/icons/SiPin';
 import SiTrash from '@/components/icons/SiTrash';
 import SiTwitch from '@/components/icons/SiTwitch';
 import { Controls } from './gallery/Controls';
@@ -50,6 +55,7 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
   const canCapture = useHasPermission('capture');
   const canModerate = useHasPermission('moderate');
   const confirmDelete = useConfirm();
+  const locationModal = useModal<PanoLocationModalProps>();
 
   const accessoryIdentifications = observation.identifications.filter(identification => identification.isAccessory);
   const identificationIdentifications = observation.identifications.filter(
@@ -81,37 +87,42 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
   return (
     <div className="@container">
       <Confirm {...confirmDelete} />
+      <PanoLocationModal {...locationModal} />
       <div className="flex gap-4 flex-col @lg:flex-row" key={observation.id}>
         <Polaroid>
           <Preloader>
-            {observation.images.map(image => (
-              <Square
-                key={image.id}
-                src={image.url}
-                image={{ width: image.width, height: image.height }}
-                options={{ extract: image.boundingBox }}
-              />
-            ))}
-          </Preloader>
-          {observation.images.map(image => (
-            <Slide key={image.id} id={image.id.toString()}>
-              <div className="w-full h-full overflow-clip relative">
+            {observation.sightings
+              .flatMap(sighting => sighting.images)
+              .map(image => (
                 <Square
-                  loading="lazy"
-                  className="absolute inset-0 w-full h-full z-10"
+                  key={image.id}
                   src={image.url}
                   image={{ width: image.width, height: image.height }}
                   options={{ extract: image.boundingBox }}
                 />
-                <Square
-                  className="absolute inset-0 w-full h-full blur-2xl"
-                  src={image.url}
-                  image={{ width: image.width, height: image.height }}
-                  options={{ extract: image.boundingBox, width: 25, height: 25 }}
-                />
-              </div>
-            </Slide>
-          ))}
+              ))}
+          </Preloader>
+          {observation.sightings
+            .flatMap(sighting => sighting.images)
+            .map(image => (
+              <Slide key={image.id} id={image.id.toString()}>
+                <div className="w-full h-full overflow-clip relative">
+                  <Square
+                    loading="lazy"
+                    className="absolute inset-0 w-full h-full z-10"
+                    src={image.url}
+                    image={{ width: image.width, height: image.height }}
+                    options={{ extract: image.boundingBox }}
+                  />
+                  <Square
+                    className="absolute inset-0 w-full h-full blur-2xl"
+                    src={image.url}
+                    image={{ width: image.width, height: image.height }}
+                    options={{ extract: image.boundingBox, width: 25, height: 25 }}
+                  />
+                </div>
+              </Slide>
+            ))}
           <Controls />
         </Polaroid>
         <Note className="w-full h-fit">
@@ -124,10 +135,17 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
               </p>
               <p className="text-sm">observed by</p>
               <p className="text-lg font-semibold">
-                {observation.credits.observedBy.map(user => user.username).join(', ')}
+                {observation.sightings
+                  .flatMap(sighting => sighting.observer)
+                  .map(user => user.username)
+                  .join(', ')}
               </p>
               <p className="text-sm">
-                captured by {observation.credits.capturedBy.map(user => user.username).join(', ')}
+                captured by{' '}
+                {observation.sightings
+                  .flatMap(sighting => sighting.capture.capturer)
+                  .map(user => user.username)
+                  .join(', ')}
               </p>
             </div>
             <div className="flex gap-2">
@@ -221,6 +239,27 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
               )}
             </div>
           </div>
+          {canSuggest && (
+            <button
+              type="button"
+              className="px-3 py-1 flex gap-2 items-center w-full transition-colors duration-100 hover:bg-accent-100 cursor-pointer"
+              onClick={() =>
+                locationModal.open({
+                  observationId: observation.id,
+                  location: observation.location ?? undefined
+                })
+              }
+            >
+              <SiPin className="text-2xl" />
+              {observation.location ? (
+                <span className="py-1.5 text-sm text-left text-accent-800 opacity-75 font-medium">
+                  location picked by {observation.location.x.toFixed(2)} {observation.location.y.toFixed(2)}
+                </span>
+              ) : (
+                <span className="py-1.5 text-sm text-left text-accent-800 opacity-75 font-medium">pick location</span>
+              )}
+            </button>
+          )}
           {accessoryTree.length > 0 && (
             <div className="flex justify-between items-center">
               <motion.div className="py-3  flex flex-col gap-1 w-full">
