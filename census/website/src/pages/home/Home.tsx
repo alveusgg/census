@@ -6,9 +6,9 @@ import { useLeaderboard } from "@/services/api/me";
 import { cn } from "@/utils/cn";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { FC, startTransition, useState } from "react";
+import { FC, startTransition, Suspense, useState } from "react";
 import { ShiniesForSeason } from "../identifications/Shiny";
-import { ActivityFeed } from "./ActivityFeed";
+import { ActivityFeed, ActivityFeedSkeleton } from "./ActivityFeed";
 import { Badge } from "./leaderboards/Badge";
 import { LeaderboardTimeframeSelect } from "./leaderboards/LeaderboardTimeframeSelect";
 import { Podium } from "./leaderboards/Podium";
@@ -17,6 +17,7 @@ import {
   getLeaderboardFromDate,
   type LeaderboardTimeframe,
 } from "./leaderboards/timeframes";
+import { ChevronRight } from "lucide-react";
 
 // import { Button } from '@/components/controls/button/blueprint';
 // import SiCheckCircle from '@/components/icons/SiCheckCircle';
@@ -42,24 +43,19 @@ export const Home: FC = () => {
   return (
     <>
       <div className="grid grid-cols-8 gap-6 mx-auto max-w-6xl w-full">
-        <div className="col-span-2 flex flex-col p-4 items-center justify-center text-center py-4 text-accent-900">
-          <h1 className="text-3xl font-semibold">welcome to the</h1>
-          <h2 className="text-5xl font-bold">alveus pollinator census</h2>
-        </div>
-        <div className="text-accent-900 col-span-8 flex flex-col gap-3 bg-accent-100 border border-accent border-opacity-50 px-8 pb-5 pt-7 rounded-2xl overflow-clip @container">
-          <h2 className="text-2xl font-bold text-accent-900">
-            <span>Get started</span>
+        <div className="text-accent-900 col-span-8 flex leading-snug flex-col bg-accent-100 border border-accent border-opacity-50 px-10 py-8 rounded-2xl overflow-clip @container">
+          <p>Welcome to the</p>
+          <h2 className="text-5xl tracking-wide mb-1.5 font-serif font-bold text-accent-900">
+            alveus pollinator census
           </h2>
-          <p className="">
-            Welcome to the Alveus Pollinator Census! This is a community-driven project to identify
-            and document all the pollinators found in the garden.
+          <p className="max-w-3xl">
+            This is a community-driven project to identify and document all the pollinators found in
+            the garden. Have a look around and see what's been identified already! If you'd like to
+            contribute, you can sign up below by completing a quick questionnaire.
           </p>
-          <p>
-            Have a look around and see what's been identified already! If you'd like to contribute,
-            you can sign up below by completing a quick questionnaire.
-          </p>
-          <Link to="/forms/onboarding" variant="alveus" className="mt-4 text-center w-full">
-            Sign up to help out!
+          <Link to="/forms/onboarding" variant="alveus" className="mt-4 px-4 text-center w-fit">
+            <span>Sign up to help out!</span>
+            <ChevronRight className="size-4" />
           </Link>
         </div>
         <div className="@4xl:col-span-4 col-span-8 flex flex-col rounded-2xl border border-leaderboard-700 bg-leaderboard-500 px-5 pb-4 pt-5 @container sm:px-6 sm:pt-6">
@@ -180,7 +176,9 @@ export const Home: FC = () => {
           </div>
         </div>
         <div className="@4xl:col-span-4 col-span-8 h-full">
-          <ActivityFeed />
+          <Suspense fallback={<ActivityFeedSkeleton />}>
+            <ActivityFeed />
+          </Suspense>
         </div>
 
         <div className="col-span-8">
