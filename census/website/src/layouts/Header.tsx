@@ -11,7 +11,7 @@ export const Header = () => {
   const hasBeenOnboarded = useHasPermission('vote');
 
   return (
-    <header className="h-[4rem] pr-12 pl-8 pt-2 flex items-center justify-between text-alveus-darker font-semibold relative">
+    <header className="relative flex h-[4rem] items-center justify-between px-4 pt-2 font-semibold text-alveus-darker sm:pl-8 sm:pr-12">
       <CreateFromClipModal {...createFromClipModalProps} />
       <div className="flex items-center divide-x divide-alveus divide-opacity-50 space-x-4">
         <MenuTrigger />
@@ -30,7 +30,7 @@ export const Header = () => {
           </Link>
         )}
       </div>
-      <div className="absolute border-b border-dashed border-alveus border-opacity-50 inset-y-0 left-8 right-12 pointer-events-none" />
+      <div className="pointer-events-none absolute inset-y-0 left-4 right-4 border-b border-dashed border-alveus border-opacity-50 sm:left-8 sm:right-12" />
     </header>
   );
 };
