@@ -10,7 +10,7 @@ export type Permissions = {
   moderate: boolean;
 };
 
-export const getPermissions = async () => {
+export const getPermissions = () => {
   const { roles, status } = useUser();
 
   const permissions = {
