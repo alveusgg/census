@@ -9,6 +9,7 @@
     "build": "tsc -b && vite build",
     "ipx:local": "IPX_HTTP_ALLOW_ALL_DOMAINS=true IPX_HTTP_MAX_AGE=86400 ipx serve --port 2209",
     "images:process": "tsx src/scripts/images.ts",
+    "test": "tsx --test \"src/**/*.test.ts\"",
     "lint": "eslint ."
   },
   "dependencies": {
@@ -72,6 +73,7 @@
     "immer": "^10.1.1",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.471.0",
+    "nuqs": "^2.8.9",
     "oslo": "^1.2.1",
     "react": "^18.3.1",
     "react-confetti": "^6.2.2",
