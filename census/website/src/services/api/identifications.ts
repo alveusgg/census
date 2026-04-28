@@ -40,10 +40,10 @@ export const useAddFeedbackToIdentification = () => {
   });
 };
 
-export const useIdentificationsGroupedBySource = () => {
+export const useIdentificationsGroupedBySource = (filterQuery = '') => {
   const trpc = useAPI();
   return queryOptions({
-    queryKey: key('identifications', 'groupedBySource'),
+    queryKey: key('identifications', 'groupedBySource', filterQuery),
     queryFn: () => trpc.identification.identificationsGroupedBySource.query()
   });
 };

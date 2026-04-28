@@ -1,61 +1,61 @@
-import { RecentAchievement, useRecentAchievements } from '@/services/api/users';
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { AnimatePresence, motion } from 'framer-motion';
-import { FC } from 'react';
+import { RecentAchievement, useRecentAchievements } from "@/services/api/users";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "framer-motion";
+import { FC } from "react";
 
 const describe = (achievement: RecentAchievement): { emoji: string; message: React.ReactNode } => {
   const username = <span className="font-bold">{achievement.user.username}</span>;
   const target = achievement.identification?.nickname;
 
   switch (achievement.payload.type) {
-    case 'onboard':
-      return { emoji: '🎉', message: <>{username} joined the census</> };
-    case 'identify':
+    case "onboard":
+      return { emoji: "🎉", message: <>{username} joined the census</> };
+    case "identify":
       return {
-        emoji: '🔬',
+        emoji: "🔬",
         message: target ? (
           <>
             {username} identified <span className="font-bold">{target}</span>
           </>
         ) : (
           <>{username} made an identification</>
-        )
+        ),
       };
-    case 'shiny':
+    case "shiny":
       return {
-        emoji: '🌟',
+        emoji: "🌟",
         message: target ? (
           <>
             {username} found a shiny <span className="font-bold">{target}</span>
           </>
         ) : (
           <>{username} found a shiny</>
-        )
+        ),
       };
-    case 'vote':
+    case "vote":
       return {
-        emoji: '👍',
+        emoji: "👍",
         message: target ? (
           <>
             {username} voted on <span className="font-bold">{target}</span>
           </>
         ) : (
           <>{username} voted on an identification</>
-        )
+        ),
       };
-    case 'comment':
+    case "comment":
       return {
-        emoji: '💬',
+        emoji: "💬",
         message: target ? (
           <>
             {username} commented on <span className="font-bold">{target}</span>
           </>
         ) : (
           <>{username} commented on an identification</>
-        )
+        ),
       };
     default:
-      return { emoji: '✨', message: <>{username} earned an achievement</> };
+      return { emoji: "✨", message: <>{username} earned an achievement</> };
   }
 };
 
@@ -69,15 +69,19 @@ export const ActivityFeed: FC = () => {
   const achievements = useSuspenseQuery(query);
 
   return (
-    <div className="flex flex-col h-full bg-leaderboard-500 border border-leaderboard-700 px-4 pt-4 rounded-2xl overflow-clip @container relative">
-      <ul className="flex flex-col gap-2 list-none" style={{ height: LIST_HEIGHT }}>
+    <div className="relative flex h-full flex-col overflow-clip rounded-2xl border border-accent-200 bg-accent-50 px-5 pb-5 pt-6 text-accent-900 @container sm:px-6">
+      <div className="flex items-center gap-4 pb-5">
+        <div className="size-8 shrink-0 rounded-sm bg-accent-300/60 shadow-sm" />
+        <h2 className="text-2xl font-bold text-accent-900">Recent activity</h2>
+      </div>
+      <ul className="flex list-none flex-col gap-3" style={{ height: LIST_HEIGHT + 20 }}>
         <AnimatePresence mode="popLayout" initial={false}>
           {achievements.data.map((achievement, index) => (
             <ActivityItem key={achievement.id.toString()} achievement={achievement} index={index} />
           ))}
         </AnimatePresence>
       </ul>
-      <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-b from-transparent to-leaderboard-500"></div>
+      <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-b from-transparent to-accent-50" />
     </div>
   );
 };
@@ -96,20 +100,28 @@ const ActivityItem: FC<ActivityItemProps> = ({ achievement, index }) => {
       initial={{ opacity: 0, y: -ITEM_HEIGHT }}
       animate={{ opacity: 1, y: 0 }}
       transition={{
-        layout: { type: 'spring', stiffness: 420, damping: 40, mass: 0.8, delay: 0.3 - index * 0.05 },
-        delay: 0.4
+        layout: {
+          type: "spring",
+          stiffness: 420,
+          damping: 40,
+          mass: 0.8,
+          delay: 0.3 - index * 0.05,
+        },
+        delay: 0.4,
       }}
       style={{ height: ITEM_HEIGHT }}
-      className="bg-leaderboard-600 border border-leaderboard-700 shadow-inner rounded-lg px-4 text-white flex items-center gap-3 shrink-0"
+      className="flex shrink-0 items-center gap-3 rounded-lg border border-accent-200 bg-accent-100 px-4 text-accent-900 shadow-sm"
     >
-      <span className="text-xl leading-none shrink-0" aria-hidden>
+      <span className="shrink-0 text-lg leading-none" aria-hidden>
         {emoji}
       </span>
-      <div className="flex-1 min-w-0 flex flex-col">
-        <p className="text-sm leading-tight truncate">{message}</p>
+      <div className="min-w-0 flex-1 flex-col">
+        <p className="truncate text-base leading-tight">{message}</p>
       </div>
-      <div className="flex flex-col justify-end items-end">
-        <span className="font-bold font-mono text-sm shrink-0">+{achievement.points}</span>
+      <div className="flex flex-col items-end justify-end">
+        <span className="shrink-0 rounded-lg bg-leaderboard-500 px-3 py-1 font-mono text-base font-bold text-white shadow-sm">
+          +{achievement.points}
+        </span>
       </div>
     </motion.li>
   );

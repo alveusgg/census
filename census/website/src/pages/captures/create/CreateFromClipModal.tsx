@@ -11,7 +11,7 @@ import { ModalProps } from '@/components/modal/useModal';
 import { useCapture, useCreateCaptureFromClip } from '@/services/api/capture';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { DialogTitle } from '@radix-ui/react-dialog';
-import { FC, Suspense, useEffect } from 'react';
+import { ComponentProps, FC, Suspense, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router';
 import { z } from 'zod';
@@ -52,7 +52,7 @@ export const CreateFromClipModal: FC<ModalProps> = props => {
   const navigate = useNavigate();
 
   return (
-    <Modal className="bg-alveus-darker text-white px-5 py-4 w-full max-w-4xl" {...props}>
+    <Modal className="bg-alveus-darker text-white px-5 py-4 w-full max-w-5xl" {...props}>
       <DialogTitle className="sr-only">Create a capture from a twitch clip</DialogTitle>
       <AutoAnimatedContainer>
         <div className="flex flex-col gap-4 py-1">
@@ -70,6 +70,8 @@ export const CreateFromClipModal: FC<ModalProps> = props => {
               <SiEnterKey className="text-2xl" />
             </Button>
           </Form>
+          {!createClip.data && <ClipCreationSteps />}
+
           {createClip.data && createClip.data.result === 'success' && (
             <div className="flex flex-col gap-4">
               <iframe
@@ -93,6 +95,43 @@ export const CreateFromClipModal: FC<ModalProps> = props => {
     </Modal>
   );
 };
+
+const ClipCreationSteps: FC = () => (
+  <div className="border-t border-white/10 pt-5">
+    <div className="grid grid-cols-1 gap-5 md:grid-cols-3 md:gap-0 p-2">
+      <ClipTutorialStep>
+        <ClipTutorialTitle>Step 1</ClipTutorialTitle>
+        <ClipTutorialDescription>
+          In the box above, paste a link to a clip of the pollinator garden. If it's too old or someone else already
+          submitted it, we'll let you know!
+        </ClipTutorialDescription>
+      </ClipTutorialStep>
+      <ClipTutorialStep>
+        <ClipTutorialTitle>Step 2</ClipTutorialTitle>
+        <ClipTutorialDescription>
+          We will upgrade the clip to the 4K 60fps recording directly from the pollinator garden camera. This can take a
+          minute so please be patient!
+        </ClipTutorialDescription>
+      </ClipTutorialStep>
+      <ClipTutorialStep>
+        <ClipTutorialTitle>Step 3</ClipTutorialTitle>
+        <ClipTutorialDescription>
+          You'll be able to scrub through the video, choose and crop the perfect shots of one, or more, subjects.
+        </ClipTutorialDescription>
+      </ClipTutorialStep>
+    </div>
+  </div>
+);
+
+const ClipTutorialTitle: FC<ComponentProps<'h3'>> = props => (
+  <h3 className="text-3xl font-serif tracking-wide font-bold" {...props} />
+);
+const ClipTutorialDescription: FC<ComponentProps<'p'>> = props => (
+  <p className="mt-3 font-medium leading-tight text-white/90" {...props} />
+);
+const ClipTutorialStep: FC<ComponentProps<'div'>> = props => (
+  <div className="md:border-l md:border-white/10 md:first:border-l-0 md:px-5 first:pl-0 last:pr-0" {...props} />
+);
 
 const messages: Record<
   | 'clip_already_used'
