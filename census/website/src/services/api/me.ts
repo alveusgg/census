@@ -112,7 +112,7 @@ export const useOnboardUser = () => {
 export const useLeaderboard = (from?: Date) => {
   const trpc = useAPI();
   return queryOptions({
-    queryKey: key('points', 'leaderboard'),
+    queryKey: key('points', 'leaderboard', from?.toISOString() ?? 'current'),
     queryFn: async () => {
       const [leaderboard, place] = await Promise.all([
         trpc.users.leaderboard.query({ from }),
