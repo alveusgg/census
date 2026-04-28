@@ -3,7 +3,7 @@ import { SelectionActionBar, SelectionCount } from '@/components/selection/Selec
 import { SelectionContainer } from '@/components/selection/SelectionContainer';
 import { SelectionProvider, useSelection } from '@/components/selection/SelectionProvider';
 import { Breadcrumbs } from '@/layouts/Breadcrumbs';
-import { useMergeObservations, useObservations } from '@/services/api/observations';
+import { useMergeObservations, useUnconfirmedObservations } from '@/services/api/observations';
 import { useHasPermission } from '@/services/permissions/hooks';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { FC, PropsWithChildren, useEffect, useMemo, useState } from 'react';
@@ -19,7 +19,7 @@ export const Observations = () => {
 };
 
 const ObservationsContent = () => {
-  const query = useObservations();
+  const query = useUnconfirmedObservations();
   const result = useSuspenseInfiniteQuery(query);
   const observations = result.data.pages.flatMap(page => page.data);
 
