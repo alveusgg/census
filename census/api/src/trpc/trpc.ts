@@ -187,7 +187,7 @@ export const procedure = loggedProcedure.use(async ({ ctx, next }) => {
 
 export const procedureWithPermissions = (required: keyof Permissions) => {
   return procedure.use(async ({ next }) => {
-    const permissions = await getPermissions();
+    const permissions = getPermissions();
     if (!permissions[required]) {
       throw new ForbiddenError('You are not authorized to perform this action.');
     }

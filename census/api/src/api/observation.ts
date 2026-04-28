@@ -5,8 +5,9 @@ import {
   deleteObservation,
   getObservationCount,
   getObservations,
+  getUnconfirmedObservationCount,
+  locateObservation,
   mergeObservations,
-  type Observation,
   ObservationPayload
 } from '../services/observations/observations.js';
 import { procedure, procedureWithPermissions, router } from '../trpc/trpc.js';
@@ -19,9 +20,19 @@ export const Pagination = z.object({
 
 export type Pagination = z.infer<typeof Pagination>;
 
+const LocationBox = z.object({
+  x1: z.number(),
+  y1: z.number(),
+  x2: z.number(),
+  y2: z.number()
+});
+
 export const Query = z.object({
   start: z.coerce.date().optional(),
-  end: z.coerce.date().optional()
+  end: z.coerce.date().optional(),
+  confirmed: z.boolean().default(false),
+
+  within: z.union([LocationBox, z.array(LocationBox).min(1)]).optional()
 });
 
 export type Query = z.infer<typeof Query>;
@@ -45,6 +56,12 @@ export default router({
       return await deleteObservation(input.observationId);
     }),
 
+  locate: procedureWithPermissions('capture')
+    .input(z.object({ id: z.number(), location: z.object({ x: z.number(), y: z.number() }) }))
+    .mutation(async ({ input }) => {
+      return await locateObservation(input.id, input.location);
+    }),
+
   merge: procedureWithPermissions('moderate')
     .input(z.object({ targetObservationId: z.number(), sourceObservationIds: z.array(z.number()).min(1) }))
     .mutation(async ({ input }) => {
@@ -54,7 +71,7 @@ export default router({
   list: procedure.input(z.object({ meta: Pagination, query: Query.optional() })).query(async ({ input }) => {
     const user = useUser();
     const count = await getObservationCount();
-    let data: Observation[] = await getObservations(input.meta);
+    let data = await getObservations(input.meta, input.query);
 
     // Fog of war: hide feedback from users who haven't given feedback yet
     // in order to avoid existing votes influencing new votes
@@ -81,5 +98,9 @@ export default router({
       },
       data
     };
+  }),
+
+  unconfirmedCount: procedure.query(async () => {
+    return await getUnconfirmedObservationCount();
   })
 });

@@ -1,14 +1,14 @@
-import { BadRequestError, DownstreamError, NotFoundError } from '@alveusgg/error';
+import { BadRequestError, DownstreamError, ForbiddenError, NotFoundError } from '@alveusgg/error';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
-import { count, desc, eq, inArray, isNull } from 'drizzle-orm';
+import { and, count, desc, eq, gte, inArray, isNull, lte, or, SQL, sql } from 'drizzle-orm';
 import ffmpeg from 'fluent-ffmpeg';
 import { createReadStream } from 'fs';
 import { writeFile } from 'fs/promises';
 import { ReadableStream } from 'node:stream/web';
 import { Readable } from 'stream';
 import { z } from 'zod';
-import { Pagination } from '../../api/observation.js';
+import { Pagination, Query } from '../../api/observation.js';
 import { BoundingBox, identifications, images, observations, sightings } from '../../db/schema/index.js';
 import { useDB, withTransaction } from '../../db/transaction.js';
 import { assert } from '../../utils/assert.js';
@@ -17,6 +17,7 @@ import { useEnvironment, useUser } from '../../utils/env/env.js';
 import { buildObjectUrl } from '../../utils/storage.js';
 import { runLongOperation } from '../../utils/teardown.js';
 import { getTemporaryFile, TemporaryFile } from '../../utils/tmp.js';
+import { getPermissions } from '../auth/role.js';
 import { getCapture } from '../capture/index.js';
 
 const frameUploadLimiter = createConcurrencyLimiter(3);
@@ -63,39 +64,30 @@ const getObservationRecord = async (id: number) => {
   });
 };
 
-type ObservationRecord = NonNullable<Awaited<ReturnType<typeof getObservationRecord>>>;
-
-const dedupeUsers = <T extends { id: number }>(users: T[]) => {
-  return Array.from(new Map(users.map(user => [user.id, user])).values());
-};
-
-export const shapeObservation = (observation: ObservationRecord) => {
-  const flattenedImages = observation.sightings
-    .flatMap(sighting =>
-      sighting.images.map(image => ({
-        ...image,
-        sightingId: sighting.id
-      }))
-    )
-    .sort((left, right) => Number(left.timestamp) - Number(right.timestamp));
-
-  return {
-    ...observation,
-    sightings: observation.sightings.sort((left, right) => left.observedAt.getTime() - right.observedAt.getTime()),
-    images: flattenedImages,
-    credits: {
-      observedBy: dedupeUsers(observation.sightings.map(sighting => sighting.observer)),
-      capturedBy: dedupeUsers(observation.sightings.map(sighting => sighting.capture.capturer))
-    }
-  };
-};
-
-export type Observation = ReturnType<typeof shapeObservation>;
-
-export const getObservation = async (id: number): Promise<Observation> => {
+export const getObservation = async (id: number) => {
   const observation = await getObservationRecord(id);
   if (!observation) throw new NotFoundError('Observation not found');
-  return shapeObservation(observation);
+  return observation;
+};
+
+const getObservationConditions = (query?: Query) => {
+  const conditions: SQL<unknown>[] = [];
+
+  if (!query?.confirmed) conditions.push(isNull(observations.confirmedAs));
+  if (query?.within) {
+    const boxes = Array.isArray(query.within) ? query.within : [query.within];
+    conditions.push(
+      or(
+        ...boxes.map(
+          box => sql`${observations.location} <@ box(point(${box.x1}, ${box.y1}), point(${box.x2}, ${box.y2}))`
+        )
+      )!
+    );
+  }
+  if (query?.start) conditions.push(gte(observations.observedAt, query.start));
+  if (query?.end) conditions.push(lte(observations.observedAt, query.end));
+
+  return conditions;
 };
 
 export const createObservationsFromCapture = async (captureId: number, observations: ObservationPayload[]) => {
@@ -115,6 +107,27 @@ export const createObservationsFromCapture = async (captureId: number, observati
 export const deleteObservation = async (observationId: number) => {
   const db = useDB();
   return await db.delete(observations).where(eq(observations.id, observationId));
+};
+
+export const locateObservation = async (observationId: number, location: { x: number; y: number }) => {
+  const db = useDB();
+  const permissions = getPermissions();
+  const observation = await db.query.observations.findFirst({
+    where: eq(observations.id, observationId),
+    columns: {
+      location: true
+    }
+  });
+  if (!observation) throw new NotFoundError('Observation not found');
+  if (observation.location && !permissions.moderate)
+    throw new ForbiddenError(`You are not authorized to overwrite this observation's location`);
+
+  await db
+    .update(observations)
+    .set({
+      location
+    })
+    .where(eq(observations.id, observationId));
 };
 
 const createObservations = async (captureId: number, selections: Selection[], nickname?: string) => {
@@ -175,7 +188,7 @@ const createObservations = async (captureId: number, selections: Selection[], ni
 
 export const getImagesForObservationId = async (observationId: number) => {
   const observation = await getObservation(observationId);
-  return observation.images;
+  return observation.sightings.flatMap(sighting => sighting.images);
 };
 
 export const getObservationCount = async () => {
@@ -184,8 +197,19 @@ export const getObservationCount = async () => {
   return result.count;
 };
 
-export const getObservations = async (pagination: Pagination): Promise<Observation[]> => {
+export const getUnconfirmedObservationCount = async () => {
   const db = useDB();
+  const [result] = await db
+    .select({ count: count() })
+    .from(observations)
+    .where(and(...getObservationConditions({ confirmed: false })));
+  return result.count;
+};
+
+export const getObservations = async (pagination: Pagination, query?: Query) => {
+  const db = useDB();
+  const conditions = getObservationConditions(query);
+
   const rows = await db.query.observations.findMany({
     with: {
       sightings: {
@@ -212,18 +236,15 @@ export const getObservations = async (pagination: Pagination): Promise<Observati
       }
     },
     orderBy: desc(observations.observedAt),
-    where: isNull(observations.confirmedAs),
+    where: and(...conditions),
     limit: pagination.size,
     offset: (pagination.page - 1) * pagination.size
   });
 
-  return rows.map(shapeObservation);
+  return rows;
 };
 
-export const mergeObservations = async (
-  targetObservationId: number,
-  sourceObservationIds: number[]
-): Promise<Observation> => {
+export const mergeObservations = async (targetObservationId: number, sourceObservationIds: number[]) => {
   const ids = [...new Set(sourceObservationIds)].filter(id => id !== targetObservationId);
   if (ids.length === 0) throw new BadRequestError('No source observations selected');
 
