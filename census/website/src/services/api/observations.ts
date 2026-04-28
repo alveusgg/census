@@ -1,20 +1,66 @@
-import { infiniteQueryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
+import { infiniteQueryOptions, queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { key, useAPI } from '../query/hooks';
 import { RouterOutput, TypeFromOutput } from './helpers';
 
 export type Observation = TypeFromOutput<RouterOutput['observation']['list']>;
 export type Identification = Observation['identifications'][number];
 export type Feedback = Identification['feedback'][number];
+type LocationBox = { x1: number; y1: number; x2: number; y2: number };
 
-export const useObservations = () => {
+export const useUnconfirmedObservations = () => {
   const trpc = useAPI();
   return infiniteQueryOptions({
-    queryKey: key('observations'),
-    queryFn: ({ pageParam }) => trpc.observation.list.query({ meta: { page: pageParam, size: 30 } }),
+    queryKey: key('observations', 'unconfirmed'),
+    queryFn: ({ pageParam }) =>
+      trpc.observation.list.query({
+        meta: { page: pageParam, size: 30 },
+        query: { confirmed: false }
+      }),
     initialPageParam: 1,
     getNextPageParam: lastPage => {
       if (lastPage.meta.page * lastPage.meta.size >= lastPage.meta.total) return undefined;
       return lastPage.meta.page + 1;
+    }
+  });
+};
+
+export const useUnconfirmedObservationCount = () => {
+  const trpc = useAPI();
+  return queryOptions({
+    queryKey: key('observations', 'unconfirmed-count'),
+    queryFn: () => trpc.observation.unconfirmedCount.query()
+  });
+};
+
+export const useConfirmedObservations = (filter: {
+  start?: Date;
+  end?: Date;
+  within?: LocationBox | LocationBox[];
+}) => {
+  const trpc = useAPI();
+  return infiniteQueryOptions({
+    queryKey: key('observations', 'confirmed', JSON.stringify(filter)),
+    queryFn: ({ pageParam }) =>
+      trpc.observation.list.query({
+        meta: { page: pageParam, size: 30 },
+        query: { confirmed: true, ...filter }
+      }),
+    initialPageParam: 1,
+    getNextPageParam: lastPage => {
+      if (lastPage.meta.page * lastPage.meta.size >= lastPage.meta.total) return undefined;
+      return lastPage.meta.page + 1;
+    }
+  });
+};
+
+export const useLocateObservation = () => {
+  const trpc = useAPI();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, location }: { id: number; location: { x: number; y: number } }) =>
+      await trpc.observation.locate.mutate({ id, location }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: key('observations') });
     }
   });
 };
