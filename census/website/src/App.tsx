@@ -1,4 +1,5 @@
 import { Loading } from '@/components/loaders/Loading';
+import { NuqsAdapter } from 'nuqs/adapters/react-router/v6';
 import { Suspense } from 'react';
 import { RouterProvider } from 'react-router-dom';
 import { ComponentErrorBoundary } from './components/feedback/ErrorBoundary';
@@ -37,5 +38,9 @@ export const App = () => {
 
 export const Router = () => {
   const router = useRouter();
-  return <RouterProvider router={router} />;
+  return (
+    <NuqsAdapter>
+      <RouterProvider router={router} />
+    </NuqsAdapter>
+  );
 };

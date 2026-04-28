@@ -9,7 +9,8 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Nunito', ...theme.fontFamily.sans],
-        mono: ['Fira Code', ...theme.fontFamily.mono]
+        mono: ['Fira Code', ...theme.fontFamily.mono],
+        serif: ['Patua One', ...theme.fontFamily.serif]
       },
       cursor: cursors,
       borderColor: {
