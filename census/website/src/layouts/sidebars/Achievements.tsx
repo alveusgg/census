@@ -6,6 +6,7 @@ import { useModal } from '@/components/modal/useModal';
 import { usePointAction } from '@/components/points/hooks';
 import { PointDestination } from '@/components/points/PointDestination';
 import { PointOrigin } from '@/components/points/PointOrigin';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   usePatchAchievement,
   usePendingAchievements,
@@ -30,6 +31,7 @@ const getLevelForPoints = (points: number) => {
 };
 
 export const Achievements = () => {
+  const isMobile = useIsMobile();
   const [open, setOpen] = useAchievements();
   const pointsQuery = usePoints();
   const points = useSuspenseQuery(pointsQuery);
@@ -58,6 +60,20 @@ export const Achievements = () => {
   return (
     <>
       <LevelUpModal {...levelUpModalProps} />
+      <AnimatePresence>
+        {isMobile && open && (
+          <motion.button
+            type="button"
+            aria-label="Close achievements"
+            className="fixed inset-0 z-30 bg-black/20"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => setOpen(false)}
+          />
+        )}
+      </AnimatePresence>
       <motion.div
         className="flex flex-col z-40 fixed md:relative right-2 top-2 bottom-2 md:top-auto md:bottom-auto md:right-auto antialiased"
         animate={{ width: open ? '16rem' : '0' }}

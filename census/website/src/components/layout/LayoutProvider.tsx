@@ -1,5 +1,5 @@
 import { useLocalStorage } from '@uidotdev/usehooks';
-import { createContext, Dispatch, FC, PropsWithChildren, SetStateAction, useContext, useMemo } from 'react';
+import { createContext, Dispatch, FC, PropsWithChildren, SetStateAction, useContext, useMemo, useState } from 'react';
 
 const shouldAchievementsBeOpen = () => {
   // If the window is over 1350px wide, then the achievements should be open by default
@@ -8,14 +8,16 @@ const shouldAchievementsBeOpen = () => {
 
 interface LayoutStore {
   sidebar: [boolean, Dispatch<SetStateAction<boolean>>];
+  mobileSidebar: [boolean, Dispatch<SetStateAction<boolean>>];
   achievements: [boolean, Dispatch<SetStateAction<boolean>>];
 }
 const LayoutContext = createContext<LayoutStore | null>(null);
 
 export const LayoutProvider: FC<PropsWithChildren> = ({ children }) => {
   const sidebar = useLocalStorage('sidebar', false);
+  const mobileSidebar = useState(false);
   const achievements = useLocalStorage('achievements', shouldAchievementsBeOpen());
-  const context = useMemo(() => ({ sidebar, achievements }), [sidebar, achievements]);
+  const context = useMemo(() => ({ sidebar, mobileSidebar, achievements }), [sidebar, mobileSidebar, achievements]);
   return <LayoutContext.Provider value={context}>{children}</LayoutContext.Provider>;
 };
 
@@ -35,4 +37,9 @@ export const useSidebar = () => {
 export const useAchievements = () => {
   const { achievements } = useLayout();
   return achievements;
+};
+
+export const useMobileSidebar = () => {
+  const { mobileSidebar } = useLayout();
+  return mobileSidebar;
 };

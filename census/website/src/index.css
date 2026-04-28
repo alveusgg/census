@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&family=Nunito:ital,wght@0,200..1000;1,200..1000&family=Patua+One&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&family=Nunito:ital,wght@0,200..1000;1,200..1000&family=Patua+One&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -11,8 +11,8 @@ html {
 :root {
   --accent-color-50: 255 254 245;
   --accent-color-100: 253 251 237;
-  --accent-color-200: 249 242 215;
-  --accent-color-300: 247 229 188;
+  --accent-color-200: 250 245 224;
+  --accent-color-300: 231 225 198;
   --accent-color-400: 247 207 70;
   --accent-color-500: 245 191 42;
   --accent-color-600: 239 158 17;
