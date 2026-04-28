@@ -16,9 +16,12 @@ import { Captures } from './pages/captures/Captures';
 import { Onboarding } from './pages/forms/Onboarding';
 import { Home } from './pages/home/Home';
 import { IdentificationPage } from './pages/identifications/Identification';
+import { MyProfile } from './pages/profile/MyProfile';
+import { UserProfile } from './pages/profile/UserProfile';
 import { Identifications } from './pages/identifications/Identifications';
 import { Observations } from './pages/observations/Observations';
 import { useLeaderboard, usePendingAchievements, usePermissions, usePoints } from './services/api/me';
+import { useUnconfirmedObservationCount } from './services/api/observations';
 import { useCurrentSeason, useShiniesForSeason } from './services/api/seasons';
 import { useRecentAchievements } from './services/api/users';
 const auth: RouteObject = {
@@ -53,6 +56,7 @@ export const useRouter = () => {
   const leaderboard = useLeaderboard();
   const shinies = useShiniesForSeason();
   const recentAchievements = useRecentAchievements();
+  const unconfirmedObservationCount = useUnconfirmedObservationCount();
 
   return createBrowserRouter([
     {
@@ -81,9 +85,8 @@ export const useRouter = () => {
                     await Promise.all([
                       client.prefetchQuery(leaderboard),
                       client.prefetchQuery(shinies),
-                      client.prefetchQuery(leaderboard),
-                      client.prefetchQuery(shinies),
-                      client.prefetchQuery(recentAchievements)
+                      client.prefetchQuery(recentAchievements),
+                      client.prefetchQuery(unconfirmedObservationCount)
                     ]);
 
                     return null;
@@ -140,6 +143,19 @@ export const useRouter = () => {
                 {
                   path: 'admin/components',
                   element: <Components />
+                },
+                {
+                  path: 'profile',
+                  children: [
+                    {
+                      path: 'me',
+                      element: <MyProfile />
+                    },
+                    {
+                      path: ':id',
+                      element: <UserProfile />
+                    }
+                  ]
                 }
               ]
             }

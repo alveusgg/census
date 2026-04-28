@@ -10,6 +10,16 @@ export const useUsers = () => {
   });
 };
 
+export const useUserProfile = (id: number) => {
+  const api = useAPI();
+  return queryOptions({
+    queryKey: key('users', 'profile', id),
+    queryFn: () => api.users.profile.query({ id })
+  });
+};
+
+export type UserProfile = TypeFromOutput<RouterOutput['users']['profile']>;
+
 export const useRecentAchievements = () => {
   const api = useAPI();
   return queryOptions({
