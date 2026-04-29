@@ -1,8 +1,12 @@
 import { Counter } from '@/components/animation/Counter';
-import { Link } from '@/components/controls/button/juicy';
+import { Button, Link } from '@/components/controls/button/juicy';
 import SiChevronDown from '@/components/icons/SiChevronDown';
+import SiTwitch from '@/components/icons/SiTwitch';
+import { useModal } from '@/components/modal/useModal';
+import { CreateFromClipModal } from '@/pages/captures/create/CreateFromClipModal';
 // import { StickerStage, StickerValueMap, createStickerValueMap } from '@/components/stickers';
 import { useLeaderboard } from '@/services/api/me';
+import { useHasPermission } from '@/services/permissions/hooks';
 import { cn } from '@/utils/cn';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -26,6 +30,9 @@ import { ExploreGardenTile, IdentifyCrittersTile, SeasonProgressTile } from './t
 // import { useMeasure } from '@uidotdev/usehooks';
 
 export const Home: FC = () => {
+  const createFromClipModalProps = useModal();
+  const hasCapturePermission = useHasPermission('capture');
+  const hasBeenOnboarded = useHasPermission('vote');
   const [timeframe, setTimeframe] = useState<LeaderboardTimeframe>(defaultLeaderboardTimeframe);
   const leaderboard = useQuery({
     ...useLeaderboard(getLeaderboardFromDate(timeframe)),
@@ -35,6 +42,7 @@ export const Home: FC = () => {
   if (!leaderboard.data) return null;
 
   const [first, second, third] = leaderboard.data.leaderboard;
+  const showSubmitClipCta = hasBeenOnboarded && hasCapturePermission;
 
   // const [value, setValue] = useState<StickerValueMap<string>>(createStickerValueMap<string>([]));
   // const [mode, setMode] = useState<'interactive' | 'static'>('static');
@@ -43,6 +51,7 @@ export const Home: FC = () => {
 
   return (
     <>
+      <CreateFromClipModal {...createFromClipModalProps} />
       <div className="grid grid-cols-8 gap-6 mx-auto max-w-6xl w-full">
         <div className="text-accent-900 col-span-8 flex leading-snug flex-col bg-accent-100 border border-accent border-opacity-50 px-10 py-8 rounded-2xl overflow-clip @container">
           <p>Welcome to the</p>
@@ -50,14 +59,21 @@ export const Home: FC = () => {
             alveus pollinator census
           </h2>
           <p className="max-w-3xl">
-            This is a community-driven project to identify and document all the pollinators found in the garden. Have a
-            look around and see what's been identified already! If you'd like to contribute, you can sign up below by
-            completing a quick questionnaire.
+            {showSubmitClipCta
+              ? "This is a community-driven project to identify and document all the pollinators found in the garden. Ready to help spot something new? Submit a Twitch clip from the pollinator garden and turn it into a new capture for the community to review."
+              : "This is a community-driven project to identify and document all the pollinators found in the garden. Have a look around and see what's been identified already! If you'd like to contribute, you can sign up below by completing a quick questionnaire."}
           </p>
-          <Link to="/forms/onboarding" variant="alveus" className="mt-4 px-4 text-center w-fit">
-            <span>Sign up to help out!</span>
-            <ChevronRight className="size-4" />
-          </Link>
+          {showSubmitClipCta ? (
+            <Button variant="alveus" className="mt-4 px-4 text-center w-fit" onClick={() => createFromClipModalProps.open()}>
+              <SiTwitch className="text-xl" />
+              <span>submit new clip</span>
+            </Button>
+          ) : (
+            <Link to="/forms/onboarding" variant="alveus" className="mt-4 px-4 text-center w-fit">
+              <span>Sign up to help out!</span>
+              <ChevronRight className="size-4" />
+            </Link>
+          )}
         </div>
 
         {/* Utility Strip */}
