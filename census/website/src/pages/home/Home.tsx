@@ -18,6 +18,7 @@ import {
   type LeaderboardTimeframe,
 } from "./leaderboards/timeframes";
 import { ChevronRight } from "lucide-react";
+import { ExploreGardenTile, IdentifyCrittersTile, SeasonProgressTile } from "./tiles";
 
 // import { Button } from '@/components/controls/button/blueprint';
 // import SiCheckCircle from '@/components/icons/SiCheckCircle';
@@ -58,6 +59,14 @@ export const Home: FC = () => {
             <ChevronRight className="size-4" />
           </Link>
         </div>
+
+        {/* Utility Strip */}
+        <div className="col-span-8 grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-accent-200/50">
+          <SeasonProgressTile />
+          <IdentifyCrittersTile />
+          <ExploreGardenTile />
+        </div>
+
         <div className="@4xl:col-span-4 col-span-8 flex flex-col rounded-2xl border border-leaderboard-700 bg-leaderboard-500 px-5 pb-4 pt-5 @container sm:px-6 sm:pt-6">
           <div className="flex items-center gap-3">
             <div className="flex min-w-0 items-center gap-3">
