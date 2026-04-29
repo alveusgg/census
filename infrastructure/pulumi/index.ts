@@ -83,7 +83,7 @@ export = async () => {
     },
     image: config.require('image'),
     scale: {
-      min: 0,
+      min: 1,
       max: 1,
       noOfRequestsPerInstance: 100
     }
@@ -102,7 +102,7 @@ export = async () => {
     image: config.require('ipx'),
     size: 'micro',
     scale: {
-      min: 0,
+      min: 1,
       max: 1,
       noOfRequestsPerInstance: 50
     },
