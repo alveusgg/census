@@ -1,7 +1,7 @@
 import { BadRequestError, DownstreamError, ForbiddenError, NotFoundError } from '@alveusgg/error';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
-import { and, count, desc, eq, gte, inArray, isNull, lte, or, SQL, sql } from 'drizzle-orm';
+import { and, count, desc, eq, gte, inArray, isNotNull, isNull, lte, or, SQL, sql } from 'drizzle-orm';
 import ffmpeg from 'fluent-ffmpeg';
 import { createReadStream } from 'fs';
 import { writeFile } from 'fs/promises';
@@ -70,25 +70,7 @@ export const getObservation = async (id: number) => {
   return observation;
 };
 
-const getObservationConditions = (query?: Query) => {
-  const conditions: SQL<unknown>[] = [];
 
-  if (!query?.confirmed) conditions.push(isNull(observations.confirmedAs));
-  if (query?.within) {
-    const boxes = Array.isArray(query.within) ? query.within : [query.within];
-    conditions.push(
-      or(
-        ...boxes.map(
-          box => sql`${observations.location} <@ box(point(${box.x1}, ${box.y1}), point(${box.x2}, ${box.y2}))`
-        )
-      )!
-    );
-  }
-  if (query?.start) conditions.push(gte(observations.observedAt, query.start));
-  if (query?.end) conditions.push(lte(observations.observedAt, query.end));
-
-  return conditions;
-};
 
 export const createObservationsFromCapture = async (captureId: number, observations: ObservationPayload[]) => {
   const db = useDB();
@@ -202,13 +184,33 @@ export const getUnconfirmedObservationCount = async () => {
   const [result] = await db
     .select({ count: count() })
     .from(observations)
-    .where(and(...getObservationConditions({ confirmed: false })));
+    .where(isNull(observations.confirmedAs));
   return result.count;
 };
 
 export const getObservations = async (pagination: Pagination, query?: Query) => {
   const db = useDB();
-  const conditions = getObservationConditions(query);
+  const conditions: SQL<unknown>[] = [];
+
+  if (query?.confirmed) {
+    conditions.push(isNotNull(observations.confirmedAs));
+  } else {
+    conditions.push(isNull(observations.confirmedAs));
+  }
+
+  if (query?.within) {
+    const boxes = Array.isArray(query.within) ? query.within : [query.within];
+    conditions.push(
+      or(
+        ...boxes.map(
+          box => sql`${observations.location} <@ box(point(${box.x1}, ${box.y1}), point(${box.x2}, ${box.y2}))`
+        )
+      )!
+    );
+  }
+
+  if (query?.start) conditions.push(gte(observations.observedAt, query.start));
+  if (query?.end) conditions.push(lte(observations.observedAt, query.end));
 
   const rows = await db.query.observations.findMany({
     with: {
@@ -232,6 +234,11 @@ export const getObservations = async (pagination: Pagination, query?: Query) => 
             }
           },
           shiny: true
+        }
+      },
+      confirmedIdentification: {
+        with: {
+          suggester: true
         }
       }
     },
