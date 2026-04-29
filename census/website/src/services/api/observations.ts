@@ -5,6 +5,10 @@ import { RouterOutput, TypeFromOutput } from './helpers';
 export type Observation = TypeFromOutput<RouterOutput['observation']['list']>;
 export type Identification = Observation['identifications'][number];
 export type Feedback = Identification['feedback'][number];
+export type ConfirmedObservation = Observation & {
+  confirmedAs: number;
+  confirmedIdentification: Identification;
+};
 type LocationBox = { x1: number; y1: number; x2: number; y2: number };
 
 export const useUnconfirmedObservations = () => {
@@ -40,11 +44,16 @@ export const useConfirmedObservations = (filter: {
   const trpc = useAPI();
   return infiniteQueryOptions({
     queryKey: key('observations', 'confirmed', JSON.stringify(filter)),
-    queryFn: ({ pageParam }) =>
-      trpc.observation.list.query({
+    queryFn: async ({ pageParam }) => {
+      const result = await trpc.observation.list.query({
         meta: { page: pageParam, size: 30 },
         query: { confirmed: true, ...filter }
-      }),
+      });
+      return {
+        ...result,
+        data: result.data as ConfirmedObservation[]
+      };
+    },
     initialPageParam: 1,
     getNextPageParam: lastPage => {
       if (lastPage.meta.page * lastPage.meta.size >= lastPage.meta.total) return undefined;
