@@ -84,10 +84,7 @@ const getUnwrappedPanBounds = (pans: number[], centerPan: number) => {
   };
 };
 
-const getBoundsBoxes = (
-  pan: { min: number; max: number },
-  tilt: { min: number; max: number }
-): ViewBoundsBox[] => {
+const getBoundsBoxes = (pan: { min: number; max: number }, tilt: { min: number; max: number }): ViewBoundsBox[] => {
   if (pan.min < -Math.PI) {
     return [
       { x1: round(normalizePan(pan.min)), y1: tilt.min, x2: round(Math.PI), y2: tilt.max },

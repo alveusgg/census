@@ -1,61 +1,61 @@
-import { RecentAchievement, useRecentAchievements } from "@/services/api/users";
-import { Skeleton } from "@/components/ui/skeleton";
-import { AnimatePresence, motion } from "framer-motion";
-import { FC } from "react";
+import { RecentAchievement, useRecentAchievements } from '@/services/api/users';
+import { Skeleton } from '@/components/ui/skeleton';
+import { AnimatePresence, motion } from 'framer-motion';
+import { FC } from 'react';
 
 const describe = (achievement: RecentAchievement): { emoji: string; message: React.ReactNode } => {
   const username = <span className="font-bold">{achievement.user.username}</span>;
   const target = achievement.identification?.nickname;
 
   switch (achievement.payload.type) {
-    case "onboard":
-      return { emoji: "🎉", message: <>{username} joined the census</> };
-    case "identify":
+    case 'onboard':
+      return { emoji: '🎉', message: <>{username} joined the census</> };
+    case 'identify':
       return {
-        emoji: "🔬",
+        emoji: '🔬',
         message: target ? (
           <>
             {username} identified <span className="font-bold">{target}</span>
           </>
         ) : (
           <>{username} made an identification</>
-        ),
+        )
       };
-    case "shiny":
+    case 'shiny':
       return {
-        emoji: "🌟",
+        emoji: '🌟',
         message: target ? (
           <>
             {username} found a shiny <span className="font-bold">{target}</span>
           </>
         ) : (
           <>{username} found a shiny</>
-        ),
+        )
       };
-    case "vote":
+    case 'vote':
       return {
-        emoji: "👍",
+        emoji: '👍',
         message: target ? (
           <>
             {username} voted on <span className="font-bold">{target}</span>
           </>
         ) : (
           <>{username} voted on an identification</>
-        ),
+        )
       };
-    case "comment":
+    case 'comment':
       return {
-        emoji: "💬",
+        emoji: '💬',
         message: target ? (
           <>
             {username} commented on <span className="font-bold">{target}</span>
           </>
         ) : (
           <>{username} commented on an identification</>
-        ),
+        )
       };
     default:
-      return { emoji: "✨", message: <>{username} earned an achievement</> };
+      return { emoji: '✨', message: <>{username} earned an achievement</> };
   }
 };
 
@@ -100,13 +100,13 @@ const ActivityItem: FC<ActivityItemProps> = ({ achievement, index }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{
         layout: {
-          type: "spring",
+          type: 'spring',
           stiffness: 420,
           damping: 40,
           mass: 0.8,
-          delay: 0.3 - index * 0.05,
+          delay: 0.3 - index * 0.05
         },
-        delay: 0.4,
+        delay: 0.4
       }}
       style={{ height: ITEM_HEIGHT }}
       className="flex shrink-0 items-center gap-3 rounded-lg border border-accent-200 bg-accent-100 px-4 text-accent-900 shadow-sm"
@@ -135,7 +135,11 @@ export const ActivityFeedSkeleton: FC = () => {
       </div>
       <ul className="flex list-none flex-col gap-3" style={{ height: LIST_HEIGHT + 20 }}>
         {Array.from({ length: MAX_ITEMS }).map((_, i) => (
-          <li key={i} className="flex shrink-0 items-center gap-3 rounded-lg border border-accent-200 bg-accent-100 px-4 shadow-sm" style={{ height: ITEM_HEIGHT }}>
+          <li
+            key={i}
+            className="flex shrink-0 items-center gap-3 rounded-lg border border-accent-200 bg-accent-100 px-4 shadow-sm"
+            style={{ height: ITEM_HEIGHT }}
+          >
             <Skeleton className="size-5 shrink-0 rounded-sm" />
             <Skeleton className="h-4 flex-1" />
             <Skeleton className="h-6 w-12 shrink-0 rounded-lg" />

@@ -1,24 +1,24 @@
-import { Counter } from "@/components/animation/Counter";
-import { Link } from "@/components/controls/button/juicy";
-import SiChevronDown from "@/components/icons/SiChevronDown";
+import { Counter } from '@/components/animation/Counter';
+import { Link } from '@/components/controls/button/juicy';
+import SiChevronDown from '@/components/icons/SiChevronDown';
 // import { StickerStage, StickerValueMap, createStickerValueMap } from '@/components/stickers';
-import { useLeaderboard } from "@/services/api/me";
-import { cn } from "@/utils/cn";
-import { useQuery } from "@tanstack/react-query";
-import { motion } from "framer-motion";
-import { FC, startTransition, Suspense, useState } from "react";
-import { ShiniesForSeason } from "../identifications/Shiny";
-import { ActivityFeed, ActivityFeedSkeleton } from "./ActivityFeed";
-import { Badge } from "./leaderboards/Badge";
-import { LeaderboardTimeframeSelect } from "./leaderboards/LeaderboardTimeframeSelect";
-import { Podium } from "./leaderboards/Podium";
+import { useLeaderboard } from '@/services/api/me';
+import { cn } from '@/utils/cn';
+import { useQuery } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
+import { FC, startTransition, Suspense, useState } from 'react';
+import { ShiniesForSeason } from '../identifications/Shiny';
+import { ActivityFeed, ActivityFeedSkeleton } from './ActivityFeed';
+import { Badge } from './leaderboards/Badge';
+import { LeaderboardTimeframeSelect } from './leaderboards/LeaderboardTimeframeSelect';
+import { Podium } from './leaderboards/Podium';
 import {
   defaultLeaderboardTimeframe,
   getLeaderboardFromDate,
-  type LeaderboardTimeframe,
-} from "./leaderboards/timeframes";
-import { ChevronRight } from "lucide-react";
-import { ExploreGardenTile, IdentifyCrittersTile, SeasonProgressTile } from "./tiles";
+  type LeaderboardTimeframe
+} from './leaderboards/timeframes';
+import { ChevronRight } from 'lucide-react';
+import { ExploreGardenTile, IdentifyCrittersTile, SeasonProgressTile } from './tiles';
 
 // import { Button } from '@/components/controls/button/blueprint';
 // import SiCheckCircle from '@/components/icons/SiCheckCircle';
@@ -29,7 +29,7 @@ export const Home: FC = () => {
   const [timeframe, setTimeframe] = useState<LeaderboardTimeframe>(defaultLeaderboardTimeframe);
   const leaderboard = useQuery({
     ...useLeaderboard(getLeaderboardFromDate(timeframe)),
-    placeholderData: (previous) => previous,
+    placeholderData: previous => previous
   });
 
   if (!leaderboard.data) return null;
@@ -50,9 +50,9 @@ export const Home: FC = () => {
             alveus pollinator census
           </h2>
           <p className="max-w-3xl">
-            This is a community-driven project to identify and document all the pollinators found in
-            the garden. Have a look around and see what's been identified already! If you'd like to
-            contribute, you can sign up below by completing a quick questionnaire.
+            This is a community-driven project to identify and document all the pollinators found in the garden. Have a
+            look around and see what's been identified already! If you'd like to contribute, you can sign up below by
+            completing a quick questionnaire.
           </p>
           <Link to="/forms/onboarding" variant="alveus" className="mt-4 px-4 text-center w-fit">
             <span>Sign up to help out!</span>
@@ -76,7 +76,7 @@ export const Home: FC = () => {
             <div className="ml-auto shrink-0">
               <LeaderboardTimeframeSelect
                 value={timeframe}
-                onValueChange={(next) => {
+                onValueChange={next => {
                   startTransition(() => setTimeframe(next));
                 }}
               />
@@ -121,10 +121,7 @@ export const Home: FC = () => {
                     </Badge>
                   }
                 >
-                  <p
-                    className="truncate font-sans text-base font-bold leading-tight text-white"
-                    title={first.username}
-                  >
+                  <p className="truncate font-sans text-base font-bold leading-tight text-white" title={first.username}>
                     {first.username}
                   </p>
                   <Counter className="text-4xl" duration={1} delay={0.5}>
@@ -146,10 +143,7 @@ export const Home: FC = () => {
                     </Badge>
                   }
                 >
-                  <p
-                    className="truncate font-sans text-base font-bold leading-tight text-white"
-                    title={third.username}
-                  >
+                  <p className="truncate font-sans text-base font-bold leading-tight text-white" title={third.username}>
                     {third.username}
                   </p>
                   <Counter className="text-3xl" duration={1} delay={2.5}>
@@ -167,19 +161,15 @@ export const Home: FC = () => {
               <motion.span className="flex flex-col items-center">
                 <div className="flex w-full items-center justify-between gap-3 rounded-lg border border-leaderboard-700 bg-leaderboard-600 px-4 py-2.5 text-base text-white shadow-inner">
                   <span className="flex min-w-0 items-center gap-3">
-                    <span className="font-mono text-lg font-bold">
-                      {leaderboard.data.place.place}
-                    </span>
+                    <span className="font-mono text-lg font-bold">{leaderboard.data.place.place}</span>
                     {leaderboard.data.place.me.username}
                   </span>
-                  <span className="font-mono text-xl font-bold">
-                    {leaderboard.data.place.me?.points ?? 0}
-                  </span>
+                  <span className="font-mono text-xl font-bold">{leaderboard.data.place.me?.points ?? 0}</span>
                 </div>
               </motion.span>
             )}
             <motion.button className="mx-auto flex items-center rounded-lg border border-transparent px-3 py-1 text-base text-white transition-colors duration-300 hover:border-white/10 hover:bg-white/5">
-              <SiChevronDown className={cn("transition-transform duration-300 text-xl -ml-1.5")} />
+              <SiChevronDown className={cn('transition-transform duration-300 text-xl -ml-1.5')} />
               <span>see all</span>
             </motion.button>
           </div>
@@ -202,14 +192,7 @@ const places = {
   first: (
     <svg width={34} className="z-10" viewBox="0 0 92.12 125">
       <defs>
-        <linearGradient
-          id="linear-gradient"
-          x1="46.06"
-          y1="2.33"
-          x2="46.06"
-          y2="123.49"
-          gradientUnits="userSpaceOnUse"
-        >
+        <linearGradient id="linear-gradient" x1="46.06" y1="2.33" x2="46.06" y2="123.49" gradientUnits="userSpaceOnUse">
           <stop offset="0" stop-color="#e6b433" />
           <stop offset=".32" stop-color="#ecc354" />
           <stop offset=".41" stop-color="#fff6c5" />
@@ -253,5 +236,5 @@ const places = {
         fill="#FFAB52"
       />
     </svg>
-  ),
+  )
 };

@@ -70,8 +70,6 @@ export const getObservation = async (id: number) => {
   return observation;
 };
 
-
-
 export const createObservationsFromCapture = async (captureId: number, observations: ObservationPayload[]) => {
   const db = useDB();
 
@@ -181,10 +179,7 @@ export const getObservationCount = async () => {
 
 export const getUnconfirmedObservationCount = async () => {
   const db = useDB();
-  const [result] = await db
-    .select({ count: count() })
-    .from(observations)
-    .where(isNull(observations.confirmedAs));
+  const [result] = await db.select({ count: count() }).from(observations).where(isNull(observations.confirmedAs));
   return result.count;
 };
 

@@ -17,7 +17,7 @@ export const useUnconfirmedObservations = () => {
     queryKey: key('observations', 'unconfirmed'),
     queryFn: ({ pageParam }) =>
       trpc.observation.list.query({
-        meta: { page: pageParam, size: 30 },
+        meta: { page: pageParam, size: 10 },
         query: { confirmed: false }
       }),
     initialPageParam: 1,
@@ -46,7 +46,7 @@ export const useConfirmedObservations = (filter: {
     queryKey: key('observations', 'confirmed', JSON.stringify(filter)),
     queryFn: async ({ pageParam }) => {
       const result = await trpc.observation.list.query({
-        meta: { page: pageParam, size: 30 },
+        meta: { page: pageParam, size: 20 },
         query: { confirmed: true, ...filter }
       });
       return {

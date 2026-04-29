@@ -122,7 +122,8 @@ export const addFeedbackToIdentification = async (
     where: eq(identifications.id, identificationId)
   });
   if (!identification) throw new NotFoundError('Identification not found');
-  if (identification.suggestedBy === userId) throw new BadRequestError('You cannot give feedback on your own suggestion');
+  if (identification.suggestedBy === userId)
+    throw new BadRequestError('You cannot give feedback on your own suggestion');
 
   return await db.insert(feedback).values({
     identificationId,

@@ -1,13 +1,13 @@
-import { ConfettiProvider } from "@/components/layout/ConfettiProvider";
-import { LayoutProvider } from "@/components/layout/LayoutProvider";
-import { Loader } from "@/components/loaders/Loader";
-import { PointsProvider } from "@/services/points/PointsProvider";
-import { AnimatePresence } from "framer-motion";
-import { Suspense } from "react";
-import { Outlet } from "react-router";
-import { Header } from "./Header";
-import { Achievements } from "./sidebars/Achievements";
-import { Menu } from "./sidebars/Menu";
+import { ConfettiProvider } from '@/components/layout/ConfettiProvider';
+import { LayoutProvider } from '@/components/layout/LayoutProvider';
+import { Loader } from '@/components/loaders/Loader';
+import { PointsProvider } from '@/services/points/PointsProvider';
+import { AnimatePresence } from 'framer-motion';
+import { Suspense } from 'react';
+import { Outlet } from 'react-router';
+import { Header } from './Header';
+import { Achievements } from './sidebars/Achievements';
+import { Menu } from './sidebars/Menu';
 
 export const Main = () => {
   return (

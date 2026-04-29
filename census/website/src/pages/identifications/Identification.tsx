@@ -1,20 +1,20 @@
-import { Square } from "@/components/assets/images/Square";
-import { Note } from "@/components/containers/Note";
-import { Link } from "@/components/controls/button/paper";
-import SiLink from "@/components/icons/SiLink";
-import { Loader } from "@/components/loaders/Loader";
-import { Modal } from "@/components/modal/Modal";
-import { ModalProps } from "@/components/modal/useModal";
-import { Timestamp } from "@/components/text/Timestamp";
-import { useIdentification } from "@/services/api/identifications";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { formatInTimeZone } from "date-fns-tz";
-import { FC, Suspense } from "react";
-import { useNavigate, useParams } from "react-router";
-import { Controls } from "../observations/gallery/Controls";
-import { Slide } from "../observations/gallery/GalleryProvider";
-import { Polaroid } from "../observations/gallery/Polaroid";
-import { Preloader } from "../observations/Observations";
+import { Square } from '@/components/assets/images/Square';
+import { Note } from '@/components/containers/Note';
+import { Preloader } from '@/components/feed/Preloader';
+import { Link } from '@/components/controls/button/paper';
+import SiLink from '@/components/icons/SiLink';
+import { Loader } from '@/components/loaders/Loader';
+import { Modal } from '@/components/modal/Modal';
+import { ModalProps } from '@/components/modal/useModal';
+import { Timestamp } from '@/components/text/Timestamp';
+import { useIdentification } from '@/services/api/identifications';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { formatInTimeZone } from 'date-fns-tz';
+import { FC, Suspense } from 'react';
+import { useNavigate, useParams } from 'react-router';
+import { Controls } from '../observations/gallery/Controls';
+import { Slide } from '../observations/gallery/GalleryProvider';
+import { Polaroid } from '../observations/gallery/Polaroid';
 
 export interface IdentificationProps {
   identificationId: number;
@@ -24,7 +24,7 @@ const Identification: FC<IdentificationProps> = ({ identificationId }) => {
   const query = useIdentification(identificationId);
   const identification = useSuspenseQuery(query);
 
-  if (!identification.data?.observation) throw new Error("Observation not found");
+  if (!identification.data?.observation) throw new Error('Observation not found');
 
   return (
     <div className="@container w-full">
@@ -32,8 +32,8 @@ const Identification: FC<IdentificationProps> = ({ identificationId }) => {
         <Polaroid>
           <Preloader>
             {identification.data.observation.sightings
-              .flatMap((sighting) => sighting.images)
-              .map((image) => (
+              .flatMap(sighting => sighting.images)
+              .map(image => (
                 <Square
                   key={image.id}
                   src={image.url}
@@ -61,8 +61,8 @@ const Identification: FC<IdentificationProps> = ({ identificationId }) => {
           )} */}
 
           {identification.data.observation.sightings
-            .flatMap((sighting) => sighting.images)
-            .map((image) => (
+            .flatMap(sighting => sighting.images)
+            .map(image => (
               <Slide key={image.id} id={image.id.toString()}>
                 <div className="w-full h-full overflow-clip relative">
                   <Square
@@ -89,18 +89,11 @@ const Identification: FC<IdentificationProps> = ({ identificationId }) => {
               <p className="text-lg font-semibold">{identification.data.nickname}</p>
               <Timestamp date={identification.data.observation.observedAt}>
                 <p className="text-sm">
-                  {formatInTimeZone(
-                    identification.data.observation.observedAt,
-                    "America/Chicago",
-                    "MM/dd/yyyy hh:mma",
-                  )}
+                  {formatInTimeZone(identification.data.observation.observedAt, 'America/Chicago', 'MM/dd/yyyy hh:mma')}
                 </p>
               </Timestamp>
             </div>
-            <Link
-              compact
-              to={`https://www.inaturalist.org/observations/${identification.data.observation.id}`}
-            >
+            <Link compact to={`https://www.inaturalist.org/observations/${identification.data.observation.id}`}>
               <SiLink className="text-lg" />
               iNat
             </Link>
@@ -114,13 +107,11 @@ const Identification: FC<IdentificationProps> = ({ identificationId }) => {
   );
 };
 
-export const IdentificationModal: FC<ModalProps<IdentificationProps>> = (props) => {
+export const IdentificationModal: FC<ModalProps<IdentificationProps>> = props => {
   return (
     <Modal {...props} className="w-full max-w-4xl bg-accent-200 p-8">
       <Suspense fallback={<Loader className="m-24 text-accent-900 w-6 h-6 mx-auto" />}>
-        {props.props?.identificationId && (
-          <Identification identificationId={props.props.identificationId} />
-        )}
+        {props.props?.identificationId && <Identification identificationId={props.props.identificationId} />}
       </Suspense>
     </Modal>
   );
@@ -129,7 +120,7 @@ export const IdentificationModal: FC<ModalProps<IdentificationProps>> = (props) 
 export const IdentificationPage: FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const goToAllIdentifications = () => navigate("/identifications");
+  const goToAllIdentifications = () => navigate('/identifications');
 
   return (
     <IdentificationModal
