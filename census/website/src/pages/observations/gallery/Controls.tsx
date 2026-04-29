@@ -40,7 +40,7 @@ export const ClickToMove: FC = () => {
 };
 
 export const Controls: FC = () => {
-  const { slides, current, goto } = useGallery(state => state);
+  const { slides } = useGallery(state => state);
   if (slides.length <= 1) return null;
   return (
     <>

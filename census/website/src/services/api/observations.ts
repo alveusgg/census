@@ -1,4 +1,4 @@
-import { infiniteQueryOptions, queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
+import { infiniteQueryOptions, keepPreviousData, queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { key, useAPI } from '../query/hooks';
 import { RouterOutput, TypeFromOutput } from './helpers';
 
@@ -44,6 +44,7 @@ export const useConfirmedObservations = (filter: {
   const trpc = useAPI();
   return infiniteQueryOptions({
     queryKey: key('observations', 'confirmed', JSON.stringify(filter)),
+    placeholderData: keepPreviousData,
     queryFn: async ({ pageParam }) => {
       const result = await trpc.observation.list.query({
         meta: { page: pageParam, size: 20 },
