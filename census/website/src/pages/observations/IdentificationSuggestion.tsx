@@ -35,6 +35,7 @@ export const IdentificationSuggestion: FC<IdentificationSuggestionProps> = ({ tr
   const negativeFeedback = identification.feedback.filter(feedback => feedback.type === 'disagree');
   const feedbackWithComments = identification.feedback.filter(feedback => feedback.comment);
   const myFeedback = identification.feedback.find(feedback => feedback.userId === me.id);
+  const isOwnSuggestion = identification.suggester?.id === me.id;
   const hasFeedback = identification.feedback.length > 0;
 
   return (
@@ -91,7 +92,7 @@ export const IdentificationSuggestion: FC<IdentificationSuggestionProps> = ({ tr
             </div>
           </div>
           <div className="flex gap-2 items-center">
-            {canVote && !myFeedback && (
+            {canVote && !myFeedback && !isOwnSuggestion && (
               <>
                 <Button
                   onClick={() => identificationFeedbackModalProps.open({ feedback: 'agree', identification })}
