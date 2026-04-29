@@ -118,6 +118,12 @@ export const addFeedbackToIdentification = async (
   comment?: string
 ) => {
   const db = useDB();
+  const identification = await db.query.identifications.findFirst({
+    where: eq(identifications.id, identificationId)
+  });
+  if (!identification) throw new NotFoundError('Identification not found');
+  if (identification.suggestedBy === userId) throw new BadRequestError('You cannot give feedback on your own suggestion');
+
   return await db.insert(feedback).values({
     identificationId,
     userId,
