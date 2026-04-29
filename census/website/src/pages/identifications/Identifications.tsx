@@ -18,10 +18,11 @@ import { cn } from "@/utils/cn";
 import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { endOfDay, format, startOfDay, subDays } from "date-fns";
 import { CalendarIcon, ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { DateRange } from "react-day-picker";
 import { Outlet } from "react-router";
 import { getConfirmedObservationFilter, type IdentificationFilters } from "./filters";
+import { ConfirmedObservationFeedCard } from "./ConfirmedObservationFeedCard";
 
 const TODAY = startOfDay(new Date());
 const DEFAULT_DATE_RANGE: DateRange = {
@@ -45,6 +46,17 @@ export const Identifications = () => {
   });
   const query = useConfirmedObservations(getConfirmedObservationFilter(filters, 3 / 1));
   const observations = useSuspenseInfiniteQuery(query);
+
+  const allObservations = useMemo(
+    () => observations.data.pages.flatMap((page) => page.data),
+    [observations.data.pages]
+  );
+
+  const grouped = useMemo(() => {
+    return Object.groupBy(allObservations, (observation) =>
+      format(new Date(observation.observedAt), "do MMM")
+    );
+  }, [allObservations]);
 
   const { clearSelection } = useSelection();
   const viewFilterLabel = !filters.dirty
@@ -129,12 +141,20 @@ export const Identifications = () => {
             </Select>
           </div>
         </div>
-        <div className="grid grid-cols-5 gap-8 pt-12">
-          {observations.data.pages
-            .flatMap((page) => page.data)
-            .map((observation) => (
-              <p>{observation.id}</p>
-            ))}
+        <div className="pt-12 space-y-12">
+          {Object.entries(grouped).map(([date, group]) => (
+            <div key={date}>
+              <h2 className="text-2xl font-bold text-accent-900 mb-4">{date}</h2>
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(12rem,1fr))] gap-4">
+                {group?.map((observation) => (
+                  <ConfirmedObservationFeedCard
+                    key={observation.id}
+                    observation={observation}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
       <SelectionActionBar className="justify-between">
