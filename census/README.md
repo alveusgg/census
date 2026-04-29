@@ -9,7 +9,6 @@
    - MacOS: run `brew install ffmpeg`
 5. Clone `./api/.env.example` and rename as `./api/.env` and configure it as follows.
 
-
 ## Seeding the database
 
 You will need to seed the database with the correct data. To add yourself as an admin, run `pnpm --filter=@alveusgg/census-api setup:api` and follow the prompts.

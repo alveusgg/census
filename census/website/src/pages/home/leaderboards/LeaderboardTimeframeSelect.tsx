@@ -1,9 +1,5 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import {
-  leaderboardTimeframeLabels,
-  leaderboardTimeframes,
-  type LeaderboardTimeframe
-} from './timeframes';
+import { leaderboardTimeframeLabels, leaderboardTimeframes, type LeaderboardTimeframe } from './timeframes';
 
 interface LeaderboardTimeframeSelectProps {
   value: LeaderboardTimeframe;

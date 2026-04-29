@@ -5,13 +5,8 @@ import { getPanoLocationForView, getViewBounds, normalizePan } from './viewBound
 
 const ASPECT_RATIO = 3 / 1;
 
-const isInside = (
-  point: { x: number; y: number },
-  boxes: ReturnType<typeof getViewBounds>['boxes']
-) => {
-  return boxes.some(
-    box => point.x >= box.x1 && point.x <= box.x2 && point.y >= box.y1 && point.y <= box.y2
-  );
+const isInside = (point: { x: number; y: number }, boxes: ReturnType<typeof getViewBounds>['boxes']) => {
+  return boxes.some(box => point.x >= box.x1 && point.x <= box.x2 && point.y >= box.y1 && point.y <= box.y2);
 };
 
 test('converts a camera view back to the pano location it is looking at', () => {

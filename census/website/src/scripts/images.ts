@@ -37,13 +37,7 @@ const generateSilhouette = async (sharpInstance: Sharp) => {
   const tmp = join(tmpdir(), `${randomUUID()}.png`);
 
   try {
-    await sharpInstance
-      .ensureAlpha()
-      .extractChannel('alpha')
-      .threshold(0)
-      .negate()
-      .png()
-      .toFile(tmp);
+    await sharpInstance.ensureAlpha().extractChannel('alpha').threshold(0).negate().png().toFile(tmp);
 
     return await new Promise<string>((resolve, reject) => {
       trace(

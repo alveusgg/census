@@ -1,4 +1,5 @@
 {
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
   "tabWidth": 2,
   "useTabs": false,
   "arrowParens": "avoid",
@@ -9,5 +10,6 @@
   "jsxSingleQuote": false,
   "quoteProps": "as-needed",
   "trailingComma": "none",
-  "bracketSameLine": false
+  "bracketSameLine": false,
+  "sortPackageJson": false
 }

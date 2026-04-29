@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "packageManager": "pnpm@9.14.2",
   "scripts": {
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check",
     "deps:up": "docker compose --file local/core-services.yml up -d",
     "deps:down": "docker compose --file local/core-services.yml down",
     "stream:up": "docker compose --file local/clip-services.yml up -d",
@@ -13,6 +15,6 @@
   "license": "MIT",
   "devDependencies": {
     "drizzle-kit": "^0.24.2",
-    "prettier": "3"
+    "oxfmt": "latest"
   }
 }

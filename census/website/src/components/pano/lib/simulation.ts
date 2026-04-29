@@ -8,11 +8,7 @@ export type SimulationResult<TValue> = {
   reset?: () => void;
 };
 
-export type Simulation<TValue> = (
-  frame: RootState,
-  gl: THREE.WebGLRenderer,
-  value: TValue
-) => SimulationResult<TValue>;
+export type Simulation<TValue> = (frame: RootState, gl: THREE.WebGLRenderer, value: TValue) => SimulationResult<TValue>;
 
 export function useWithSimulation<TValue>(
   state: [TValue, Dispatch<SetStateAction<TValue>>],

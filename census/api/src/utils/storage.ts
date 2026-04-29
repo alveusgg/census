@@ -7,10 +7,7 @@ import type { z } from 'zod';
 import { config } from './env/config.js';
 import { useEnvironment } from './env/env.js';
 
-type StorageUrlConfig = Pick<
-  z.infer<typeof config>,
-  'S3_BUCKET' | 'S3_REGION' | 'S3_ENDPOINT' | 'S3_PUBLIC_URL'
->;
+type StorageUrlConfig = Pick<z.infer<typeof config>, 'S3_BUCKET' | 'S3_REGION' | 'S3_ENDPOINT' | 'S3_PUBLIC_URL'>;
 
 /** Public HTTPS URL for an object key (used by Mux, browsers, etc.). */
 export const buildObjectUrl = (variables: StorageUrlConfig, key: string): string => {

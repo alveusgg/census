@@ -1,4 +1,5 @@
 import { Button } from '@/components/controls/button/paper';
+import { InfiniteFeedSentinel } from '@/components/feed/InfiniteFeedSentinel';
 import { SelectionActionBar, SelectionCount } from '@/components/selection/SelectionActionBar';
 import { SelectionContainer } from '@/components/selection/SelectionContainer';
 import { SelectionProvider, useSelection } from '@/components/selection/SelectionProvider';
@@ -6,8 +7,7 @@ import { Breadcrumbs } from '@/layouts/Breadcrumbs';
 import { useMergeObservations, useUnconfirmedObservations } from '@/services/api/observations';
 import { useHasPermission } from '@/services/permissions/hooks';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { FC, PropsWithChildren, useEffect, useMemo, useState } from 'react';
-import { useInView } from 'react-intersection-observer';
+import { useMemo } from 'react';
 import { Observation } from './Observation';
 
 export const Observations = () => {
@@ -59,6 +59,15 @@ const ObservationsContent = () => {
           <Observation key={observation.id} observation={observation} />
         )
       )}
+      <InfiniteFeedSentinel
+        className="flex min-h-10 items-center justify-center text-sm text-accent-800"
+        fetchNextPage={() => result.fetchNextPage()}
+        hasNextPage={result.hasNextPage}
+        isFetchingNextPage={result.isFetchingNextPage}
+        threshold={0.8}
+      >
+        Loading...
+      </InfiniteFeedSentinel>
       {canMerge && (
         <SelectionActionBar className="justify-between">
           <SelectionCount singular="observation" />
@@ -78,22 +87,6 @@ const ObservationsContent = () => {
           </div>
         </SelectionActionBar>
       )}
-    </div>
-  );
-};
-
-export const Preloader: FC<PropsWithChildren> = ({ children }) => {
-  const [ref, inView] = useInView();
-  const [hasLoaded, setHasLoaded] = useState(false);
-
-  useEffect(() => {
-    if (hasLoaded) return;
-    if (inView) setHasLoaded(true);
-  }, [inView, hasLoaded]);
-
-  return (
-    <div ref={ref} className="w-0 h-0">
-      {hasLoaded && children}
     </div>
   );
 };

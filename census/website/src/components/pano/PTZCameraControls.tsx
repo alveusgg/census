@@ -182,7 +182,23 @@ export const usePTZCameraControls = ({
       window.removeEventListener('mouseup', handleMouseUp);
       gl.domElement.style.cursor = 'default';
     };
-  }, [camera, gl, onChange, onFovChange, onInteractionStart, onInteractionEnd, sensitivity, zoomSensitivity, minFov, maxFov, minTilt, maxTilt, enabled, invertHorizontal, invertVertical]);
+  }, [
+    camera,
+    gl,
+    onChange,
+    onFovChange,
+    onInteractionStart,
+    onInteractionEnd,
+    sensitivity,
+    zoomSensitivity,
+    minFov,
+    maxFov,
+    minTilt,
+    maxTilt,
+    enabled,
+    invertHorizontal,
+    invertVertical
+  ]);
 
   // Sync external rotation changes
   useEffect(() => {

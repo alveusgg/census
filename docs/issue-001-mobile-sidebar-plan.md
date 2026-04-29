@@ -61,30 +61,36 @@ Remove the authenticated shell's mobile width pressure by making the main menu b
 ## Implementation Approach
 
 1. Add mobile awareness to the menu plumbing.
+
 - Use `useIsMobile()` inside `Menu` and `MenuTrigger`.
 - Keep `LayoutProvider` as the source of truth for desktop sidebar collapsed state.
 - Add a local mobile open state near the menu component, or extend layout state with a dedicated `mobileMenuOpen` boolean if shared access is cleaner.
 
 2. Split menu rendering into shared content plus two containers.
+
 - Extract the repeated logo and nav items into a shared `MenuContent`/`MenuItems` internal component.
 - Desktop container keeps the current `motion.nav` implementation and width animation.
 - Mobile container uses `Sheet` with `side="left"` and no inline width reservation.
 
 3. Update the trigger behavior.
+
 - On desktop, the header trigger should keep toggling collapsed/expanded state.
 - On mobile, the same trigger should open/close the sheet instead.
 - Remove hover-delay assumptions from mobile-only interactions.
 
 4. Prevent the shell from reserving side-rail width on mobile.
+
 - Keep `Main.tsx` structure, but ensure only desktop menu and desktop achievements participate in the outer flex width.
 - Mobile menu should portal out of flow via `Sheet`.
 - Mobile achievements should continue to overlay content rather than consume layout width.
 
 5. Tighten mobile header/content spacing if needed.
+
 - After the rail removal, verify that `Header` and `Scrollable` paddings do not leave the mobile experience feeling over-indented.
 - Only make minimal spacing adjustments if necessary.
 
 6. Apply targeted mobile height adjustments based on the audit.
+
 - Keep `Main.tsx` on `h-svh`; the bigger issue is fixed children and nested scroll containers, not the shell height token itself.
 - Leave desktop fixed insets alone, but remove or relax the mobile-only `top-2 bottom-2 right-2` achievements positioning so the overlay can size more naturally within the viewport.
 - Prefer a single obvious scroll container per mobile surface: the main content when overlays are closed, and the overlay body when a menu/panel is open.
