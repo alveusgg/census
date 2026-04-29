@@ -11,10 +11,10 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useConfirmedObservations } from '@/services/api/observations';
 import { cn } from '@/utils/cn';
-import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { endOfDay, format, startOfDay, subDays } from 'date-fns';
 import { CalendarIcon, ChevronDown } from 'lucide-react';
-import { Suspense, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { Outlet } from 'react-router';
 import { getConfirmedObservationFilter, type IdentificationFilters } from './filters';
@@ -34,13 +34,21 @@ const getDateRangeLabel = (dateRange?: DateRange) => {
 
 const ConfirmedObservationsFeed = ({ filter }: { filter: ReturnType<typeof getConfirmedObservationFilter> }) => {
   const query = useConfirmedObservations(filter);
-  const observations = useSuspenseInfiniteQuery(query);
+  const observations = useInfiniteQuery(query);
 
-  const allObservations = useMemo(() => observations.data.pages.flatMap(page => page.data), [observations.data.pages]);
-
+  const pages = observations.data?.pages ?? [];
+  const allObservations = useMemo(() => pages.flatMap(page => page.data), [pages]);
   const grouped = useMemo(() => {
     return Object.groupBy(allObservations, observation => format(new Date(observation.observedAt), 'do MMM'));
   }, [allObservations]);
+
+  if (!observations.data) {
+    return (
+      <div className="flex min-h-24 items-center justify-center pt-12">
+        <Loader className="size-6 text-accent-900" />
+      </div>
+    );
+  }
 
   return (
     <div className="pt-12 space-y-12">
@@ -158,15 +166,7 @@ export const Identifications = () => {
             </Select>
           </div>
         </div>
-        <Suspense
-          fallback={
-            <div className="flex min-h-24 items-center justify-center pt-12">
-              <Loader className="size-6 text-accent-900" />
-            </div>
-          }
-        >
-          <ConfirmedObservationsFeed filter={confirmedObservationFilter} />
-        </Suspense>
+        <ConfirmedObservationsFeed filter={confirmedObservationFilter} />
       </div>
       <SelectionActionBar className="justify-between">
         <SelectionCount singular="identification" />

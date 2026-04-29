@@ -2,7 +2,6 @@ import { Button } from '@/components/controls/button/blueprint';
 import SiCheckCircle from '@/components/icons/SiCheckCircle';
 import SiSticker from '@/components/icons/SiSticker';
 import {
-  StickerSilhouette,
   StickerSpec,
   StickerStage,
   StickerValueMap,
@@ -15,37 +14,6 @@ interface ProfileStickerStageProps {
   username: string;
   editable?: boolean;
 }
-
-const parseSilhouette = (svgSource: string): StickerSilhouette => {
-  const viewBoxMatch = svgSource.match(/viewBox="([^"]+)"/);
-  const pathMatch = svgSource.match(/<path d="([^"]+)"/);
-
-  if (!viewBoxMatch || !pathMatch) {
-    throw new Error('Unable to parse silhouette SVG metadata');
-  }
-
-  const viewBox = viewBoxMatch[1];
-  const path = pathMatch[1];
-
-  if (!viewBox || !path) {
-    throw new Error('Silhouette SVG metadata is incomplete');
-  }
-
-  const [, , widthValue, heightValue] = viewBox.split(/\s+/);
-  const width = Number(widthValue);
-  const height = Number(heightValue);
-
-  if (!Number.isFinite(width) || !Number.isFinite(height)) {
-    throw new Error('Unable to parse silhouette SVG dimensions');
-  }
-
-  return {
-    height,
-    path,
-    viewBox,
-    width
-  };
-};
 
 const stickers: StickerSpec<string>[] = [];
 

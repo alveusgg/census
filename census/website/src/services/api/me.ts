@@ -1,6 +1,6 @@
 import { handleTRPCError } from '@/components/feedback/ErrorBoundary';
 import { OnboardingFormSchema } from '@alveusgg/census-forms';
-import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
+import { infiniteQueryOptions, queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { key, useAPI } from '../query/hooks';
@@ -119,6 +119,36 @@ export const useLeaderboard = (from?: Date) => {
         trpc.me.place.query({ from })
       ]);
       return { leaderboard, place };
+    }
+  });
+};
+
+export type LeaderboardUser = TypeFromOutput<RouterOutput['users']['leaderboardPage']>;
+
+export const useInfiniteLeaderboard = ({
+  from,
+  offset = 3,
+  size = 20
+}: {
+  from?: Date;
+  offset?: number;
+  size?: number;
+}) => {
+  const trpc = useAPI();
+
+  return infiniteQueryOptions({
+    queryKey: key('points', 'leaderboard', 'pages', from?.toISOString() ?? 'current', String(offset), String(size)),
+    queryFn: ({ pageParam }) =>
+      trpc.users.leaderboardPage.query({
+        from,
+        meta: { page: pageParam, size },
+        offset
+      }),
+    initialPageParam: 1,
+    getNextPageParam: lastPage => {
+      const loaded = offset + lastPage.meta.page * lastPage.meta.size;
+      if (loaded >= lastPage.meta.total) return undefined;
+      return lastPage.meta.page + 1;
     }
   });
 };
