@@ -12,7 +12,7 @@ import { Pagination, Query } from '../../api/observation.js';
 import { BoundingBox, identifications, images, observations, sightings } from '../../db/schema/index.js';
 import { useDB, withTransaction } from '../../db/transaction.js';
 import { assert } from '../../utils/assert.js';
-import { createConcurrencyLimiter } from '../../utils/concurrency.js';
+import { createConcurrencyLimiter, createRetrier } from '../../utils/concurrency.js';
 import { useEnvironment, useUser } from '../../utils/env/env.js';
 import { buildObjectUrl } from '../../utils/storage.js';
 import { runLongOperation } from '../../utils/teardown.js';
@@ -21,6 +21,7 @@ import { getPermissions } from '../auth/role.js';
 import { getCapture } from '../capture/index.js';
 
 const frameUploadLimiter = createConcurrencyLimiter(3);
+const frameUploadRetrier = createRetrier(3);
 
 const Selection = z.object({
   timestamp: z.number(),
@@ -314,21 +315,23 @@ export const getFrameFromVideo = async (video: TemporaryFile, stats: ffmpeg.Ffpr
   console.log(`Extracting frame from video for timestamp ${timestamp}`);
   const frame = await extractFrameFromVideo(video, timestamp, stats);
   return await frameUploadLimiter.run(async () => {
-    console.log(`Uploading frame to S3: ${frame.name}`);
-    try {
-      await storage.send(
-        new PutObjectCommand({
-          Bucket: variables.S3_BUCKET,
-          Key: frame.name,
-          Body: createReadStream(frame.path)
-        })
-      );
-      console.log(`Uploaded frame to S3: ${frame.name}`);
-      return buildObjectUrl(variables, frame.name);
-    } catch (error) {
-      console.error(`Failed to upload frame to S3: ${frame.name}`, error);
-      throw new DownstreamError('s3', `Failed to upload frame to S3: ${frame.name}`);
-    }
+    return await frameUploadRetrier.run(async () => {
+      console.log(`Uploading frame to S3: ${frame.name}`);
+      try {
+        await storage.send(
+          new PutObjectCommand({
+            Bucket: variables.S3_BUCKET,
+            Key: frame.name,
+            Body: createReadStream(frame.path)
+          })
+        );
+        console.log(`Uploaded frame to S3: ${frame.name}`);
+        return buildObjectUrl(variables, frame.name);
+      } catch (error) {
+        console.error(`Failed to upload frame to S3: ${frame.name}`, error);
+        throw new DownstreamError('s3', `Failed to upload frame to S3: ${frame.name}`);
+      }
+    });
   });
 };
 

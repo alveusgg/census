@@ -23,3 +23,24 @@ export const createConcurrencyLimiter = (concurrency: number) => {
 };
 
 export type ConcurrencyLimiter = ReturnType<typeof createConcurrencyLimiter>;
+
+export const createRetrier = (attempts: number) => {
+  const run = async <T>(fn: () => Promise<T>): Promise<T> => {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await fn();
+      } catch (error) {
+        if (attempt >= attempts) throw error;
+
+        const delay = 1000 * 2 ** (attempt - 1);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  };
+
+  return {
+    run
+  };
+};
+
+export type Retrier = ReturnType<typeof createRetrier>;
