@@ -1,4 +1,5 @@
 import { StickerValueMap } from '@/components/stickers';
+import { Breadcrumbs } from '@/layouts/Breadcrumbs';
 import { useMe } from '@/services/api/me';
 import { useUserProfile } from '@/services/api/users';
 import { useAPI } from '@/services/query/hooks';
@@ -28,6 +29,11 @@ export const MyProfile: FC = () => {
 
   return (
     <ProfilePageLayout>
+      <Breadcrumbs>
+        <p>home</p>
+        <span>•</span>
+        <p className="text-lg">{me.data.username}</p>
+      </Breadcrumbs>
       <ProfileStickerStage
         userId={me.data.id}
         username={me.data.username}

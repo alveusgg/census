@@ -1,4 +1,5 @@
 import { StickerValueMap } from '@/components/stickers';
+import { Breadcrumbs } from '@/layouts/Breadcrumbs';
 import { useUserProfile } from '@/services/api/users';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { FC } from 'react';
@@ -16,6 +17,11 @@ export const UserProfile: FC = () => {
 
   return (
     <ProfilePageLayout>
+      <Breadcrumbs>
+        <p>home</p>
+        <span>•</span>
+        <p className="text-lg">{profile.data.user.username}</p>
+      </Breadcrumbs>
       <ProfileStickerStage
         userId={profile.data.user.id}
         username={profile.data.user.username}
