@@ -15,21 +15,21 @@ type StageSize = {
   readonly width: number;
 };
 
-type UseStickerStageArgs<Id extends string> = {
-  readonly stickers: readonly StickerSpec<Id>[];
+type UseStickerStageArgs = {
+  readonly stickers: readonly StickerSpec[];
   readonly mode: 'interactive' | 'static';
   readonly effectsEnabled: boolean;
   readonly referenceSize?: StickerBoardReferenceSize;
-  readonly onChange?: (value: StickerValueMap<Id>) => void;
-  readonly onDragEnd?: (value: StickerValueMap<Id>, stickerId: Id) => void;
-  readonly value: StickerValueMap<Id>;
+  readonly onChange?: (value: StickerValueMap) => void;
+  readonly onDragEnd?: (value: StickerValueMap, stickerId: string) => void;
+  readonly value: StickerValueMap;
 };
 
-type UseStickerStageResult<Id extends string> = {
-  readonly positions: StickerPositionMap<Id>;
+type UseStickerStageResult = {
+  readonly positions: StickerPositionMap;
   readonly stageRef: (node: HTMLDivElement | null) => void;
-  readonly registerHandle: (stickerId: Id, handle: StickerHandle<Id> | null) => void;
-  readonly handlePointerDown: (event: ReactPointerEvent<HTMLDivElement>, stickerId: Id) => void;
+  readonly registerHandle: (stickerId: string, handle: StickerHandle | null) => void;
+  readonly handlePointerDown: (event: ReactPointerEvent<HTMLDivElement>, stickerId: string) => void;
 };
 
 const clamp = (value: number): number => Math.min(Math.max(value, 0), 1);
@@ -38,15 +38,15 @@ const ROTATION_STEP_DEGREES = 5;
 const getSizeScale = (stageSize: StageSize, referenceSize?: StickerBoardReferenceSize): number =>
   referenceSize ? Math.min(stageSize.width / referenceSize.width, stageSize.height / referenceSize.height) : 1;
 
-const getHighestZIndex = <Id extends string>(valueMap: StickerValueMap<Id>, minimum: number): number =>
+const getHighestZIndex = (valueMap: StickerValueMap, minimum: number): number =>
   Math.max(...(Object.values(valueMap) as StickerValue[]).map(layout => layout.zIndex), minimum);
 
-const buildPositions = <Id extends string>(
-  stickers: readonly StickerSpec<Id>[],
-  currentValue: StickerValueMap<Id>,
+const buildPositions = (
+  stickers: readonly StickerSpec[],
+  currentValue: StickerValueMap,
   stageSize: StageSize,
   referenceSize?: StickerBoardReferenceSize
-): StickerPositionMap<Id> =>
+): StickerPositionMap =>
   Object.fromEntries(
     stickers.map(sticker => {
       const layout = currentValue[sticker.id];
@@ -68,7 +68,7 @@ const buildPositions = <Id extends string>(
         }
       ];
     })
-  ) as StickerPositionMap<Id>;
+  ) as StickerPositionMap;
 
 const useStageSize = (): [StageSize, (node: HTMLDivElement | null) => void, React.RefObject<HTMLDivElement | null>] => {
   const [stageSize, setStageSize] = useState<StageSize>({ height: 0, width: 0 });
@@ -132,7 +132,7 @@ const useGlobalRotateShortcut = (handleRotate: (event: KeyboardEvent) => void): 
   }, [handleRotate]);
 };
 
-export const useStickerStage = <Id extends string>({
+export const useStickerStage = ({
   stickers,
   mode,
   effectsEnabled,
@@ -140,12 +140,12 @@ export const useStickerStage = <Id extends string>({
   onChange,
   onDragEnd,
   value
-}: UseStickerStageArgs<Id>): UseStickerStageResult<Id> => {
+}: UseStickerStageArgs): UseStickerStageResult => {
   const interactive = mode === 'interactive';
   const [stageSize, setStageRef, stageRef] = useStageSize();
-  const dragStateRef = useRef<StickerDragState<Id> | null>(null);
+  const dragStateRef = useRef<StickerDragState | null>(null);
   const highestZIndexRef = useRef(getHighestZIndex(value, 1000 + stickers.length));
-  const handlesRef = useRef(new Map<Id, StickerHandle<Id>>());
+  const handlesRef = useRef(new Map<string, StickerHandle>());
 
   if (!interactive && dragStateRef.current) {
     dragStateRef.current = null;
@@ -161,13 +161,13 @@ export const useStickerStage = <Id extends string>({
   );
 
   const updateValue = useCallback(
-    (nextValue: StickerValueMap<Id>) => {
+    (nextValue: StickerValueMap) => {
       onChange?.(nextValue);
     },
     [onChange]
   );
 
-  const registerHandle = (stickerId: Id, handle: StickerHandle<Id> | null): void => {
+  const registerHandle = (stickerId: string, handle: StickerHandle | null): void => {
     if (handle) {
       handlesRef.current.set(stickerId, handle);
       return;
@@ -264,7 +264,7 @@ export const useStickerStage = <Id extends string>({
 
   useGlobalRotateShortcut(handleRotateKeyDown);
 
-  const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>, stickerId: Id): void => {
+  const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>, stickerId: string): void => {
     if (!interactive) {
       return;
     }

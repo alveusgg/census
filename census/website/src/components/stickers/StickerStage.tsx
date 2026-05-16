@@ -4,8 +4,9 @@ import hideoutBackground from './hideout.svg?url';
 import { useStickerStage } from './hooks';
 import { Sticker } from './Sticker';
 import type { StickerBoardProps } from './types';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
-export const StickerStage = <Id extends string>({
+export const StickerStage = ({
   stickers,
   mode = 'interactive',
   effects = true,
@@ -17,8 +18,9 @@ export const StickerStage = <Id extends string>({
   onChange,
   onDragEnd,
   value
-}: StickerBoardProps<Id>): JSX.Element => {
+}: StickerBoardProps): JSX.Element => {
   const interactive = mode === 'interactive';
+  const showTooltips = !interactive;
 
   const { positions, stageRef, registerHandle, handlePointerDown } = useStickerStage({
     stickers,
@@ -42,24 +44,27 @@ export const StickerStage = <Id extends string>({
     : style;
 
   return (
-    <div
-      ref={stageRef}
-      className={`relative overflow-hidden${className ? ` ${className}` : ''}`}
-      style={stageStyle}
-      aria-label={boardLabel}
-    >
-      {stickers.map(sticker => (
-        <Sticker
-          key={sticker.id}
-          sticker={sticker}
-          position={positions[sticker.id]}
-          interactive={interactive}
-          effectsEnabled={effects}
-          peel={peel}
-          onPointerDown={handlePointerDown}
-          registerHandle={registerHandle}
-        />
-      ))}
-    </div>
+    <TooltipProvider delayDuration={100}>
+      <div
+        ref={stageRef}
+        className={`relative overflow-hidden${className ? ` ${className}` : ''}`}
+        style={stageStyle}
+        aria-label={boardLabel}
+      >
+        {stickers.map(sticker => (
+          <Sticker
+            key={sticker.id}
+            sticker={sticker}
+            position={positions[sticker.id]}
+            interactive={interactive}
+            effectsEnabled={effects}
+            peel={peel}
+            tooltip={showTooltips ? (sticker.tooltip ?? sticker.label) : undefined}
+            onPointerDown={handlePointerDown}
+            registerHandle={registerHandle}
+          />
+        ))}
+      </div>
+    </TooltipProvider>
   );
 };
