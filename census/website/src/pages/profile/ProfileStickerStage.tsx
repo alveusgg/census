@@ -127,17 +127,17 @@ export const ProfileStickerStage: FC<ProfileStickerStageProps> = ({
             )}
           </h2>
         </div>
+        {editable && (
+          <Button
+            variant="primary"
+            className="absolute bottom-3 left-3 z-10"
+            onClick={() => setMode(m => (m === 'interactive' ? 'static' : 'interactive'))}
+          >
+            {mode === 'static' ? <SiSticker className="text-xl" /> : <SiCheckCircle className="text-xl" />}
+            <span>{mode === 'static' ? 'rearrange your stickers' : 'lock your stickers in place'}</span>
+          </Button>
+        )}
       </div>
-      {editable && (
-        <Button
-          variant="primary"
-          className="self-start"
-          onClick={() => setMode(m => (m === 'interactive' ? 'static' : 'interactive'))}
-        >
-          {mode === 'static' ? <SiSticker className="text-xl" /> : <SiCheckCircle className="text-xl" />}
-          <span>{mode === 'static' ? 'rearrange your stickers' : 'lock your stickers in place'}</span>
-        </Button>
-      )}
     </div>
   );
 };
