@@ -1,8 +1,8 @@
-import { desc, eq } from 'drizzle-orm';
+import { count, desc, eq } from 'drizzle-orm';
 
 import { OnboardingFormSchema } from '@alveusgg/census-forms';
 import { NotAuthenticatedError, NotFoundError } from '@alveusgg/error';
-import { users } from '../../db/schema/index.js';
+import { identifications, users } from '../../db/schema/index.js';
 import { responses } from '../../db/schema/responses.js';
 import { useDB, withTransaction } from '../../db/transaction.js';
 import { withCoalescing } from '../../utils/cache.js';
@@ -66,6 +66,47 @@ export const getUserPublicProfile = async (id: number) => {
   const levels = getAllReachedLevelsForPoints(points);
   if (!user) throw new NotFoundError(`User not found: ${id}`);
   return { user, points, levels };
+};
+
+export const getUserIdentifications = async (id: number, page: number, size: number) => {
+  const db = useDB();
+  const [{ total }] = await db.select({ total: count() }).from(identifications).where(eq(identifications.suggestedBy, id));
+
+  const data = await db.query.identifications.findMany({
+    where: eq(identifications.suggestedBy, id),
+    with: {
+      suggester: true,
+      feedback: {
+        with: {
+          submitter: true
+        }
+      },
+      shiny: true,
+      observation: {
+        with: {
+          sightings: {
+            with: {
+              images: true,
+              observer: true,
+              capture: {
+                with: {
+                  capturer: true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    orderBy: desc(identifications.id),
+    limit: size,
+    offset: (page - 1) * size
+  });
+
+  return {
+    meta: { page, size, total },
+    data
+  };
 };
 
 export const onboardUser = async (id: number, data: OnboardingFormSchema) => {
