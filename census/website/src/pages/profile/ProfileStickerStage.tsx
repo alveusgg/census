@@ -8,10 +8,12 @@ import {
   StickerValueMap,
   createStickerValueMap
 } from '@/components/stickers';
+import { UserLink } from '@/components/users/UserLink';
 import { useMeasure } from '@uidotdev/usehooks';
-import { FC, useMemo, useState } from 'react';
+import { FC, useEffect, useMemo, useState } from 'react';
 
 interface ProfileStickerStageProps {
+  userId?: number;
   username: string;
   editable?: boolean;
   stickers?: StickerSpec[];
@@ -84,6 +86,7 @@ export const createSticker = ({
 });
 
 export const ProfileStickerStage: FC<ProfileStickerStageProps> = ({
+  userId,
   username,
   editable = false,
   stickers = [],
@@ -97,6 +100,10 @@ export const ProfileStickerStage: FC<ProfileStickerStageProps> = ({
   const [ref, { width }] = useMeasure<HTMLDivElement>();
 
   const activeMode = editable ? mode : 'static';
+
+  useEffect(() => {
+    setValue(initialStageValue);
+  }, [initialStageValue]);
 
   return (
     <div className="flex flex-col gap-4 w-full">
@@ -113,7 +120,11 @@ export const ProfileStickerStage: FC<ProfileStickerStageProps> = ({
         />
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <h2 className="bg-accent-100 px-8 py-6 rounded-lg text-accent-900 font-bold [font-size:clamp(2rem,7.5cqw,3.75rem)]">
-            {username}
+            {userId ? (
+              <UserLink user={{ id: userId, username }} className="pointer-events-auto" />
+            ) : (
+              username
+            )}
           </h2>
         </div>
       </div>

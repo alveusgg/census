@@ -3,7 +3,7 @@ import { subscribeToChanges } from '../db/listen.js';
 import { getRecentRedeemedAchievements } from '../services/points/achievement.js';
 import { getLeaderboard, getLeaderboardPage } from '../services/points/points.js';
 import { getCurrentSeason } from '../services/seasons/season.js';
-import { getUserPublicProfile, getUsers } from '../services/users/index.js';
+import { getUserIdentifications, getUserPublicProfile, getUsers } from '../services/users/index.js';
 import { procedure, procedureWithPermissions, router } from '../trpc/trpc.js';
 import { Pagination } from './observation.js';
 import { useUser } from '../utils/env/env.js';
@@ -17,6 +17,12 @@ export default router({
   profile: procedure.input(z.object({ id: z.number().int().positive() })).query(async ({ input }) => {
     return getUserPublicProfile(input.id);
   }),
+
+  identifications: procedure
+    .input(z.object({ id: z.number().int().positive(), meta: Pagination }))
+    .query(async ({ input }) => {
+      return getUserIdentifications(input.id, input.meta.page, input.meta.size);
+    }),
 
   updateStickerPositions: procedure.input(z.object({ positions: z.unknown() })).mutation(async ({ input }) => {
     const user = useUser();

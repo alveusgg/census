@@ -1,4 +1,4 @@
-import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
+import { infiniteQueryOptions, queryOptions, useSuspenseQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { key, useAPI, useLiveQuery } from '../query/hooks';
 import { RouterOutput, TypeFromOutput } from './helpers';
@@ -20,6 +20,21 @@ export const useUserProfile = (id: number) => {
 };
 
 export type UserProfile = TypeFromOutput<RouterOutput['users']['profile']>;
+
+export const useUserIdentifications = (id: number, size = 20) => {
+  const api = useAPI();
+  return infiniteQueryOptions({
+    queryKey: key('users', 'identifications', id.toString(), size.toString()),
+    queryFn: ({ pageParam }) => api.users.identifications.query({ id, meta: { page: pageParam, size } }),
+    initialPageParam: 1,
+    getNextPageParam: lastPage => {
+      if (lastPage.meta.page * lastPage.meta.size >= lastPage.meta.total) return undefined;
+      return lastPage.meta.page + 1;
+    }
+  });
+};
+
+export type UserIdentification = TypeFromOutput<RouterOutput['users']['identifications']>;
 
 export const useRecentAchievements = () => {
   const api = useAPI();
