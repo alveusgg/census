@@ -11,7 +11,8 @@ import { ModalProps } from '@/components/modal/useModal';
 import { useCapture, useCreateCaptureFromClip } from '@/services/api/capture';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { DialogTitle } from '@radix-ui/react-dialog';
-import { ComponentProps, FC, Suspense, useEffect } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ComponentProps, FC, Suspense, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router';
 import { z } from 'zod';
@@ -157,6 +158,43 @@ interface ClipCreationProgressProps {
   onComplete: () => void;
 }
 
+const progressMessages = [
+  "We're getting your clip from Twitch",
+  'Finding the right time & cam',
+  'Processing the 4k clip',
+  'Uploading the video',
+  'Waiting for the video to process'
+];
+
+const ProgressMessageRotator: FC = () => {
+  const [messageIndex, setMessageIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setMessageIndex(current => (current + 1) % progressMessages.length);
+    }, 15000);
+
+    return () => window.clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="relative h-6 min-w-0 flex-1 overflow-hidden">
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.p
+          key={progressMessages[messageIndex]}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.28, ease: 'easeOut' }}
+          className="absolute inset-x-0 top-0 truncate font-medium"
+        >
+          {progressMessages[messageIndex]}
+        </motion.p>
+      </AnimatePresence>
+    </div>
+  );
+};
+
 export const ClipCreationProgress: FC<ClipCreationProgressProps> = ({ id, onComplete }) => {
   // This is a live updating query, so this will re-render as the capture is updated
   const capture = useCapture(id);
@@ -177,7 +215,7 @@ export const ClipCreationProgress: FC<ClipCreationProgressProps> = ({ id, onComp
 
   return (
     <div className="flex justify-between items-center gap-3 bg-alveus p-4 rounded-md w-full">
-      <p>We&apos;re upgrading this clip to 4K, please wait!</p>
+      <ProgressMessageRotator />
       <Loader />
     </div>
   );
