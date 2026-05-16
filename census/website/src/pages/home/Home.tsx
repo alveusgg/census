@@ -68,23 +68,18 @@ export const Home: FC = () => {
       />
 
       <div className="mx-auto grid w-full max-w-6xl grid-cols-8 gap-6">
-        <div className="@container relative col-span-8 flex flex-col overflow-clip rounded-2xl border border-accent border-opacity-50 bg-accent-100 px-10 py-8 leading-snug text-accent-900">
+        <div className="@container relative col-span-8 grid overflow-clip rounded-2xl border border-accent border-opacity-50 bg-accent-100 px-6 py-8 leading-snug text-accent-900 sm:px-10 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,28rem)] lg:items-center lg:gap-8">
           <img
             src={bg}
             alt="Background"
             className="absolute inset-y-0 right-0 h-full"
           />
-          <img
-            src={mural}
-            alt="Mural"
-            className="absolute inset-y-6 right-6 h-4/5 rotate-3 drop-shadow-lg"
-          />
-          <div className="relative z-10">
+          <div className="relative z-10 min-w-0">
             <p>Welcome to the</p>
-            <h2 className="mb-1.5 text-5xl font-serif font-bold tracking-wide text-accent-900">
+            <h2 className="mb-1.5 text-4xl font-serif font-bold tracking-wide text-accent-900 sm:text-5xl">
               alveus pollinator census
             </h2>
-            <p className="max-w-3xl">
+            <p>
               {showSubmitClipCta
                 ? "This is a community-driven project to identify and document all the pollinators found in the garden. Ready to help spot something new? Submit a Twitch clip from the pollinator garden and turn it into a new capture for the community to review."
                 : "This is a community-driven project to identify and document all the pollinators found in the garden. Have a look around and see what's been identified already! If you'd like to contribute, you can sign up below by completing a quick questionnaire."}
@@ -108,6 +103,13 @@ export const Home: FC = () => {
                 <ChevronRight className="size-4" />
               </Link>
             )}
+          </div>
+          <div className="relative z-10 hidden h-full min-h-48 items-center justify-center lg:flex">
+            <img
+              src={mural}
+              alt="Mural"
+              className="max-h-60 w-full max-w-sm rotate-3 object-contain drop-shadow-lg"
+            />
           </div>
         </div>
 

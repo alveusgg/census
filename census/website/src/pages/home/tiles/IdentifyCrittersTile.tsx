@@ -11,7 +11,10 @@ export const IdentifyCrittersTile: FC = () => {
   const unconfirmedCount = unconfirmedQuery.data ?? 0;
 
   return (
-    <div className="flex items-center gap-4 py-4 md:px-6 md:py-2 @container">
+    <Link
+      to="/observations"
+      className="group flex items-center gap-4 py-4 md:px-6 md:py-2 @container"
+    >
       <div
         className="w-20 md:w-16 h-16 shrink-0"
         aria-label="Focus target placeholder"
@@ -26,16 +29,13 @@ export const IdentifyCrittersTile: FC = () => {
         <h3 className="font-serif text-xl font-bold text-accent-900 leading-tight">
           help identify critters!
         </h3>
-        <Link
-          to="/observations"
-          className="group inline text-sm text-accent-800 hover:text-accent-700 transition-colors leading-snug"
-        >
+        <p className="text-sm text-accent-800 transition-colors leading-snug group-hover:text-accent-700">
           There are currently{" "}
           <span className="font-bold text-accent-900">{unconfirmedCount}</span>{" "}
           critters that need to be identified – you can help out!{" "}
           <ChevronRight className="size-4 inline-block align-text-bottom transition-transform group-hover:translate-x-0.5" />
-        </Link>
+        </p>
       </div>
-    </div>
+    </Link>
   );
 };
