@@ -102,10 +102,7 @@ export const Identifications = () => {
     dateRange: seasonDateRange,
     type: 'all'
   }));
-  const confirmedObservationFilter = getConfirmedObservationFilter(
-    isMobile ? { ...filters, active: false } : filters,
-    3 / 1
-  );
+  const confirmedObservationFilter = getConfirmedObservationFilter(filters, 3 / 1);
 
   const { clearSelection } = useSelection();
   const viewFilterLabel = !filters.dirty
