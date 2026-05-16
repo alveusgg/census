@@ -3,17 +3,14 @@ import { Wordmark } from '@/components/assets/logos/Wordmark';
 import { Button } from '@/components/controls/button/juicy';
 import { useMobileSidebar, useSidebar } from '@/components/layout/LayoutProvider';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import SiCog from '@/components/icons/SiCog';
+import SiBinoculars from '@/components/icons/SiBinoculars';
 import SiHome from '@/components/icons/SiHome';
 import SiLogOut from '@/components/icons/SiLogOut';
 import SiMenu from '@/components/icons/SiMenu';
 import SiPhoto from '@/components/icons/SiPhoto';
 import SiUser from '@/components/icons/SiUser';
-import SiUsers from '@/components/icons/SiUsers';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { usePermissions } from '@/services/api/me';
 import { cn } from '@/utils/cn';
-import { useSuspenseQuery } from '@tanstack/react-query';
 import { AnimatePresence, HTMLMotionProps, motion } from 'framer-motion';
 import { ComponentPropsWithoutRef, Dispatch, ElementType, FC, PropsWithChildren, SetStateAction, useRef } from 'react';
 import { Link } from 'react-router-dom';
@@ -37,8 +34,6 @@ export const Menu = () => {
   const isMobile = useIsMobile();
   const [open, setOpen] = useSidebar();
   const [mobileOpen, setMobileOpen] = useMobileSidebar();
-  const query = usePermissions();
-  const permissions = useSuspenseQuery(query);
 
   if (isMobile) {
     return (
@@ -50,7 +45,7 @@ export const Menu = () => {
           <SheetHeader className="sr-only">
             <SheetTitle>Main navigation</SheetTitle>
           </SheetHeader>
-          <MobileMenu permissions={permissions.data} closeMenu={() => setMobileOpen(false)} />
+          <MobileMenu closeMenu={() => setMobileOpen(false)} />
         </SheetContent>
       </Sheet>
     );
@@ -64,24 +59,17 @@ export const Menu = () => {
         animate={{ width: open ? '12.5rem' : '5rem', minWidth: open ? '12.5rem' : '5rem' }}
       >
         <div className="absolute left-0 bottom-2 top-2 min-w-[12.5rem] w-[12.5rem] flex flex-col flex-1 pl-3 pr-3">
-          <DesktopMenu permissions={permissions.data} open={open} setOpen={setOpen} />
+          <DesktopMenu open={open} setOpen={setOpen} />
         </div>
       </motion.nav>
     </AnimatePresence>
   );
 };
 
-interface MenuPermissions {
-  moderate: boolean;
-  admin: boolean;
-}
-
 const DesktopMenu = ({
-  permissions,
   open,
   setOpen
 }: {
-  permissions: MenuPermissions;
   open: boolean;
   setOpen: Dispatch<SetStateAction<boolean>>;
 }) => {
@@ -117,21 +105,13 @@ const DesktopMenu = ({
           <SiPhoto className="text-2xl" />
           <MenuLabel>observations</MenuLabel>
         </MenuItem>
-        {permissions.moderate && (
-          <MenuItem as={Link} to="/users">
-            <SiUsers className="text-2xl" />
-            <MenuLabel>users</MenuLabel>
-          </MenuItem>
-        )}
-        {permissions.admin && (
-          <MenuItem as={Link} to="/admin">
-            <SiCog className="text-2xl" />
-            <MenuLabel>admin</MenuLabel>
-          </MenuItem>
-        )}
+        <MenuItem as={Link} to="/identifications">
+          <SiBinoculars className="text-2xl" />
+          <MenuLabel>identifications</MenuLabel>
+        </MenuItem>
       </div>
       <div className="flex flex-col gap-2 py-2 w-full">
-        <MenuItem>
+        <MenuItem as={Link} to="/profile/me">
           <SiUser className="text-2xl" />
           <MenuLabel>profile</MenuLabel>
         </MenuItem>
@@ -144,7 +124,7 @@ const DesktopMenu = ({
   );
 };
 
-const MobileMenu = ({ permissions, closeMenu }: { permissions: MenuPermissions; closeMenu: () => void }) => {
+const MobileMenu = ({ closeMenu }: { closeMenu: () => void }) => {
   return (
     <nav className="flex h-full flex-col bg-accent-100 px-4 py-4">
       <div className="mb-4 flex items-center gap-3 px-2">
@@ -162,21 +142,13 @@ const MobileMenu = ({ permissions, closeMenu }: { permissions: MenuPermissions; 
           <SiPhoto className="text-2xl" />
           <span>observations</span>
         </MobileMenuItem>
-        {permissions.moderate && (
-          <MobileMenuItem as={Link} to="/users" onClick={closeMenu}>
-            <SiUsers className="text-2xl" />
-            <span>users</span>
-          </MobileMenuItem>
-        )}
-        {permissions.admin && (
-          <MobileMenuItem as={Link} to="/admin" onClick={closeMenu}>
-            <SiCog className="text-2xl" />
-            <span>admin</span>
-          </MobileMenuItem>
-        )}
+        <MobileMenuItem as={Link} to="/identifications" onClick={closeMenu}>
+          <SiBinoculars className="text-2xl" />
+          <span>identifications</span>
+        </MobileMenuItem>
       </div>
       <div className="flex flex-col gap-2 border-t border-accent border-opacity-50 pt-3">
-        <MobileMenuItem>
+        <MobileMenuItem as={Link} to="/profile/me" onClick={closeMenu}>
           <SiUser className="text-2xl" />
           <span>profile</span>
         </MobileMenuItem>
