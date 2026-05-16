@@ -1,99 +1,122 @@
-import { Square } from '@/components/assets/images/Square';
-import { Note } from '@/components/containers/Note';
-import { Button, Link } from '@/components/controls/button/paper';
+import { Square } from "@/components/assets/images/Square";
+import { Note } from "@/components/containers/Note";
+import { Button, Link } from "@/components/controls/button/paper";
+import { Preloader } from "@/components/feed/Preloader";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger
-} from '@/components/forms/base/dropdown-menu';
-import { INatTaxaInput } from '@/components/forms/inputs/INatTaxaInput';
-import { Preloader } from '@/components/feed/Preloader';
-import { Loader } from '@/components/loaders/Loader';
-import { Confirm, useConfirm } from '@/components/modal/Confirm';
-import { Timestamp } from '@/components/text/Timestamp';
-import { useSuggestAccessoryIdentification, useSuggestIdentification } from '@/services/api/identifications';
+  DropdownMenuTrigger,
+} from "@/components/forms/base/dropdown-menu";
+import { INatTaxaInput } from "@/components/forms/inputs/INatTaxaInput";
+import { Loader } from "@/components/loaders/Loader";
+import { Confirm, useConfirm } from "@/components/modal/Confirm";
+import { Timestamp } from "@/components/text/Timestamp";
+import { UserLink } from "@/components/users/UserLink";
+import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  useSuggestAccessoryIdentification,
+  useSuggestIdentification,
+} from "@/services/api/identifications";
 import {
   Identification as IdentificationType,
   Observation as ObservationType,
   useDeleteObservation,
-  useNotifyDiscordAboutObservation
-} from '@/services/api/observations';
-import { useHasPermission } from '@/services/permissions/hooks';
-import { cn } from '@/utils/cn';
-import { formatInTimeZone } from 'date-fns-tz';
-import { AnimatePresence, motion } from 'framer-motion';
-import { FC, useMemo, useState } from 'react';
-import { Slide } from './gallery/GalleryProvider';
-import { Polaroid } from './gallery/Polaroid';
-import { IdentificationSuggestion } from './IdentificationSuggestion';
+} from "@/services/api/observations";
+import { useHasPermission } from "@/services/permissions/hooks";
+import { cn } from "@/utils/cn";
+import { formatInTimeZone } from "date-fns-tz";
+import { AnimatePresence, motion } from "framer-motion";
+import { FC, useMemo, useState } from "react";
+import { Slide } from "./gallery/GalleryProvider";
+import { Polaroid } from "./gallery/Polaroid";
+import { IdentificationSuggestion } from "./IdentificationSuggestion";
 
-import { useModal } from '@/components/modal/useModal';
-import type { PanoLocationModalProps } from '@/components/pano/PanoLocationModal';
-import { PanoLocationModal } from '@/components/pano/PanoLocationModal';
+import { useModal } from "@/components/modal/useModal";
+import type { PanoLocationModalProps } from "@/components/pano/PanoLocationModal";
+import { PanoLocationModal } from "@/components/pano/PanoLocationModal";
 
-import SiChevronDown from '@/components/icons/SiChevronDown';
-import SiChevronUp from '@/components/icons/SiChevronUp';
-import SiDiscord from '@/components/icons/SiDiscord';
-import SiLeaf from '@/components/icons/SiLeaf';
-import SiPin from '@/components/icons/SiPin';
-import SiTrash from '@/components/icons/SiTrash';
-import SiTwitch from '@/components/icons/SiTwitch';
-import { Controls, SlidePips } from './gallery/Controls';
-import { getMinimizedTree, Node } from './helpers';
+import SiChevronDown from "@/components/icons/SiChevronDown";
+import SiChevronUp from "@/components/icons/SiChevronUp";
+import SiLeaf from "@/components/icons/SiLeaf";
+import SiPin from "@/components/icons/SiPin";
+import SiTrash from "@/components/icons/SiTrash";
+import SiTwitch from "@/components/icons/SiTwitch";
+import { Controls, SlidePips } from "./gallery/Controls";
+import { getMinimizedTree, Node } from "./helpers";
 
 interface ObservationProps {
   observation: ObservationType;
 }
 
+const UserLinkList: FC<{ users: { id: number; username: string }[] }> = ({
+  users,
+}) => {
+  return (
+    <>
+      {users.map((user, index) => (
+        <span key={`${user.id}-${index}`}>
+          {index > 0 && ", "}
+          <UserLink user={user} />
+        </span>
+      ))}
+    </>
+  );
+};
+
 export const Observation: FC<ObservationProps> = ({ observation }) => {
-  const notifyDiscordAboutObservation = useNotifyDiscordAboutObservation();
   const suggestIdentification = useSuggestIdentification();
   const suggestAccessoryIdentification = useSuggestAccessoryIdentification();
   const deleteObservation = useDeleteObservation();
-  const canSuggest = useHasPermission('suggest');
-  const canCapture = useHasPermission('capture');
-  const canModerate = useHasPermission('moderate');
+  const canSuggest = useHasPermission("suggest");
+  const canModerate = useHasPermission("moderate");
+  const isMobile = useIsMobile();
   const confirmDelete = useConfirm();
   const locationModal = useModal<PanoLocationModalProps>();
 
-  const accessoryIdentifications = observation.identifications.filter(identification => identification.isAccessory);
+  const accessoryIdentifications = observation.identifications.filter(
+    (identification) => identification.isAccessory,
+  );
   const identificationIdentifications = observation.identifications.filter(
-    identification => !identification.isAccessory
+    (identification) => !identification.isAccessory,
   );
 
   const accessoryTree = useMemo(() => {
-    const nodes = accessoryIdentifications.map(identification => new Node(identification.id, identification));
-    nodes.forEach(node => {
+    const nodes = accessoryIdentifications.map(
+      (identification) => new Node(identification.id, identification),
+    );
+    nodes.forEach((node) => {
       if (!node.data.alternateForId) return;
-      const parent = nodes.find(n => n.id === node.data.alternateForId);
-      if (!parent) throw new Error('Parent not found');
+      const parent = nodes.find((n) => n.id === node.data.alternateForId);
+      if (!parent) throw new Error("Parent not found");
       parent.add(node);
     });
-    return nodes.filter(node => node.isRoot());
+    return nodes.filter((node) => node.isRoot());
   }, [accessoryIdentifications]);
 
   const tree = useMemo(() => {
-    const nodes = identificationIdentifications.map(identification => new Node(identification.id, identification));
-    nodes.forEach(node => {
+    const nodes = identificationIdentifications.map(
+      (identification) => new Node(identification.id, identification),
+    );
+    nodes.forEach((node) => {
       if (!node.data.alternateForId) return;
-      const parent = nodes.find(n => n.id === node.data.alternateForId);
-      if (!parent) throw new Error('Parent not found');
+      const parent = nodes.find((n) => n.id === node.data.alternateForId);
+      if (!parent) throw new Error("Parent not found");
       parent.add(node);
     });
-    return nodes.filter(node => node.isRoot());
+    return nodes.filter((node) => node.isRoot());
   }, [identificationIdentifications]);
 
   return (
     <div className="@container">
       <Confirm {...confirmDelete} />
-      <PanoLocationModal {...locationModal} />
+      {!isMobile && <PanoLocationModal {...locationModal} />}
       <div className="flex gap-4 flex-col @lg:flex-row" key={observation.id}>
         <Polaroid>
           <Preloader>
             {observation.sightings
-              .flatMap(sighting => sighting.images)
-              .map(image => (
+              .flatMap((sighting) => sighting.images)
+              .map((image) => (
                 <Square
                   key={image.id}
                   src={image.url}
@@ -103,8 +126,8 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
               ))}
           </Preloader>
           {observation.sightings
-            .flatMap(sighting => sighting.images)
-            .map(image => (
+            .flatMap((sighting) => sighting.images)
+            .map((image) => (
               <Slide key={image.id} id={image.id.toString()}>
                 <div className="w-full h-full overflow-clip relative">
                   <Square
@@ -118,7 +141,11 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
                     className="absolute inset-0 w-full h-full blur-2xl"
                     src={image.url}
                     image={{ width: image.width, height: image.height }}
-                    options={{ extract: image.boundingBox, width: 25, height: 25 }}
+                    options={{
+                      extract: image.boundingBox,
+                      width: 25,
+                      height: 25,
+                    }}
                   />
                 </div>
               </Slide>
@@ -131,56 +158,39 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
             <div className="font-mono mb-1">
               <p className="text-sm">
                 <Timestamp date={new Date(observation.observedAt)}>
-                  {formatInTimeZone(observation.observedAt, 'America/Chicago', 'MM/dd/yyyy hh:mma')}
+                  {formatInTimeZone(
+                    observation.observedAt,
+                    "America/Chicago",
+                    "MM/dd/yyyy hh:mma",
+                  )}
                 </Timestamp>
               </p>
               <p className="text-sm">observed by</p>
               <p className="text-lg font-semibold">
-                {observation.sightings
-                  .flatMap(sighting => sighting.observer)
-                  .map(user => user.username)
-                  .join(', ')}
+                <UserLinkList
+                  users={observation.sightings.flatMap(
+                    (sighting) => sighting.observer,
+                  )}
+                />
               </p>
               <p className="text-sm">
-                captured by{' '}
-                {observation.sightings
-                  .flatMap(sighting => sighting.capture.capturer)
-                  .map(user => user.username)
-                  .join(', ')}
+                captured by{" "}
+                <UserLinkList
+                  users={observation.sightings.flatMap(
+                    (sighting) => sighting.capture.capturer,
+                  )}
+                />
               </p>
             </div>
             <div className="flex gap-2">
-              {observation.discordThreadId && (
-                <Link
-                  variant={false}
-                  target="_blank"
-                  rel="noreferrer"
-                  to={`https://discord.com/channels/943622444852330518/${observation.discordThreadId}`}
-                  className={cn(
-                    'rounded-full w-10 h-10 p-1 flex items-center justify-center text-blue-800 bg-blue-100 hover:bg-blue-200'
-                  )}
-                >
-                  <SiDiscord className="text-2xl" />
-                </Link>
-              )}
-              {!observation.discordThreadId && canCapture && (
-                <Button
-                  variant={false}
-                  onClick={() => notifyDiscordAboutObservation.mutate(observation.id)}
-                  loading={notifyDiscordAboutObservation.isPending}
-                  className={cn(
-                    'rounded-full w-10 h-10 p-1 flex items-center justify-center text-blue-500 bg-blue-50 hover:bg-blue-100'
-                  )}
-                >
-                  <SiDiscord className="text-2xl" />
-                </Button>
-              )}
               {(() => {
                 const clipIds = Object.keys(
                   Object.groupBy(
-                    observation.sightings.filter(sighting => Boolean(sighting.capture.clipId)),
-                    sighting => sighting.capture.clipId
-                  )
+                    observation.sightings.filter((sighting) =>
+                      Boolean(sighting.capture.clipId),
+                    ),
+                    (sighting) => sighting.capture.clipId,
+                  ),
                 );
                 if (clipIds.length === 0) return null;
                 if (clipIds.length === 1) {
@@ -207,7 +217,11 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
                     <DropdownMenuContent align="end">
                       {clipIds.map((clipId, index) => (
                         <DropdownMenuItem key={clipId} asChild>
-                          <a href={`https://clips.twitch.tv/${clipId}`} target="_blank" rel="noreferrer">
+                          <a
+                            href={`https://clips.twitch.tv/${clipId}`}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
                             <SiTwitch className="text-lg" />
                             Clip #{index + 1}
                           </a>
@@ -223,16 +237,17 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
                   aria-label="delete observation"
                   onClick={() =>
                     confirmDelete.open({
-                      title: 'Delete observation?',
-                      description: 'This will permanently delete this observation. This action cannot be undone.',
+                      title: "Delete observation?",
+                      description:
+                        "This will permanently delete this observation. This action cannot be undone.",
                       onConfirm: async () => {
                         await deleteObservation.mutateAsync(observation.id);
-                      }
+                      },
                     })
                   }
                   loading={deleteObservation.isPending}
                   className={cn(
-                    'rounded-full w-10 h-10 p-1 flex items-center justify-center text-red-800 bg-red-100 hover:bg-red-200'
+                    "rounded-full w-10 h-10 p-1 flex items-center justify-center text-red-800 bg-red-100 hover:bg-red-200",
                   )}
                 >
                   <SiTrash className="text-2xl" />
@@ -240,24 +255,27 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
               )}
             </div>
           </div>
-          {canSuggest && (
+          {canSuggest && !isMobile && (
             <button
               type="button"
               className="px-3 py-1 flex gap-2 items-center w-full transition-colors duration-100 hover:bg-accent-100 cursor-pointer"
               onClick={() =>
                 locationModal.open({
                   observationId: observation.id,
-                  location: observation.location ?? undefined
+                  location: observation.location ?? undefined,
                 })
               }
             >
               <SiPin className="text-2xl" />
               {observation.location ? (
                 <span className="py-1.5 text-sm text-left text-accent-800 opacity-75 font-medium">
-                  location picked by {observation.location.x.toFixed(2)} {observation.location.y.toFixed(2)}
+                  location picked by {observation.location.x.toFixed(2)}{" "}
+                  {observation.location.y.toFixed(2)}
                 </span>
               ) : (
-                <span className="py-1.5 text-sm text-left text-accent-800 opacity-75 font-medium">pick location</span>
+                <span className="py-1.5 text-sm text-left text-accent-800 opacity-75 font-medium">
+                  pick location
+                </span>
               )}
             </button>
           )}
@@ -269,8 +287,11 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
                     <SiLeaf className="text-xl" />
                     associated plants
                   </label>
-                  {accessoryTree.map(identification => (
-                    <TopLevelIdentificationTree key={identification.id} tree={identification} />
+                  {accessoryTree.map((identification) => (
+                    <TopLevelIdentificationTree
+                      key={identification.id}
+                      tree={identification}
+                    />
                   ))}
                 </AnimatePresence>
               </motion.div>
@@ -281,10 +302,10 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
               <INatTaxaInput
                 icon={<SiLeaf className="text-2xl" />}
                 placeholder="suggest plant"
-                onSelect={async taxon => {
+                onSelect={async (taxon) => {
                   await suggestAccessoryIdentification.mutateAsync({
                     observationId: observation.id,
-                    iNatId: taxon.id
+                    iNatId: taxon.id,
                   });
                 }}
               />
@@ -296,8 +317,11 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
           {tree.length > 0 && (
             <motion.div className="py-3 px-1 flex flex-col gap-1">
               <AnimatePresence initial={false}>
-                {tree.map(identification => (
-                  <TopLevelIdentificationTree key={identification.id} tree={identification} />
+                {tree.map((identification) => (
+                  <TopLevelIdentificationTree
+                    key={identification.id}
+                    tree={identification}
+                  />
                 ))}
               </AnimatePresence>
             </motion.div>
@@ -306,14 +330,16 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
             <motion.div className="relative">
               <INatTaxaInput
                 placeholder="suggest identification"
-                onSelect={async taxon => {
+                onSelect={async (taxon) => {
                   await suggestIdentification.mutateAsync({
                     observationId: observation.id,
-                    iNatId: taxon.id
+                    iNatId: taxon.id,
                   });
                 }}
               />
-              {suggestIdentification.isPending && <Loader className="absolute top-1/2 -translate-y-1/2 right-3" />}
+              {suggestIdentification.isPending && (
+                <Loader className="absolute top-1/2 -translate-y-1/2 right-3" />
+              )}
             </motion.div>
           )}
         </Note>
@@ -326,7 +352,9 @@ interface TopLevelIdentificationTreeProps {
   tree: Node<IdentificationType>;
 }
 
-const TopLevelIdentificationTree: FC<TopLevelIdentificationTreeProps> = ({ tree }) => {
+const TopLevelIdentificationTree: FC<TopLevelIdentificationTreeProps> = ({
+  tree,
+}) => {
   const minimizedTree = getMinimizedTree(tree);
 
   const [expanded, setExpanded] = useState(false);
@@ -335,7 +363,10 @@ const TopLevelIdentificationTree: FC<TopLevelIdentificationTreeProps> = ({ tree 
   return (
     <div>
       {minimizedTree.id !== tree.id && (
-        <button className="text-sm text-accent-900 mx-1 flex items-center" onClick={() => setExpanded(!expanded)}>
+        <button
+          className="text-sm text-accent-900 mx-1 flex items-center"
+          onClick={() => setExpanded(!expanded)}
+        >
           {expanded ? (
             <>
               <SiChevronUp className="text-2xl" />
