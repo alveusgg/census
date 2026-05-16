@@ -1,6 +1,7 @@
 import { Button, Link } from "@/components/controls/button/juicy";
 import SiChevronDown from "@/components/icons/SiChevronDown";
 import SiTwitch from "@/components/icons/SiTwitch";
+import { Breadcrumbs } from "@/layouts/Breadcrumbs";
 import { useModal } from "@/components/modal/useModal";
 import { CreateFromClipModal } from "@/pages/captures/create/CreateFromClipModal";
 import { useLeaderboard } from "@/services/api/me";
@@ -55,6 +56,9 @@ export const Home: FC = () => {
   return (
     <>
       <CreateFromClipModal {...createFromClipModalProps} />
+      <Breadcrumbs>
+        <p className="text-lg">home</p>
+      </Breadcrumbs>
       <LeaderboardModal
         {...leaderboardModalProps}
         leaderboard={leaderboard.data.leaderboard}

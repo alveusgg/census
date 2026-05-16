@@ -10,6 +10,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Breadcrumbs } from '@/layouts/Breadcrumbs';
 import { useConfirmedObservations } from '@/services/api/observations';
 import { useCurrentSeason } from '@/services/api/seasons';
 import { cn } from '@/utils/cn';
@@ -136,6 +137,11 @@ export const Identifications = () => {
   return (
     <>
       <Outlet />
+      <Breadcrumbs>
+        <p>home</p>
+        <span>•</span>
+        <p className="text-lg">identifications</p>
+      </Breadcrumbs>
       <div className="w-full @container mx-auto max-w-6xl">
         <div className="pt-8">
           {!isMobile && (
