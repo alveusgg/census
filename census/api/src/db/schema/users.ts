@@ -1,4 +1,4 @@
-import { index, pgEnum, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
+import { index, json, pgEnum, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
 
 export const userStatusEnum = pgEnum('user_status', ['active', 'pending']);
 
@@ -12,6 +12,7 @@ export const users = pgTable(
     status: userStatusEnum('status').notNull(),
     providerId: text('provider_id').notNull(),
     username: text('username').notNull(),
+    stickers: json('stickers'),
     createdAt: timestamp('created_at').defaultNow().notNull()
   },
   table => {

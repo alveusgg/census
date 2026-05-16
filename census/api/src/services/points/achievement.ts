@@ -8,13 +8,20 @@ import { useUser } from '../../utils/env/env.js';
 import { metric } from '../../utils/logs.js';
 import { getCurrentSeason, getRawShiniesForSeason } from '../seasons/season.js';
 
-interface ImageLocation {
-  type: 'url' | 'assets';
-  path: string;
+interface AssetImageLocation {
+  type: 'assets';
+  name: string;
 }
 
+interface UrlImageLocation {
+  type: 'url';
+  url: string;
+}
+
+export type ImageLocation = AssetImageLocation | UrlImageLocation;
+
 export interface Sticker {
-  name: string;
+  scale?: number;
   silhouette: ImageLocation;
   artwork: ImageLocation;
 }
