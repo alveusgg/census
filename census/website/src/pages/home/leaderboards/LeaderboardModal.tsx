@@ -1,20 +1,23 @@
-import { InfiniteFeedSentinel } from '@/components/feed/InfiniteFeedSentinel';
-import { Modal } from '@/components/modal/Modal';
-import { ModalProps } from '@/components/modal/useModal';
-import { useInfiniteLeaderboard } from '@/services/api/me';
-import { cn } from '@/utils/cn';
-import { useInfiniteQuery } from '@tanstack/react-query';
-import { DialogTitle } from '@radix-ui/react-dialog';
-import { X } from 'lucide-react';
-import { FC, useMemo } from 'react';
-import { LeaderboardTimeframeSelect } from './LeaderboardTimeframeSelect';
-import { LeaderboardPodium } from './LeaderboardPodium';
-import { LeaderboardRow } from './LeaderboardRow';
-import { LeaderboardTimeframe, getLeaderboardFromDate } from './timeframes';
+import { InfiniteFeedSentinel } from "@/components/feed/InfiniteFeedSentinel";
+import { Modal } from "@/components/modal/Modal";
+import { ModalProps } from "@/components/modal/useModal";
+import { useInfiniteLeaderboard } from "@/services/api/me";
+import { cn } from "@/utils/cn";
+import { DialogTitle } from "@radix-ui/react-dialog";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { X } from "lucide-react";
+import { FC, useMemo } from "react";
+import { LeaderboardPodium } from "./LeaderboardPodium";
+import { LeaderboardRow } from "./LeaderboardRow";
+import { LeaderboardTimeframeSelect } from "./LeaderboardTimeframeSelect";
+import { LeaderboardTimeframe, getLeaderboardFromDate } from "./timeframes";
 
 interface LeaderboardModalProps extends ModalProps {
   leaderboard: { id: number; username: string; points: number }[];
-  place: { place: number; me?: { id: number; username: string; points: number } };
+  place: {
+    place: number;
+    me?: { id: number; username: string; points: number };
+  };
   timeframe: LeaderboardTimeframe;
   onTimeframeChange: (timeframe: LeaderboardTimeframe) => void;
 }
@@ -33,15 +36,17 @@ export const LeaderboardModal: FC<LeaderboardModalProps> = ({
     ...useInfiniteLeaderboard({
       from: getLeaderboardFromDate(timeframe),
       offset: PODIUM_COUNT,
-      size: PAGE_SIZE
+      size: PAGE_SIZE,
     }),
-    enabled: props.isOpen
+    enabled: props.isOpen,
   });
 
   const totalRanks = query.data?.pages[0]?.meta.total ?? leaderboard.length;
   const rows = useMemo(() => {
     const meId = place.me?.id;
-    return (query.data?.pages.flatMap(page => page.data) ?? []).filter(entry => entry.id !== meId);
+    return (query.data?.pages.flatMap((page) => page.data) ?? []).filter(
+      (entry) => entry.id !== meId,
+    );
   }, [place.me?.id, query.data?.pages]);
 
   return (
@@ -54,12 +59,14 @@ export const LeaderboardModal: FC<LeaderboardModalProps> = ({
       <div className="flex max-h-[min(90vh,52rem)] min-h-[32rem] flex-col overflow-hidden">
         <div className="flex items-start gap-3 border-b border-white/10 px-5 pb-4 pt-5 sm:px-6 sm:pb-5 sm:pt-6">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="size-7 shrink-0 rounded-sm bg-white/80 shadow-sm" />
             <h2 className="text-2xl font-bold text-white">Leaderboard</h2>
           </div>
 
           <div className="ml-auto flex items-center gap-2">
-            <LeaderboardTimeframeSelect value={timeframe} onValueChange={onTimeframeChange} />
+            <LeaderboardTimeframeSelect
+              value={timeframe}
+              onValueChange={onTimeframeChange}
+            />
             <button
               type="button"
               onClick={props.close}
@@ -77,22 +84,30 @@ export const LeaderboardModal: FC<LeaderboardModalProps> = ({
 
         <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6">
           <div className="space-y-4">
-            {rows.map(entry => (
-              <LeaderboardRow key={entry.id} place={entry.place} points={entry.points} username={entry.username} />
+            {rows.map((entry) => (
+              <LeaderboardRow
+                key={entry.id}
+                place={entry.place}
+                points={entry.points}
+                username={entry.username}
+              />
             ))}
 
             {!rows.length && !query.isLoading && !query.isFetchingNextPage && (
               <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-center text-sm text-white/80">
                 {totalRanks <= PODIUM_COUNT
-                  ? 'No leaderboard rows below the podium yet.'
-                  : 'No additional leaderboard rows to show.'}
+                  ? "No leaderboard rows below the podium yet."
+                  : "No additional leaderboard rows to show."}
               </div>
             )}
 
             <InfiniteFeedSentinel
-              className={cn('flex min-h-10 items-center justify-center text-sm text-white/80', {
-                hidden: !query.hasNextPage && !query.isFetchingNextPage
-              })}
+              className={cn(
+                "flex min-h-10 items-center justify-center text-sm text-white/80",
+                {
+                  hidden: !query.hasNextPage && !query.isFetchingNextPage,
+                },
+              )}
               fetchNextPage={() => query.fetchNextPage()}
               hasNextPage={query.hasNextPage}
               isFetchingNextPage={query.isFetchingNextPage}
@@ -105,7 +120,11 @@ export const LeaderboardModal: FC<LeaderboardModalProps> = ({
 
         {place.me && (
           <div className="border-t border-white/10 bg-leaderboard-500/95 px-5 py-4 backdrop-blur sm:px-6">
-            <LeaderboardRow place={place.place} points={place.me.points} username={place.me.username} />
+            <LeaderboardRow
+              place={place.place}
+              points={place.me.points}
+              username={place.me.username}
+            />
           </div>
         )}
       </div>
