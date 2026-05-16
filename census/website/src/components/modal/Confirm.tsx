@@ -1,4 +1,4 @@
-import { FC, PropsWithChildren, useState } from 'react';
+import { FC, PropsWithChildren, ReactNode, useState } from 'react';
 import { Button } from '../controls/button/juicy';
 import { Modal } from './Modal';
 import { ModalProps, useModal } from './useModal';
@@ -6,7 +6,7 @@ import { ModalProps, useModal } from './useModal';
 interface ConfirmModalProps {
   onConfirm: () => void | Promise<void>;
   title: string;
-  description: string;
+  description: ReactNode;
 }
 
 export const useConfirm = () => {
