@@ -70,12 +70,12 @@ export const Controls: FC = () => {
   );
 };
 
-export const SlidePips: FC = () => {
+export const SlidePips: FC<{ className?: string }> = ({ className }) => {
   const { slides, current, goto } = useGallery(state => state);
   if (slides.length <= 1) return null;
 
   return (
-    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-0.5 z-40">
+    <div className={cn('absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-0.5 z-40', className)}>
       {slides.map(slide => (
         <button
           aria-label={`Jump to slide ${slide}`}

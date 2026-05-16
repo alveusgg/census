@@ -4,6 +4,7 @@ import SiBug2 from '@/components/icons/SiBug2';
 import SiCommentCheck from '@/components/icons/SiCommentCheck';
 import SiMessage from '@/components/icons/SiMessage';
 import { useModal } from '@/components/modal/useModal';
+import { UserLink } from '@/components/users/UserLink';
 import { Identification as IdentificationType } from '@/services/api/observations';
 import { useMe } from '@/services/api/me';
 import { useHasPermission } from '@/services/permissions/hooks';
@@ -60,7 +61,7 @@ export const IdentificationSuggestion: FC<IdentificationSuggestionProps> = ({ tr
                   <span>{identification.name}</span>
                 </a>
                 <p className="text-sm">
-                  suggested by <span className="font-semibold">{identification.suggester.username}</span>
+                  suggested by <UserLink user={identification.suggester} className="font-semibold" />
                 </p>
               </div>
               {hasFeedback && (
