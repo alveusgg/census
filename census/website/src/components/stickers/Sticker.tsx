@@ -6,10 +6,13 @@ import {
   useRef,
   type CSSProperties,
   type JSX,
+  type ReactNode,
   type PointerEvent as ReactPointerEvent
 } from 'react';
 
 import type { StickerBoardPeel, StickerHandle, StickerPosition, StickerRuntimeCss, StickerSpec } from './types';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/utils/cn';
 
 const DEFAULT_CONTENT_OFFSET = { x: 0, y: 0 };
 const DEFAULT_PEEL_ACTIVE_RATIO = 0.44;
@@ -54,27 +57,27 @@ const FLAP_BASE_POSITION = '[top:calc(-100%_-_var(--sticker-p)_-_var(--sticker-p
 const FLAP_HOVER_POSITION = 'group-hover:[top:calc(-100%_+_2_*_var(--sticker-peelback-hover)_-_1px)]';
 const FLAP_ACTIVE_POSITION = 'group-active:[top:calc(-100%_+_2_*_var(--sticker-peelback-active)_-_1px)]';
 
-const joinClasses = (...parts: Array<string | false | null | undefined>): string => parts.filter(Boolean).join(' ');
-
-type PeelStickerProps<Id extends string> = {
-  readonly sticker: StickerSpec<Id>;
+type PeelStickerProps = {
+  readonly sticker: StickerSpec;
   readonly position: StickerPosition;
   readonly interactive: boolean;
   readonly effectsEnabled: boolean;
   readonly peel?: StickerBoardPeel;
-  readonly onPointerDown: (event: ReactPointerEvent<HTMLDivElement>, stickerId: Id) => void;
-  readonly registerHandle: (stickerId: Id, handle: StickerHandle<Id> | null) => void;
+  readonly tooltip?: ReactNode;
+  readonly onPointerDown: (event: ReactPointerEvent<HTMLDivElement>, stickerId: string) => void;
+  readonly registerHandle: (stickerId: string, handle: StickerHandle | null) => void;
 };
 
-const StickerComponent = <Id extends string>({
+const StickerComponent = ({
   sticker,
   position,
   interactive,
   effectsEnabled,
   peel,
+  tooltip,
   onPointerDown,
   registerHandle
-}: PeelStickerProps<Id>): JSX.Element => {
+}: PeelStickerProps): JSX.Element => {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const lightRef = useRef<SVGFEPointLightElement | null>(null);
   const flippedLightRef = useRef<SVGFEPointLightElement | null>(null);
@@ -171,7 +174,7 @@ const StickerComponent = <Id extends string>({
   const peelEffectsEnabled = interactive && effectsEnabled;
   const flapLightingEnabled = interactive && effectsEnabled;
 
-  const rootClassName = joinClasses(
+  const rootClassName = cn(
     'group absolute touch-none select-none',
     interactive ? 'cursor-grab active:cursor-grabbing' : 'cursor-default',
     sticker.className
@@ -184,7 +187,8 @@ const StickerComponent = <Id extends string>({
     transformOrigin: 'center center'
   };
 
-  const stickerMainClassName = joinClasses(
+  const stickerMainClassName = cn(
+    'drop-shadow-md',
     CLIP_PATH_FULL,
     TRANSITION_MAIN_BASE,
     peelEffectsEnabled && CLIP_PATH_HOVER_MAIN,
@@ -192,7 +196,7 @@ const StickerComponent = <Id extends string>({
     peelEffectsEnabled && TRANSITION_MAIN_ACTIVE
   );
 
-  const flapClassName = joinClasses(
+  const flapClassName = cn(
     // Intentionally no `top-0` utility here: Tailwind emits `top-0` after our
     // arbitrary `[top:calc(...)]` utility, which would win and leave the flap
     // stuck at the sticker's top edge instead of its collapsed position above
@@ -208,7 +212,7 @@ const StickerComponent = <Id extends string>({
     peelEffectsEnabled && TRANSITION_FLAP_ACTIVE
   );
 
-  const shadowClassName = joinClasses(
+  const shadowClassName = cn(
     'absolute top-0 left-2 h-full w-full',
     effectsEnabled ? 'opacity-20 [filter:brightness(0)_blur(4px)]' : 'opacity-[0.12]'
   );
@@ -252,7 +256,7 @@ const StickerComponent = <Id extends string>({
     );
   };
 
-  return (
+  const stickerRoot = (
     <div
       ref={setRootRef}
       className={rootClassName}
@@ -315,6 +319,19 @@ const StickerComponent = <Id extends string>({
         </div>
       </div>
     </div>
+  );
+
+  if (!tooltip) {
+    return stickerRoot;
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{stickerRoot}</TooltipTrigger>
+      <TooltipContent side="top" align="center">
+        {tooltip}
+      </TooltipContent>
+    </Tooltip>
   );
 };
 

@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 export type StickerSilhouette = {
   readonly height: number;
@@ -22,8 +22,8 @@ export type StickerInitialValue = {
   readonly height: number;
   readonly rotation?: number;
   readonly width: number;
-  readonly x: number;
-  readonly y: number;
+  readonly x?: number;
+  readonly y?: number;
   readonly zIndex?: number;
 };
 
@@ -54,9 +54,10 @@ export type StickerBoardReferenceSize = {
   readonly width: number;
 };
 
-export type StickerSpec<Id extends string = string> = {
-  readonly id: Id;
+export type StickerSpec = {
+  readonly id: string;
   readonly label: string;
+  readonly tooltip?: ReactNode;
   readonly className?: string;
   readonly initialValue: StickerInitialValue;
   readonly geometry: StickerGeometry;
@@ -72,12 +73,12 @@ export type StickerPosition = {
   readonly width: number;
 };
 
-export type StickerValueMap<Id extends string = string> = Record<Id, StickerValue>;
+export type StickerValueMap = Record<string, StickerValue>;
 
-export type StickerPositionMap<Id extends string = string> = Record<Id, StickerPosition>;
+export type StickerPositionMap = Record<string, StickerPosition>;
 
-export type StickerBoardProps<Id extends string = string> = {
-  readonly stickers: readonly StickerSpec<Id>[];
+export type StickerBoardProps = {
+  readonly stickers: readonly StickerSpec[];
   readonly mode?: StickerBoardMode;
   readonly effects?: boolean;
   readonly className?: string;
@@ -85,20 +86,20 @@ export type StickerBoardProps<Id extends string = string> = {
   readonly boardLabel?: string;
   readonly referenceSize?: StickerBoardReferenceSize;
   readonly peel?: StickerBoardPeel;
-  readonly onDragEnd?: (value: StickerValueMap<Id>, stickerId: Id) => void;
-  readonly onChange?: (value: StickerValueMap<Id>) => void;
-  readonly value: StickerValueMap<Id>;
+  readonly onDragEnd?: (value: StickerValueMap, stickerId: string) => void;
+  readonly onChange?: (value: StickerValueMap) => void;
+  readonly value: StickerValueMap;
 };
 
-export type StickerHandle<Id extends string = string> = {
-  readonly id: Id;
+export type StickerHandle = {
+  readonly id: string;
   readonly root: HTMLDivElement;
   readonly updateLightPosition: (clientX: number, clientY: number) => boolean;
 };
 
-export type StickerDragState<Id extends string = string> = {
+export type StickerDragState = {
   readonly pointerId: number;
-  readonly stickerId: Id;
+  readonly stickerId: string;
   readonly offsetX: number;
   readonly offsetY: number;
 };
