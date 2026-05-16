@@ -10,14 +10,53 @@ async function processImages(src: string, dst: string) {
   async function processDir(dir: string) {
     for (const entry of await readdir(dir, { withFileTypes: true })) {
       const id = basename(entry.name).replace(extname(entry.name), '');
+      const outputId = id.toLowerCase();
       const filePath = join(dir, entry.name);
       const data = await getSharpFromPath(filePath);
-      const cropped = await shrinkwrapCropSharp(data);
-      const outlined = await drawOutlineSharp(cropped.clone());
-      await writeFile(join(dst, id + '.outlined.png'), outlined);
+      const sourceMetadata = await data.metadata();
+      const cropped = await shrinkwrapCropSharp(data, 0);
+      const croppedMetadata = await cropped.metadata();
+      const { width = 0 } = croppedMetadata;
+      const { padding, thickness } = getOutlineSizes(width);
+      const padded = cropped.clone().ensureAlpha().extend({
+        top: padding,
+        bottom: padding,
+        left: padding,
+        right: padding,
+        background: { r: 0, g: 0, b: 0, alpha: 0 }
+      });
+      const paddedMetadata = await padded.metadata();
+      console.log('[images:process]', {
+        id,
+        filePath,
+        source: {
+          width: sourceMetadata.width,
+          height: sourceMetadata.height,
+          channels: sourceMetadata.channels,
+          hasAlpha: sourceMetadata.hasAlpha
+        },
+        cropped: {
+          width: croppedMetadata.width,
+          height: croppedMetadata.height,
+          channels: croppedMetadata.channels,
+          hasAlpha: croppedMetadata.hasAlpha
+        },
+        computed: {
+          padding,
+          thickness
+        },
+        padded: {
+          width: paddedMetadata.width,
+          height: paddedMetadata.height,
+          channels: paddedMetadata.channels,
+          hasAlpha: paddedMetadata.hasAlpha
+        }
+      });
+      const outlined = await drawOutlineSharp(padded, thickness);
+      await writeFile(join(dst, outputId + '.outlined.png'), outlined);
 
       const silhouette = await generateSilhouette(sharp(outlined));
-      await writeFile(join(dst, id + '.silhouette.svg'), silhouette);
+      await writeFile(join(dst, outputId + '.silhouette.svg'), silhouette);
     }
   }
 
@@ -63,7 +102,12 @@ const getSharpFromPath = async (path: string) => {
   return sharp(data);
 };
 
-const shrinkwrapCropSharp = async (sharpInstance: Sharp, padding: number = 60) => {
+const getOutlineSizes = (width: number) => {
+  const size = Math.max(4, Math.min(120, Math.round(width * 0.04)));
+  return { padding: size, thickness: size };
+};
+
+const shrinkwrapCropSharp = async (sharpInstance: Sharp, padding: number = 0) => {
   const alpha = sharpInstance.clone().ensureAlpha().extractChannel('alpha');
   const { data, info } = await alpha.raw().toBuffer({ resolveWithObject: true });
 
@@ -88,6 +132,7 @@ const shrinkwrapCropSharp = async (sharpInstance: Sharp, padding: number = 60) =
 
   return sharpInstance
     .clone()
+    .ensureAlpha()
     .extract({
       left: minX,
       top: minY,
@@ -105,9 +150,10 @@ const shrinkwrapCropSharp = async (sharpInstance: Sharp, padding: number = 60) =
 
 const drawOutlineSharp = async (sharpInstance: Sharp, thickness: number = 60, blurSigma: number = 1) => {
   const outlineColor = { r: 255, g: 255, b: 255, alpha: 1 };
-  const inputBuffer = await sharpInstance.toBuffer();
+  const image = sharpInstance.clone().ensureAlpha();
+  const inputBuffer = await image.toBuffer();
 
-  const alphaMask = sharpInstance.clone().extractChannel('alpha').png();
+  const alphaMask = image.extractChannel('alpha').png();
   const negatedAlphaMask = sharp(await alphaMask.clone().blur(2).negate().toBuffer());
   const bgMask = negatedAlphaMask.blur(thickness / 2).unflatten();
 

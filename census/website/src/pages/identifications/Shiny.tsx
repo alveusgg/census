@@ -8,6 +8,7 @@ import { addMonths, format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { ComponentProps, FC, useMemo, useState } from 'react';
 import { IdentificationModal, IdentificationProps } from './Identification';
+import { loadSilhouette } from '@/lib/levels';
 
 export const ShiniesForSeason = () => {
   const shiniesQuery = useShiniesForSeason();
@@ -49,7 +50,7 @@ export const ShiniesForSeason = () => {
         </motion.div>
         <div className="relative">
           {!expanded && (
-            <div className="w-8 absolute right-0 top-0 bottom-0 h-full bg-gradient-to-r from-transparent to-accent-50 z-10"></div>
+            <div className="w-8 absolute right-0 top-0 bottom-0 h-full bg-gradient-to-r from-transparent to-accent-100 z-10"></div>
           )}
           <div className="overflow-x-scroll relative" style={{ height: height ?? 0 }}>
             <div
@@ -68,7 +69,7 @@ export const ShiniesForSeason = () => {
                       identificationModalProps.open({ identificationId: shiny.identificationId });
                     }
                   }}
-                  className="min-w-28 relative mx-1 my-1 group"
+                  className="min-w-28 aspect-square relative mx-1 my-1 group"
                   transition={!expanded ? { duration: 0 } : undefined}
                   layoutId={shiny.id.toString()}
                   layout
@@ -118,36 +119,28 @@ export const ShinyThumbnail: FC<ShinyThumbnailProps> = ({ shiny }) => {
           className="rounded-full bg-red-500 border-red-700 border-2 absolute top-3 right-1 z-10"
         ></div>
       )}
-      {'key' in shiny && (
+      {'artwork' in shiny && shiny.artwork.type === 'url' && (
         <>
           <Shine />
-          {/* <EncryptedImg
-            src={`/images/${shiny.assetId}.encrypted.png`}
-            iv={shiny.key}
-            className={cn(
-              'absolute inset-0 drop-shadow-md rotate-1 group-hover:scale-[1.1] group-hover:rotate-2 cursor-pointer transition-all duration-300'
-            )}
-          /> */}
+          <img
+            src={shiny.artwork.url}
+            className="absolute top-0 aspect-square bottom-0 bg-center drop-shadow-md rotate-1 group-hover:scale-[1.1] group-hover:rotate-2 cursor-pointer transition-all duration-300"
+          />
         </>
       )}
-      {/* <img src={`/images/${shiny.assetId}.svg`} /> */}
+      {shiny.silhouette.type === 'assets' && <Image className="aspect-square" src={shiny.silhouette.name} />}
     </>
   );
 };
 
-export const EncryptedImg: FC<ComponentProps<'img'> & { iv: string }> = ({ iv, src, ...props }) => {
-  return (
-    <img
-      key={src}
-      data-retried={false}
-      onError={e => {
-        const attr = e.currentTarget.getAttribute('data-retried');
-        if (attr === 'true') return;
-        e.currentTarget.setAttribute('data-retried', 'true');
-        e.currentTarget.src = e.currentTarget.src;
-      }}
-      src={src}
-      {...props}
-    />
-  );
+export const Image: FC<ComponentProps<'img'> & { src: string }> = ({ src, ...props }) => {
+  const source = useSuspenseQuery({
+    queryKey: ['image', src],
+    queryFn: async () => {
+      const imageSrc = await loadSilhouette(src);
+      if (!imageSrc) throw new Error(`Silhouette ${src} not found`);
+      return imageSrc;
+    }
+  });
+  return <img src={source.data} {...props} />;
 };

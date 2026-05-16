@@ -1,25 +1,209 @@
 import { z } from 'zod';
 import { achievement, PayloadFor } from './helpers.js';
+
 export const levels = {
-  newcomer: {
-    number: 1,
+  initial: {
+    number: 0,
     points: 0,
-    name: 'Newcomer'
+    name: 'Initial'
   },
-  rookie: {
+  beetle_larvae: {
+    number: 1,
+    points: 300,
+    name: 'Larvae',
+
+    sticker: {
+      scale: 0.8,
+      artwork: {
+        type: 'assets',
+        name: 'stag_beetle_larvae.outlined.png'
+      },
+      silhouette: {
+        type: 'assets',
+        name: 'stag_beetle_larvae.silhouette.svg'
+      }
+    }
+  },
+  beetle_pupa: {
     number: 2,
-    points: 450,
-    name: 'Rookie'
+    points: 900,
+    name: 'Pupa',
+
+    sticker: {
+      artwork: {
+        type: 'assets',
+        name: 'stag_beetle_pupa.outlined.png'
+      },
+      silhouette: {
+        type: 'assets',
+        name: 'stag_beetle_pupa.silhouette.svg'
+      }
+    }
   },
-  veteran: {
+  beetle: {
     number: 3,
-    points: 5000,
-    name: 'Veteran'
+    points: 1500,
+    name: 'Beetle',
+
+    sticker: {
+      artwork: {
+        type: 'assets',
+        name: 'adult_stag_beetle.outlined.png'
+      },
+      silhouette: {
+        type: 'assets',
+        name: 'adult_stag_beetle.silhouette.svg'
+      }
+    }
   },
-  expert: {
+  ladybird_eggs: {
     number: 4,
-    points: 10000,
-    name: 'Expert'
+    points: 2500,
+    name: 'Larvae',
+
+    sticker: {
+      scale: 1,
+      artwork: {
+        type: 'assets',
+        name: 'ladybird_eggs.outlined.png'
+      },
+      silhouette: {
+        type: 'assets',
+        name: 'ladybird_eggs.silhouette.svg'
+      }
+    }
+  },
+  ladybird_larvae: {
+    number: 5,
+    points: 3500,
+    name: 'Pupa',
+
+    sticker: {
+      scale: 1.2,
+      artwork: {
+        type: 'assets',
+        name: 'ladybird_larvae.outlined.png'
+      },
+      silhouette: {
+        type: 'assets',
+        name: 'ladybird_larvae.silhouette.svg'
+      }
+    }
+  },
+  ladybird: {
+    number: 6,
+    points: 4500,
+    name: 'Ladybug',
+
+    sticker: {
+      artwork: {
+        type: 'assets',
+        name: 'adult_ladybird.outlined.png'
+      },
+      silhouette: {
+        type: 'assets',
+        name: 'adult_ladybird.silhouette.svg'
+      }
+    }
+  },
+  spider_egg_sack: {
+    number: 7,
+    points: 5500,
+    name: 'Egg Sack',
+
+    sticker: {
+      artwork: {
+        type: 'assets',
+        name: 'spider_egg_sack.outlined.png'
+      },
+      silhouette: {
+        type: 'assets',
+        name: 'spider_egg_sack.silhouette.svg'
+      }
+    }
+  },
+  spiderlings: {
+    number: 8,
+    points: 6500,
+    name: 'Spiderlings',
+
+    sticker: {
+      artwork: {
+        type: 'assets',
+        name: 'spiderlings.outlined.png'
+      },
+      silhouette: {
+        type: 'assets',
+        name: 'spiderlings.silhouette.svg'
+      }
+    }
+  },
+  spider: {
+    number: 9,
+    points: 7500,
+    name: 'Spider',
+
+    sticker: {
+      scale: 1.6,
+      artwork: {
+        type: 'assets',
+        name: 'adult_spider.outlined.png'
+      },
+      silhouette: {
+        type: 'assets',
+        name: 'adult_spider.silhouette.svg'
+      }
+    }
+  },
+  butterfly_caterpillar: {
+    number: 10,
+    points: 8500,
+    name: 'Caterpillar',
+
+    sticker: {
+      scale: 1.2,
+      artwork: {
+        type: 'assets',
+        name: 'caterpillar.outlined.png'
+      },
+      silhouette: {
+        type: 'assets',
+        name: 'caterpillar.silhouette.svg'
+      }
+    }
+  },
+  butterfly_chrysalis: {
+    number: 11,
+    points: 9500,
+    name: 'Chrysalis',
+
+    sticker: {
+      scale: 1.6,
+      artwork: {
+        type: 'assets',
+        name: 'butterfly_chrysalis.outlined.png'
+      },
+      silhouette: {
+        type: 'assets',
+        name: 'butterfly_chrysalis.silhouette.svg'
+      }
+    }
+  },
+  butterfly: {
+    number: 12,
+    points: 10500,
+    name: 'Butterfly',
+
+    sticker: {
+      artwork: {
+        type: 'assets',
+        name: 'adult_butterfly.outlined.png'
+      },
+      silhouette: {
+        type: 'assets',
+        name: 'adult_butterfly.silhouette.svg'
+      }
+    }
   }
 };
 
