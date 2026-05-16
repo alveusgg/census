@@ -1,13 +1,15 @@
+import { UserLink } from '@/components/users/UserLink';
 import { cn } from '@/utils/cn';
 import { ComponentProps, FC } from 'react';
 
 interface LeaderboardRowProps extends ComponentProps<'div'> {
   place: number;
   points: number;
+  userId: number;
   username: string;
 }
 
-export const LeaderboardRow: FC<LeaderboardRowProps> = ({ place, points, username, className, ...props }) => {
+export const LeaderboardRow: FC<LeaderboardRowProps> = ({ place, points, userId, username, className, ...props }) => {
   return (
     <div
       className={cn(
@@ -18,9 +20,7 @@ export const LeaderboardRow: FC<LeaderboardRowProps> = ({ place, points, usernam
     >
       <span className="flex min-w-0 items-center gap-3">
         <span className="font-mono text-lg font-bold">{place}</span>
-        <span className="truncate" title={username}>
-          {username}
-        </span>
+        <UserLink user={{ id: userId, username }} className="block truncate" />
       </span>
       <span className="shrink-0 font-mono text-xl font-bold">{points}</span>
     </div>

@@ -7,6 +7,7 @@ import { DialogTitle } from "@radix-ui/react-dialog";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import { FC, useMemo } from "react";
+import { LeaderboardEmptyState } from "./LeaderboardEmptyState";
 import { LeaderboardPodium } from "./LeaderboardPodium";
 import { LeaderboardRow } from "./LeaderboardRow";
 import { LeaderboardTimeframeSelect } from "./LeaderboardTimeframeSelect";
@@ -42,6 +43,7 @@ export const LeaderboardModal: FC<LeaderboardModalProps> = ({
   });
 
   const totalRanks = query.data?.pages[0]?.meta.total ?? leaderboard.length;
+  const hasLeaderboardEntries = leaderboard.length > 0;
   const rows = useMemo(() => {
     const meId = place.me?.id;
     return (query.data?.pages.flatMap((page) => page.data) ?? []).filter(
@@ -78,51 +80,63 @@ export const LeaderboardModal: FC<LeaderboardModalProps> = ({
           </div>
         </div>
 
-        <div className="border-b border-white/10 px-5 pb-5 pt-4 sm:px-6">
-          <LeaderboardPodium leaderboard={leaderboard} />
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6">
-          <div className="space-y-4">
-            {rows.map((entry) => (
-              <LeaderboardRow
-                key={entry.id}
-                place={entry.place}
-                points={entry.points}
-                username={entry.username}
-              />
-            ))}
-
-            {!rows.length && !query.isLoading && !query.isFetchingNextPage && (
-              <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-center text-sm text-white/80">
-                {totalRanks <= PODIUM_COUNT
-                  ? "No leaderboard rows below the podium yet."
-                  : "No additional leaderboard rows to show."}
-              </div>
-            )}
-
-            <InfiniteFeedSentinel
-              className={cn(
-                "flex min-h-10 items-center justify-center text-sm text-white/80",
-                {
-                  hidden: !query.hasNextPage && !query.isFetchingNextPage,
-                },
-              )}
-              fetchNextPage={() => query.fetchNextPage()}
-              hasNextPage={query.hasNextPage}
-              isFetchingNextPage={query.isFetchingNextPage}
-              threshold={0.8}
-            >
-              Loading more...
-            </InfiniteFeedSentinel>
+        {hasLeaderboardEntries && (
+          <div className="border-b border-white/10 px-5 pb-5 pt-4 sm:px-6">
+            <LeaderboardPodium leaderboard={leaderboard} />
           </div>
+        )}
+
+        <div className={cn("flex-1 overflow-y-auto px-5 py-5 sm:px-6", !hasLeaderboardEntries && "flex items-center justify-center")}>
+          {hasLeaderboardEntries ? (
+            <div className="space-y-4">
+              {rows.map((entry) => (
+                <LeaderboardRow
+                  key={entry.id}
+                  place={entry.place}
+                  points={entry.points}
+                  userId={entry.id}
+                  username={entry.username}
+                />
+              ))}
+
+              {!rows.length && !query.isLoading && !query.isFetchingNextPage && (
+                <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-center text-sm text-white/80">
+                  {totalRanks <= PODIUM_COUNT
+                    ? "No leaderboard rows below the podium yet."
+                    : "No additional leaderboard rows to show."}
+                </div>
+              )}
+
+              <InfiniteFeedSentinel
+                className={cn(
+                  "flex min-h-10 items-center justify-center text-sm text-white/80",
+                  {
+                    hidden: !query.hasNextPage && !query.isFetchingNextPage,
+                  },
+                )}
+                fetchNextPage={() => query.fetchNextPage()}
+                hasNextPage={query.hasNextPage}
+                isFetchingNextPage={query.isFetchingNextPage}
+                threshold={0.8}
+              >
+                Loading more...
+              </InfiniteFeedSentinel>
+            </div>
+          ) : (
+            <LeaderboardEmptyState
+              className="w-full max-w-md"
+              title="No one is on this leaderboard yet"
+              description="When this timeframe has verified identifications, the rankings will show up here."
+            />
+          )}
         </div>
 
-        {place.me && (
+        {place.me && hasLeaderboardEntries && (
           <div className="border-t border-white/10 bg-leaderboard-500/95 px-5 py-4 backdrop-blur sm:px-6">
             <LeaderboardRow
               place={place.place}
               points={place.me.points}
+              userId={place.me.id}
               username={place.me.username}
             />
           </div>

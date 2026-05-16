@@ -1,9 +1,11 @@
 import { Counter } from '@/components/animation/Counter';
+import { UserLink } from '@/components/users/UserLink';
 import { FC } from 'react';
 import { Badge } from './Badge';
 import { Podium } from './Podium';
 
 interface LeaderboardPodiumEntry {
+  id: number;
   username: string;
   points: number;
 }
@@ -22,9 +24,10 @@ export const LeaderboardPodium: FC<{ leaderboard: LeaderboardPodiumEntry[] }> = 
             </Badge>
           }
         >
-          <p className="truncate font-sans text-base font-bold leading-tight text-white" title={second.username}>
-            {second.username}
-          </p>
+          <UserLink
+            user={second}
+            className="block truncate font-sans text-base font-bold leading-tight text-white"
+          />
           <Counter className="text-3xl" duration={1} delay={1.25}>
             {second.points}
           </Counter>
@@ -39,9 +42,10 @@ export const LeaderboardPodium: FC<{ leaderboard: LeaderboardPodiumEntry[] }> = 
             </Badge>
           }
         >
-          <p className="truncate font-sans text-base font-bold leading-tight text-white" title={first.username}>
-            {first.username}
-          </p>
+          <UserLink
+            user={first}
+            className="block truncate font-sans text-base font-bold leading-tight text-white"
+          />
           <Counter className="text-4xl" duration={1} delay={0.5}>
             {first.points}
           </Counter>
@@ -57,9 +61,10 @@ export const LeaderboardPodium: FC<{ leaderboard: LeaderboardPodiumEntry[] }> = 
             </Badge>
           }
         >
-          <p className="truncate font-sans text-base font-bold leading-tight text-white" title={third.username}>
-            {third.username}
-          </p>
+          <UserLink
+            user={third}
+            className="block truncate font-sans text-base font-bold leading-tight text-white"
+          />
           <Counter className="text-3xl" duration={1} delay={2.5}>
             {third.points}
           </Counter>

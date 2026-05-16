@@ -1,4 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { UserLink } from "@/components/users/UserLink";
 import { RecentAchievement, useRecentAchievements } from "@/services/api/users";
 import { AnimatePresence, motion } from "framer-motion";
 import { FC } from "react";
@@ -7,7 +8,7 @@ const describe = (
   achievement: RecentAchievement,
 ): { emoji: string; message: React.ReactNode } => {
   const username = (
-    <span className="font-bold">{achievement.user.username}</span>
+    <UserLink user={achievement.user} className="font-bold" />
   );
   const target = achievement.identification?.nickname;
 

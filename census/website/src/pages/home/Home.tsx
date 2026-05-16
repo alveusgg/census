@@ -12,6 +12,7 @@ import { ChevronRight } from "lucide-react";
 import { FC, startTransition, Suspense, useState } from "react";
 import { ShiniesForSeason } from "../identifications/Shiny";
 import { ActivityFeed, ActivityFeedSkeleton } from "./ActivityFeed";
+import { LeaderboardEmptyState } from "./leaderboards/LeaderboardEmptyState";
 import { LeaderboardModal } from "./leaderboards/LeaderboardModal";
 import { LeaderboardPodium } from "./leaderboards/LeaderboardPodium";
 import { LeaderboardRow } from "./leaderboards/LeaderboardRow";
@@ -46,6 +47,7 @@ export const Home: FC = () => {
   if (!leaderboard.data) return null;
 
   const showSubmitClipCta = hasBeenOnboarded && hasCapturePermission;
+  const hasLeaderboardEntries = leaderboard.data.leaderboard.length > 0;
   const handleTimeframeChange = (next: LeaderboardTimeframe) => {
     startTransition(() => setTimeframe(next));
   };
@@ -125,22 +127,29 @@ export const Home: FC = () => {
           </div>
 
           <div className="flex flex-1 flex-col justify-between gap-3 pt-4">
-            <LeaderboardPodium leaderboard={leaderboard.data.leaderboard} />
+            {hasLeaderboardEntries ? (
+              <>
+                <LeaderboardPodium leaderboard={leaderboard.data.leaderboard} />
 
-            <div className="flex items-center justify-center gap-1.5 py-0.5">
-              <span className="size-1.5 rounded-full bg-leaderboard-700/50" />
-              <span className="size-1.5 rounded-full bg-leaderboard-700/30" />
-              <span className="size-1.5 rounded-full bg-leaderboard-700/30" />
-            </div>
+                <div className="flex items-center justify-center gap-1.5 py-0.5">
+                  <span className="size-1.5 rounded-full bg-leaderboard-700/50" />
+                  <span className="size-1.5 rounded-full bg-leaderboard-700/30" />
+                  <span className="size-1.5 rounded-full bg-leaderboard-700/30" />
+                </div>
 
-            {leaderboard.data.place.me && (
-              <motion.span className="flex flex-col items-center">
-                <LeaderboardRow
-                  place={leaderboard.data.place.place}
-                  points={leaderboard.data.place.me.points}
-                  username={leaderboard.data.place.me.username}
-                />
-              </motion.span>
+                {leaderboard.data.place.me && (
+                  <motion.span className="flex flex-col items-center">
+                    <LeaderboardRow
+                      place={leaderboard.data.place.place}
+                      points={leaderboard.data.place.me.points}
+                      userId={leaderboard.data.place.me.id}
+                      username={leaderboard.data.place.me.username}
+                    />
+                  </motion.span>
+                )}
+              </>
+            ) : (
+              <LeaderboardEmptyState className="my-1" />
             )}
 
             <motion.button
