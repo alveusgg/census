@@ -7,11 +7,13 @@ import { SelectionActionBar, SelectionCount } from '@/components/selection/Selec
 import { useSelection } from '@/components/selection/SelectionProvider';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useConfirmedObservations } from '@/services/api/observations';
+import { useCurrentSeason } from '@/services/api/seasons';
 import { cn } from '@/utils/cn';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { endOfDay, format, startOfDay, subDays } from 'date-fns';
 import { CalendarIcon, ChevronDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -20,16 +22,23 @@ import { Outlet } from 'react-router';
 import { getConfirmedObservationFilter, type IdentificationFilters } from './filters';
 import { ConfirmedObservationFeedCard } from './ConfirmedObservationFeedCard';
 
-const TODAY = startOfDay(new Date());
-const DEFAULT_DATE_RANGE: DateRange = {
-  from: subDays(TODAY, 6),
-  to: endOfDay(TODAY)
+const getLastDaysRange = (days: number): DateRange => {
+  const today = startOfDay(new Date());
+  return {
+    from: subDays(today, days - 1),
+    to: endOfDay(today)
+  };
 };
 
 const getDateRangeLabel = (dateRange?: DateRange) => {
-  if (!dateRange?.from) return 'Last 7 days';
+  if (!dateRange?.from) return 'All';
   if (!dateRange.to) return format(dateRange.from, 'MMM d, yyyy');
   return `${format(dateRange.from, 'MMM d')} - ${format(dateRange.to, 'MMM d, yyyy')}`;
+};
+
+const isSameRange = (range?: DateRange, target?: DateRange) => {
+  if (!range?.from || !target?.from) return !range?.from && !target?.from;
+  return range.from.getTime() === target.from.getTime() && range.to?.getTime() === target.to?.getTime();
 };
 
 const ConfirmedObservationsFeed = ({ filter }: { filter: ReturnType<typeof getConfirmedObservationFilter> }) => {
@@ -76,14 +85,26 @@ const ConfirmedObservationsFeed = ({ filter }: { filter: ReturnType<typeof getCo
 };
 
 export const Identifications = () => {
-  const [filters, setFilters] = useState<IdentificationFilters>({
+  const season = useSuspenseQuery(useCurrentSeason());
+  const isMobile = useIsMobile();
+  const seasonDateRange: DateRange = useMemo(
+    () => ({
+      from: startOfDay(new Date(season.data.startDate)),
+      to: endOfDay(new Date(season.data.endDate))
+    }),
+    [season.data.endDate, season.data.startDate]
+  );
+  const [filters, setFilters] = useState<IdentificationFilters>(() => ({
     view: DEFAULT_VIEW,
     dirty: false,
     active: false,
-    dateRange: DEFAULT_DATE_RANGE,
+    dateRange: seasonDateRange,
     type: 'all'
-  });
-  const confirmedObservationFilter = getConfirmedObservationFilter(filters, 3 / 1);
+  }));
+  const confirmedObservationFilter = getConfirmedObservationFilter(
+    isMobile ? { ...filters, active: false } : filters,
+    3 / 1
+  );
 
   const { clearSelection } = useSelection();
   const viewFilterLabel = !filters.dirty
@@ -101,34 +122,49 @@ export const Identifications = () => {
     }));
   };
 
+  const setDateRange = (dateRange?: DateRange) => {
+    setFilters(current => ({ ...current, dateRange }));
+  };
+
+  const dateRangePresets = [
+    { label: '7 days', range: getLastDaysRange(7) },
+    { label: '30 days', range: getLastDaysRange(30) },
+    { label: 'Season', range: seasonDateRange },
+    { label: 'All', range: undefined }
+  ];
+
   return (
     <>
       <Outlet />
       <div className="w-full @container mx-auto max-w-6xl">
         <div className="pt-8">
-          <PanoViewInput
-            value={filters.view}
-            onPointerUp={handleViewChange}
-            active={filters.dirty && filters.active}
-            className="w-full h-full aspect-[3/1]"
-          />
+          {!isMobile && (
+            <PanoViewInput
+              value={filters.view}
+              onPointerUp={handleViewChange}
+              active={filters.dirty && filters.active}
+              className="w-full h-full aspect-[3/1]"
+            />
+          )}
           <div className="mt-4 flex items-center justify-end gap-2">
-            <PaperButton
-              compact
-              disabled={!filters.dirty}
-              onClick={() =>
-                setFilters(current => ({
-                  ...current,
-                  active: !current.active
-                }))
-              }
-              className={cn(
-                'justify-center px-3 py-1.5',
-                filters.dirty && filters.active && '!bg-[#8B4217] !bg-opacity-100 !text-white hover:!bg-[#743512]'
-              )}
-            >
-              {viewFilterLabel}
-            </PaperButton>
+            {!isMobile && (
+              <PaperButton
+                compact
+                disabled={!filters.dirty}
+                onClick={() =>
+                  setFilters(current => ({
+                    ...current,
+                    active: !current.active
+                  }))
+                }
+                className={cn(
+                  'justify-center px-3 py-1.5',
+                  filters.dirty && filters.active && '!bg-[#8B4217] !bg-opacity-100 !text-white hover:!bg-[#743512]'
+                )}
+              >
+                {viewFilterLabel}
+              </PaperButton>
+            )}
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -140,11 +176,28 @@ export const Identifications = () => {
                   <ChevronDown className="size-4 opacity-70" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent align="end" className="w-auto p-0">
+              <PopoverContent align="end" className="w-[15.5rem] max-w-[calc(100vw-2rem)] overflow-hidden p-0">
+                <div className="grid grid-cols-2 gap-1 border-b border-accent-200 bg-accent-50/50 p-2">
+                  {dateRangePresets.map(preset => (
+                    <Button
+                      key={preset.label}
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setDateRange(preset.range)}
+                      className={cn(
+                        'text-accent-900 hover:bg-accent-200/60',
+                        isSameRange(filters.dateRange, preset.range) && 'bg-accent-700 text-white hover:bg-accent-700'
+                      )}
+                    >
+                      {preset.label}
+                    </Button>
+                  ))}
+                </div>
                 <Calendar
                   mode="range"
                   selected={filters.dateRange}
-                  onSelect={dateRange => setFilters(current => ({ ...current, dateRange }))}
+                  onSelect={setDateRange}
+                  showOutsideDays={false}
                 />
               </PopoverContent>
             </Popover>
