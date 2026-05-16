@@ -7,6 +7,8 @@ import { responses } from '../../db/schema/responses.js';
 import { useDB, withTransaction } from '../../db/transaction.js';
 import { withCoalescing } from '../../utils/cache.js';
 import { recordAchievement } from '../points/achievement.js';
+import { getPointsForUser } from '../points/points.js';
+import { getAllReachedLevelsForPoints } from '../points/level.js';
 
 export const getUsers = async () => {
   const db = useDB();
@@ -48,14 +50,22 @@ export const updateUsername = async (id: number, username: string) => {
   await db.update(users).set({ username }).where(eq(users.id, id));
 };
 
+export const updateStickerPositionsForUser = async (id: number, positions: unknown) => {
+  const db = useDB();
+  await db.update(users).set({ stickers: positions }).where(eq(users.id, id));
+};
+
 export const getUserPublicProfile = async (id: number) => {
   const db = useDB();
   const [user] = await db
-    .select({ id: users.id, username: users.username, createdAt: users.createdAt })
+    .select({ id: users.id, username: users.username, createdAt: users.createdAt, stickers: users.stickers })
     .from(users)
     .where(eq(users.id, id));
+
+  const points = await getPointsForUser(id);
+  const levels = getAllReachedLevelsForPoints(points);
   if (!user) throw new NotFoundError(`User not found: ${id}`);
-  return user;
+  return { user, points, levels };
 };
 
 export const onboardUser = async (id: number, data: OnboardingFormSchema) => {

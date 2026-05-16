@@ -31,19 +31,15 @@ const getLeaderboardBaseQuery = (from: Date) => {
     .groupBy(users.id);
 };
 
-export const getPointsForUser = async (userId: number, from: Date) => {
+export const getPointsForUser = async (userId: number, from?: Date) => {
   const db = useDB();
+  const query = [eq(achievements.userId, userId), eq(achievements.redeemed, true), eq(achievements.revoked, false)];
+  if (from) query.push(gte(achievements.createdAt, from));
   const [user] = await db
     .select({ points: sum(achievements.points).mapWith(Number) })
     .from(achievements)
-    .where(
-      and(
-        eq(achievements.userId, userId),
-        eq(achievements.redeemed, true),
-        gte(achievements.createdAt, from),
-        eq(achievements.revoked, false)
-      )
-    );
+    .where(and(...query));
+
   if (!user) throw new NotFoundError(`User not found: ${userId}`);
   return user.points || 0;
 };

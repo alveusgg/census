@@ -19,6 +19,11 @@ export const getLevelForPoints = (points: number) => {
   return panic('No level reached');
 };
 
+export const getAllReachedLevelsForPoints = (points: number) => {
+  const entries = Object.entries(levels) as [Level, (typeof levels)[Level]][];
+  return entries.filter(([level]) => hasReachedLevel(level, points)).map(([, config]) => config);
+};
+
 export const didLevelUp = (previous: number, current: number) => {
   const previousLevel = getLevelForPoints(previous);
   const currentLevel = getLevelForPoints(current);
