@@ -1,6 +1,7 @@
 import { Button } from '@/components/controls/button/paper';
 import { Checkbox } from '@/components/forms/inputs/CheckboxInput';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/table/Table';
+import { UserLink } from '@/components/users/UserLink';
 import { Clipboard } from '@/layouts/Clipboard';
 import { useUsers } from '@/services/api/users';
 import { ColumnDef, RowSelectionState, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
@@ -38,7 +39,8 @@ const columns: ColumnDef<User>[] = [
   },
   {
     accessorKey: 'username',
-    header: 'Username'
+    header: 'Username',
+    cell: ({ row }) => <UserLink user={row.original} />
   },
   {
     accessorKey: 'role',
@@ -142,7 +144,11 @@ export const Users: FC = () => {
                             onClick={() => {
                               confirm.open({
                                 title: 'Change role to expert?',
-                                description: `This will give ${row.original.username} expert permissions.`,
+                                description: (
+                                  <>
+                                    This will give <UserLink user={row.original} /> expert permissions.
+                                  </>
+                                ),
                                 onConfirm: async () => {
                                   // TODO: promoteUser endpoint not available - needs to be implemented in API
                                   console.warn('promoteUser endpoint not available');
