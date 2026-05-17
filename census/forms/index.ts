@@ -1,9 +1,18 @@
 import { z } from 'zod';
 
 export const OnboardingFormSchema = z.object({
-  bugLikingComment: z
-    .string({ required_error: 'Please enter a comment' })
-    .min(2, { message: 'Please enter a comment with at least 2 characters' }),
+  firstHeardAboutAlveus: z
+    .string({ required_error: 'Please answer this question' })
+    .min(2, { message: 'Please enter at least 2 characters' }),
+  communityScienceExperience: z
+    .string({ required_error: 'Please answer this question' })
+    .min(2, { message: 'Please enter at least 2 characters' }),
+  bugIdentifyingSkills: z
+    .string({ required_error: 'Please answer this question' })
+    .min(2, { message: 'Please enter at least 2 characters' }),
+  alveusWatchFrequency: z
+    .string({ required_error: 'Please answer this question' })
+    .min(2, { message: 'Please enter at least 2 characters' }),
   agreeToTerms: z.literal(true, { required_error: 'Please agree to the terms' })
 });
 

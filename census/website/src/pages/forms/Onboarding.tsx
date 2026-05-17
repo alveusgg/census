@@ -4,6 +4,7 @@ import { Field } from '@/components/forms/Field';
 import { Form } from '@/components/forms/Form';
 import { CheckboxField } from '@/components/forms/inputs/CheckboxInput';
 import { TextAreaField } from '@/components/forms/inputs/TextAreaInput';
+import { TextField } from '@/components/forms/inputs/TextInput';
 import { Label } from '@/components/forms/Label';
 import { useConfetti } from '@/components/layout/ConfettiProvider';
 import { useAchievements } from '@/components/layout/LayoutProvider';
@@ -11,7 +12,6 @@ import { usePointAction } from '@/components/points/hooks';
 import { PointOrigin } from '@/components/points/PointOrigin';
 import { Clipboard } from '@/layouts/Clipboard';
 import { useOnboardUser } from '@/services/api/me';
-import { lorum } from '@/utils/placeholder';
 import { OnboardingFormSchema } from '@alveusgg/census-forms';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FC } from 'react';
@@ -41,10 +41,30 @@ export const Onboarding: FC = () => {
         <h1 className="text-3xl font-semibold leading-8 text-center text-balance sm:text-left">
           welcome to the <span className="font-extrabold">alveus pollinator census!</span>
         </h1>
-        <p className="leading-tight">{lorum(4)}</p>
-        <Field name="bugLikingComment">
-          <Label content="How much do you like bugs?">
+        <p className="leading-tight">
+          Tell us a little about how you found Alveus and your experience with community science so far.
+        </p>
+        <Field name="firstHeardAboutAlveus">
+          <Label content="When did you first hear about Alveus?">
+            <TextField />
+            <FieldError />
+          </Label>
+        </Field>
+        <Field name="communityScienceExperience">
+          <Label content="Have you taken part in an IRL or online community science project before?">
             <TextAreaField />
+            <FieldError />
+          </Label>
+        </Field>
+        <Field name="bugIdentifyingSkills">
+          <Label content="How would you describe your bug identifying skills?">
+            <TextAreaField />
+            <FieldError />
+          </Label>
+        </Field>
+        <Field name="alveusWatchFrequency">
+          <Label content="How often do you watch alveus?">
+            <TextField />
             <FieldError />
           </Label>
         </Field>
@@ -52,7 +72,19 @@ export const Onboarding: FC = () => {
           <Field name="agreeToTerms">
             <Label
               className="flex-row-reverse justify-between w-full"
-              content="I understand that this will be used for research purposes and I consent to it. Read more about it here."
+              content={
+                <>
+                  I understand that this will be used for research purposes and I consent to it.{' '}
+                  <a
+                    href="https://www.alveussanctuary.org/privacy-policy"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-semibold underline underline-offset-2"
+                  >
+                    Read more about it here.
+                  </a>
+                </>
+              }
             >
               <CheckboxField />
             </Label>
