@@ -10,7 +10,7 @@ export const SubjectToggle = () => {
     createNewSubject: state.createNewSubject
   }));
   return (
-    <div className="flex gap-2 mb-4">
+    <div className="flex flex-wrap gap-2">
       {subjects.map(subject => {
         const toggled = selectedSubjectId === subject.id;
         return (
