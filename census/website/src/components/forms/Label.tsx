@@ -1,7 +1,7 @@
 import { cn } from '@/utils/cn';
 import { ComponentProps, FC, ReactNode } from 'react';
 
-export const Label: FC<ComponentProps<'label'> & { content: ReactNode }> = ({
+export const Label: FC<Omit<ComponentProps<'label'>, 'content'> & { content: ReactNode }> = ({
   children,
   content,
   className,
