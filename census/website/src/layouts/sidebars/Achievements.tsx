@@ -25,7 +25,7 @@ const getLevelForPoints = (points: number) => {
   const level = Object.values(levels).reduce((acc, level) => {
     if (points >= level.points) return level;
     return acc;
-  }, levels.newcomer);
+  }, levels.initial);
   if (!level) return 0;
   return level.number;
 };
