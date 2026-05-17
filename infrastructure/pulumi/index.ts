@@ -50,7 +50,7 @@ export = async () => {
     cluster,
     subdomain: 'census-api',
     port: 3000,
-    size: 'regular',
+    size: 'large',
     env: {
       HOST: '0.0.0.0',
       PORT: '3000',
