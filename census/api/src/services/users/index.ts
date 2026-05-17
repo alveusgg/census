@@ -1,4 +1,4 @@
-import { count, desc, eq } from 'drizzle-orm';
+import { and, count, desc, eq, isNotNull } from 'drizzle-orm';
 
 import { OnboardingFormSchema } from '@alveusgg/census-forms';
 import { NotAuthenticatedError, NotFoundError } from '@alveusgg/error';
@@ -70,10 +70,11 @@ export const getUserPublicProfile = async (id: number) => {
 
 export const getUserIdentifications = async (id: number, page: number, size: number) => {
   const db = useDB();
-  const [{ total }] = await db.select({ total: count() }).from(identifications).where(eq(identifications.suggestedBy, id));
+  const confirmedUserIdentification = and(eq(identifications.suggestedBy, id), isNotNull(identifications.confirmedBy));
+  const [{ total }] = await db.select({ total: count() }).from(identifications).where(confirmedUserIdentification);
 
   const data = await db.query.identifications.findMany({
-    where: eq(identifications.suggestedBy, id),
+    where: confirmedUserIdentification,
     with: {
       suggester: true,
       feedback: {
