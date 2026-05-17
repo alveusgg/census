@@ -1,17 +1,19 @@
 import SiChevronDown from '@/components/icons/SiChevronDown';
 import { useModal } from '@/components/modal/useModal';
-import { Shiny, useShiniesForSeason } from '@/services/api/seasons';
+import { Shiny, useCurrentSeason, useShiniesForSeason } from '@/services/api/seasons';
 import { cn } from '@/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useMeasure } from '@uidotdev/usehooks';
-import { addMonths, format } from 'date-fns';
+import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { ComponentProps, FC, useMemo, useState } from 'react';
 import { IdentificationModal, IdentificationProps } from './Identification';
 import { loadSilhouette } from '@/lib/levels';
 
 export const ShiniesForSeason = () => {
+  const seasonQuery = useCurrentSeason();
   const shiniesQuery = useShiniesForSeason();
+  const season = useSuspenseQuery(seasonQuery);
   const shinies = useSuspenseQuery(shiniesQuery);
 
   const [ref, { height }] = useMeasure();
@@ -43,7 +45,8 @@ export const ShiniesForSeason = () => {
             <div className="text-right">
               <h3 className="text-2xl font-bold">generation one</h3>
               <p className="font-semibold">
-                {format(new Date(), 'MMM yyyy')} - {format(addMonths(new Date(), 11), 'MMM yyyy')}
+                {format(new Date(season.data.startDate), 'MMM yyyy')} -{' '}
+                {format(new Date(season.data.endDate), 'MMM yyyy')}
               </p>
             </div>
           </div>
