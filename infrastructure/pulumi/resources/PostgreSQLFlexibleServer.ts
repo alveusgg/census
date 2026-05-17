@@ -1,4 +1,4 @@
-import { Configuration, FirewallRule, Server } from '@pulumi/azure-native/dbforpostgresql';
+import { Configuration, FirewallRule, Server } from '@pulumi/azure-native/dbforpostgresql/v20240801';
 import { ComponentResource, Input, Output, ResourceOptions } from '@pulumi/pulumi';
 import { RandomPassword, RandomString } from '@pulumi/random';
 
@@ -43,11 +43,12 @@ export class PostgreSQLFlexibleServer extends ComponentResource {
         administratorLoginPassword: password.result,
         version: '16',
         storage: {
-          storageSizeGB: 32
+          storageSizeGB: 32,
+          tier: 'P15'
         },
         sku: {
           tier: 'Burstable',
-          name: 'Standard_B1ms'
+          name: 'Standard_B2s'
         }
       },
       { parent: this }
