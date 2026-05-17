@@ -250,7 +250,7 @@ export const completeCaptureRequest = async (id: number, videoUrl: string) => {
     const asset = await mux.video.assets.create({
       input: [{ url: videoUrl }],
       playback_policy: ['public'],
-      video_quality: 'plus'
+      video_quality: 'basic'
     });
 
     const assetId = asset.id;
