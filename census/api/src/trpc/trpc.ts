@@ -166,14 +166,16 @@ export const procedure = loggedProcedure.use(async ({ ctx, next }) => {
   }
 
   try {
-    const decoded = await validateJWT(token);
+    const decoded = await Sentry.startSpan({ name: 'validateJWT', op: 'auth.jwt' }, () => validateJWT(token));
     if (!decoded.subject) throw new NotAuthenticatedError('Your token is malformed as it does not have a subject.');
     const payload = TokenPayload.safeParse(decoded.payload);
     if (!payload.success)
       throw new NotAuthenticatedError(
         `Your token is malformed as it does not have the required payload: ${payload.error.message}`
       );
-    const user = await getUserByProviderId(payload.data.sub);
+    const user = await Sentry.startSpan({ name: 'getUserByProviderId', op: 'auth.user' }, () =>
+      getUserByProviderId(payload.data.sub)
+    );
     context.active().setValue(Symbol.for('ai.user.authUserId'), user.id);
     return withUser({ ...payload.data, ...user, points: ctx.points, achievements: ctx.achievements }, next);
   } catch (error) {
