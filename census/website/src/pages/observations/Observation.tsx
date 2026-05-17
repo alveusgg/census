@@ -10,6 +10,7 @@ import {
 } from "@/components/forms/base/dropdown-menu";
 import { INatTaxaInput } from "@/components/forms/inputs/INatTaxaInput";
 import { Loader } from "@/components/loaders/Loader";
+import { Spinner } from "@/components/loaders/Spinner";
 import { Confirm, useConfirm } from "@/components/modal/Confirm";
 import { Timestamp } from "@/components/text/Timestamp";
 import { UserLink } from "@/components/users/UserLink";
@@ -61,6 +62,52 @@ const UserLinkList: FC<{ users: { id: number; username: string }[] }> = ({
         </span>
       ))}
     </>
+  );
+};
+
+interface ObservationImageProps {
+  image: ObservationType["sightings"][number]["images"][number];
+}
+
+const ObservationImage: FC<ObservationImageProps> = ({ image }) => {
+  const [hasLoadedHighResolutionImage, setHasLoadedHighResolutionImage] =
+    useState(false);
+  const [hasLoadedLowResolutionImage, setHasLoadedLowResolutionImage] =
+    useState(false);
+  const isProcessingImages =
+    !hasLoadedHighResolutionImage && !hasLoadedLowResolutionImage;
+
+  return (
+    <div className="w-full h-full overflow-clip relative">
+      {isProcessingImages && (
+        <div
+          role="status"
+          className="absolute inset-0 flex items-center justify-center gap-2 text-sm font-medium text-accent-800"
+        >
+          <Spinner className="h-4 w-4" />
+          <span>Processing images</span>
+        </div>
+      )}
+      <Square
+        loading="lazy"
+        className="absolute inset-0 w-full h-full z-20"
+        src={image.url}
+        image={{ width: image.width, height: image.height }}
+        options={{ extract: image.boundingBox }}
+        onLoad={() => setHasLoadedHighResolutionImage(true)}
+      />
+      <Square
+        className="absolute inset-0 w-full h-full z-10 blur-2xl"
+        src={image.url}
+        image={{ width: image.width, height: image.height }}
+        options={{
+          extract: image.boundingBox,
+          width: 25,
+          height: 25,
+        }}
+        onLoad={() => setHasLoadedLowResolutionImage(true)}
+      />
+    </div>
   );
 };
 
@@ -129,25 +176,7 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
             .flatMap((sighting) => sighting.images)
             .map((image) => (
               <Slide key={image.id} id={image.id.toString()}>
-                <div className="w-full h-full overflow-clip relative">
-                  <Square
-                    loading="lazy"
-                    className="absolute inset-0 w-full h-full z-10"
-                    src={image.url}
-                    image={{ width: image.width, height: image.height }}
-                    options={{ extract: image.boundingBox }}
-                  />
-                  <Square
-                    className="absolute inset-0 w-full h-full blur-2xl"
-                    src={image.url}
-                    image={{ width: image.width, height: image.height }}
-                    options={{
-                      extract: image.boundingBox,
-                      width: 25,
-                      height: 25,
-                    }}
-                  />
-                </div>
+                <ObservationImage image={image} />
               </Slide>
             ))}
           <Controls />
