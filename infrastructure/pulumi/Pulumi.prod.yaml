@@ -9,13 +9,13 @@ config:
     secure: AAABAK0Bp4gGTghzc3aGHBs5drm22+1S1x4TSXMLAJRmcbHac1DmwhnoSATS2bDGVjMXcO4E+XOilGMS247DE1UHe6D663iZbOvrNvynh8ZLDqRaieZHODq8SpmqaNomjSO2rrnS6T8V5oA=
   census:alveus-client-secret:
     secure: AAABAPvvjxi3lAXkCDftl2o2CkwGZDcFsgvE4T87rrThy5SbYfIAOun3H0RBh+J/A6W7YTMwD6zJDVuL6alZ0hRs
-  census:s3-bucket: census
-  census:s3-endpoint: https://0def86f295b15a1a2d012774b38b04f9.r2.cloudflarestorage.com
-  census:s3-public-url: http://pub-60558bf29d3f4228992d40e50e14aae4.r2.dev
+  census:s3-bucket: census-clip-storage
+  census:s3-endpoint: https://1f4b83a9106fec33c984912210d93e1b.r2.cloudflarestorage.com
+  census:s3-public-url: https://census-storage.alveus.gg
   census:s3-access-key-id:
-    secure: AAABAHfHd42TibSFpVpAion3GXeUDduB+3fnh22Wc3oUwUC592QqL2cZ/w5bBtjWARo/79FPRmTkBhPUW2e0+w==
+    secure: AAABAF7WOqUFav2WqTWGbfSjeIVxdBQCkF1C56nSMHXZEGTpAlYVqippAhs1maxfHwkrmIpS/CUBIXvW0OUjRg==
   census:s3-secret-access-key:
-    secure: AAABADfbx08aHKKsT4wbrKVfqOQ+5XGEDbObs/qoWjn10B7LIxCBooWUS1+2qqQ4U9FokHIWSBTCtehBubzBQMzBoCQF3nqOvy8JlLdDMKbb2nMKZLa1FWBBtIZgOFP2
+    secure: AAABAPdhgk3/NBxwWissEeGlMJ5JGlFMEWqoD5mCpw2P3MpCrKeQOhamKdjPuj53SoK5owrODPrYR98Lst5ukXP7vzgh3/HNysNKm9A2cSMnC+HNSGmZX6AVc3uIbKIc
   census:twitch-client-id: sjj3rcjojtqyeobptmjf3pjukaerkc
   census:twitch-client-secret:
     secure: AAABAJY/MAFnmek/sfNPPpPph4UhaaKq1RTH/h9rXTsuAx8iOHyjAKlI1+O3OfsjQAHnru42kBZEQJzmfT4=
