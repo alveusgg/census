@@ -82,7 +82,7 @@ const ObservationImage: FC<ObservationImageProps> = ({ image }) => {
       {isProcessingImages && (
         <div
           role="status"
-          className="absolute inset-0 flex items-center justify-center gap-2 text-sm font-medium text-accent-800"
+          className="absolute inset-0 z-0 flex items-center justify-center gap-2 text-sm font-medium text-accent-800"
         >
           <Spinner className="h-4 w-4" />
           <span>Processing images</span>
@@ -90,14 +90,14 @@ const ObservationImage: FC<ObservationImageProps> = ({ image }) => {
       )}
       <Square
         loading="lazy"
-        className="absolute inset-0 w-full h-full z-20"
+        className="absolute inset-0 z-[2] w-full h-full"
         src={image.url}
         image={{ width: image.width, height: image.height }}
         options={{ extract: image.boundingBox }}
         onLoad={() => setHasLoadedHighResolutionImage(true)}
       />
       <Square
-        className="absolute inset-0 w-full h-full z-10 blur-2xl"
+        className="absolute inset-0 z-[1] w-full h-full blur-2xl"
         src={image.url}
         image={{ width: image.width, height: image.height }}
         options={{
