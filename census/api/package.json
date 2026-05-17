@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "type": "module",
+  "packageManager": "pnpm@9.14.2",
   "main": "src/index.ts",
   "types": "src/index.ts",
   "dependencies": {
