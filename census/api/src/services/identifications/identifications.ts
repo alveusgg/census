@@ -40,10 +40,12 @@ export const confirmIdentification = async (identificationId: number, comment: s
         type: 'confirm',
         comment: comment
       });
-      await tx
-        .update(observations)
-        .set({ confirmedAs: identification.id })
-        .where(eq(observations.id, identification.observationId));
+      if (!identification.isAccessory) {
+        await tx
+          .update(observations)
+          .set({ confirmedAs: identification.id })
+          .where(eq(observations.id, identification.observationId));
+      }
 
       await recordAchievement('identify', identification.suggestedBy, { payload: { identificationId } });
       user.achievements();

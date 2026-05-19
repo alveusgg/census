@@ -1,7 +1,7 @@
 import { BadRequestError, DownstreamError, ForbiddenError, NotFoundError } from '@alveusgg/error';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
-import { and, count, desc, eq, gte, inArray, isNotNull, isNull, lte, or, SQL, sql } from 'drizzle-orm';
+import { and, count, desc, eq, gte, inArray, lte, or, SQL, sql } from 'drizzle-orm';
 import ffmpeg from 'fluent-ffmpeg';
 import { createReadStream } from 'fs';
 import { writeFile } from 'fs/promises';
@@ -178,9 +178,21 @@ export const getObservationCount = async () => {
   return result.count;
 };
 
+const hasConfirmedPrimaryIdentification = sql`
+  exists (
+    select 1
+    from ${identifications}
+    where ${identifications.id} = ${observations.confirmedAs}
+      and ${identifications.isAccessory} is not true
+  )
+`;
+
 export const getUnconfirmedObservationCount = async () => {
   const db = useDB();
-  const [result] = await db.select({ count: count() }).from(observations).where(isNull(observations.confirmedAs));
+  const [result] = await db
+    .select({ count: count() })
+    .from(observations)
+    .where(sql`not ${hasConfirmedPrimaryIdentification}`);
   return result.count;
 };
 
@@ -189,9 +201,9 @@ export const getObservations = async (pagination: Pagination, query?: Query) => 
   const conditions: SQL<unknown>[] = [];
 
   if (query?.confirmed) {
-    conditions.push(isNotNull(observations.confirmedAs));
+    conditions.push(hasConfirmedPrimaryIdentification);
   } else {
-    conditions.push(isNull(observations.confirmedAs));
+    conditions.push(sql`not ${hasConfirmedPrimaryIdentification}`);
   }
 
   if (query?.within) {
