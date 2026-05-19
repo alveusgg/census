@@ -39,6 +39,7 @@ import { PanoLocationModal } from "@/components/pano/PanoLocationModal";
 
 import SiChevronDown from "@/components/icons/SiChevronDown";
 import SiChevronUp from "@/components/icons/SiChevronUp";
+import SiCheckmark from "@/components/icons/SiCheckmark";
 import SiLeaf from "@/components/icons/SiLeaf";
 import SiPin from "@/components/icons/SiPin";
 import SiTrash from "@/components/icons/SiTrash";
@@ -123,6 +124,9 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
 
   const accessoryIdentifications = observation.identifications.filter(
     (identification) => identification.isAccessory,
+  );
+  const confirmedAccessoryIdentification = accessoryIdentifications.find(
+    (identification) => identification.confirmedBy,
   );
   const identificationIdentifications = observation.identifications.filter(
     (identification) => !identification.isAccessory,
@@ -316,17 +320,23 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
                     <SiLeaf className="text-xl" />
                     associated plants
                   </label>
-                  {accessoryTree.map((identification) => (
-                    <TopLevelIdentificationTree
-                      key={identification.id}
-                      tree={identification}
+                  {confirmedAccessoryIdentification ? (
+                    <ConfirmedAccessoryIdentification
+                      identification={confirmedAccessoryIdentification}
                     />
-                  ))}
+                  ) : (
+                    accessoryTree.map((identification) => (
+                      <TopLevelIdentificationTree
+                        key={identification.id}
+                        tree={identification}
+                      />
+                    ))
+                  )}
                 </AnimatePresence>
               </motion.div>
             </div>
           )}
-          {canSuggest && (
+          {canSuggest && !confirmedAccessoryIdentification && (
             <div>
               <INatTaxaInput
                 icon={<SiLeaf className="text-2xl" />}
@@ -380,6 +390,39 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
 interface TopLevelIdentificationTreeProps {
   tree: Node<IdentificationType>;
 }
+
+const ConfirmedAccessoryIdentification: FC<{
+  identification: IdentificationType;
+}> = ({ identification }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="mx-3 py-1"
+    >
+      <div className="flex items-start justify-between gap-3 rounded-lg border border-green-200 bg-green-50/80 px-3 py-2">
+        <div className="min-w-0 leading-tight">
+          <a
+            href={`https://www.inaturalist.org/taxa/${identification.sourceId}`}
+            target="_blank"
+            className="flex min-w-0 items-center gap-1 font-semibold text-accent-900"
+          >
+            <SiLeaf className="shrink-0 text-xl text-green-700" />
+            <span className="truncate">{identification.name}</span>
+          </a>
+          <p className="text-sm text-accent-800">
+            suggested by{" "}
+            <UserLink user={identification.suggester} className="font-semibold" />
+          </p>
+        </div>
+        <span className="flex shrink-0 items-center gap-1 rounded-full bg-green-700 px-2 py-0.5 text-xs font-bold text-white">
+          <SiCheckmark className="text-sm" />
+          confirmed
+        </span>
+      </div>
+    </motion.div>
+  );
+};
 
 const TopLevelIdentificationTree: FC<TopLevelIdentificationTreeProps> = ({
   tree,

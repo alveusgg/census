@@ -181,9 +181,9 @@ export const getObservationCount = async () => {
 const hasConfirmedPrimaryIdentification = sql`
   exists (
     select 1
-    from ${identifications}
-    where ${identifications.id} = ${observations.confirmedAs}
-      and ${identifications.isAccessory} is not true
+    from identifications
+    where identifications.id = observations.confirmed_as
+      and identifications.is_accessory is not true
   )
 `;
 
