@@ -2,6 +2,7 @@ import { Button } from '@/components/controls/button/paper';
 import { DownThumb, UpThumb } from '@/components/controls/ObservationEntry';
 import SiBug2 from '@/components/icons/SiBug2';
 import SiCommentCheck from '@/components/icons/SiCommentCheck';
+import SiLeaf from '@/components/icons/SiLeaf';
 import SiMessage from '@/components/icons/SiMessage';
 import { useModal } from '@/components/modal/useModal';
 import { UserLink } from '@/components/users/UserLink';
@@ -38,6 +39,7 @@ export const IdentificationSuggestion: FC<IdentificationSuggestionProps> = ({ tr
   const myFeedback = identification.feedback.find(feedback => feedback.userId === me.id);
   const isOwnSuggestion = identification.suggester?.id === me.id;
   const hasFeedback = identification.feedback.length > 0;
+  const TaxonIcon = identification.isAccessory ? SiLeaf : SiBug2;
 
   return (
     <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="py-1 flex flex-col gap-1">
@@ -57,7 +59,7 @@ export const IdentificationSuggestion: FC<IdentificationSuggestionProps> = ({ tr
                   target="_blank"
                   className="flex items-center mt-0.5 gap-1"
                 >
-                  <SiBug2 className="text-xl" />
+                  <TaxonIcon className={cn('text-xl', identification.isAccessory && 'text-green-700')} />
                   <span>{identification.name}</span>
                 </a>
                 <p className="text-sm">
