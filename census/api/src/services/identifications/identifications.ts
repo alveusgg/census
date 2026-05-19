@@ -9,7 +9,7 @@ import { recordAchievement } from '../points/achievement.js';
 
 export const suggestIdentification = async (observationId: number, iNatId: number) => {
   const source = await getTaxaInfo(iNatId);
-  const parent = await getPossibleParentIdentifications(observationId, source.ancestor_ids);
+  const parent = await getPossibleParentIdentifications(observationId, source.ancestor_ids, false);
   return createIdentification(observationId, iNatId, source.preferred_common_name ?? source.name, source.ancestor_ids, {
     parentIdentificationId: parent?.id
   });
@@ -17,7 +17,9 @@ export const suggestIdentification = async (observationId: number, iNatId: numbe
 
 export const suggestAccessoryIdentification = async (observationId: number, iNatId: number) => {
   const source = await getTaxaInfo(iNatId);
+  const parent = await getPossibleParentIdentifications(observationId, source.ancestor_ids, true);
   return createIdentification(observationId, iNatId, source.preferred_common_name ?? source.name, source.ancestor_ids, {
+    parentIdentificationId: parent?.id,
     isAccessory: true
   });
 };
@@ -53,13 +55,23 @@ export const confirmIdentification = async (identificationId: number, comment: s
   });
 };
 
-export const getPossibleParentIdentifications = async (observationId: number, taxonIds: number[]) => {
+export const getPossibleParentIdentifications = async (
+  observationId: number,
+  taxonIds: number[],
+  isAccessory: boolean
+) => {
   const db = useDB();
   const ids = taxonIds.map(id => id.toString());
   const possibleParents = await db
     .select()
     .from(identifications)
-    .where(and(eq(identifications.observationId, observationId), inArray(identifications.sourceId, ids)));
+    .where(
+      and(
+        eq(identifications.observationId, observationId),
+        isAccessory ? eq(identifications.isAccessory, true) : sql`${identifications.isAccessory} is not true`,
+        inArray(identifications.sourceId, ids)
+      )
+    );
 
   if (possibleParents.length === 0) return undefined;
   if (possibleParents.length === 1) return possibleParents[0];
