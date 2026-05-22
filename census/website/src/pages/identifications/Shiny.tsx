@@ -110,6 +110,7 @@ const Shine: FC<ComponentProps<'div'>> = props => (
 export const ShinyThumbnail: FC<ShinyThumbnailProps> = ({ shiny }) => {
   // This doesn't need to be reactive, we really only care if the user has seen it on a previous page load
   const hasBeenSeen = useMemo(() => localStorage.getItem(`shiny-unlocked-and-new:${shiny.id}`) === 'true', [shiny]);
+  const artwork = 'artwork' in shiny && shiny.artwork.type === 'url' ? shiny.artwork : null;
 
   return (
     <>
@@ -122,16 +123,18 @@ export const ShinyThumbnail: FC<ShinyThumbnailProps> = ({ shiny }) => {
           className="rounded-full bg-red-500 border-red-700 border-2 absolute top-3 right-1 z-10"
         ></div>
       )}
-      {'artwork' in shiny && shiny.artwork.type === 'url' && (
+      {artwork && (
         <>
           <Shine />
           <img
-            src={shiny.artwork.url}
-            className="absolute top-0 aspect-square bottom-0 bg-center drop-shadow-md rotate-1 group-hover:scale-[1.1] group-hover:rotate-2 cursor-pointer transition-all duration-300"
+            src={artwork.url}
+            className="absolute inset-0 size-full object-contain bg-center drop-shadow-md rotate-1 group-hover:scale-[1.1] group-hover:rotate-2 cursor-pointer transition-all duration-300"
           />
         </>
       )}
-      {shiny.silhouette.type === 'assets' && <Image className="aspect-square" src={shiny.silhouette.name} />}
+      {!artwork && shiny.silhouette.type === 'assets' && (
+        <Image className="absolute inset-0 size-full object-contain" src={shiny.silhouette.name} />
+      )}
     </>
   );
 };
