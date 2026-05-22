@@ -59,7 +59,7 @@ export const IdentificationSuggestion: FC<IdentificationSuggestionProps> = ({ tr
                   target="_blank"
                   className="flex items-center mt-0.5 gap-1"
                 >
-                  <TaxonIcon className={cn('text-xl', identification.isAccessory && 'text-green-700')} />
+                  <TaxonIcon className="text-xl" />
                   <span>{identification.name}</span>
                 </a>
                 <p className="text-sm">
