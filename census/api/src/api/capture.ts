@@ -10,16 +10,18 @@ import {
   getCaptures,
   processingCaptureRequest
 } from '../services/capture/index.js';
-import { procedure, procedureWithPermissions, router } from '../trpc/trpc.js';
+import { procedure, procedureWithPermissions, publicProcedure, router } from '../trpc/trpc.js';
 import { report } from '../utils/logs.js';
 import { Pagination } from './observation.js';
 
 export default router({
-  capture: procedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+  // Keep this public with the matching SSE subscription; see docs/dev/api/sse-subscriptions.md.
+  capture: publicProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
     return getCapture(input.id);
   }),
   live: {
-    capture: procedure.input(z.object({ id: z.number() })).subscription(async function* ({ input }) {
+    // Public because EventSource reconnects can reuse stale auth; see docs/dev/api/sse-subscriptions.md.
+    capture: publicProcedure.input(z.object({ id: z.number() })).subscription(async function* ({ input }) {
       const capture = await getCapture(input.id);
       if (capture.status === 'complete') return;
 

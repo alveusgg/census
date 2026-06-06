@@ -15,6 +15,7 @@ export const useCapture = (id: number) => {
     }
   });
 
+  // The matching server subscription is intentionally public; see docs/dev/api/sse-subscriptions.md.
   useEffect(() => {
     if (result.data.status === 'complete') return;
     const subscription = trpc.capture.live.capture.subscribe({ id }, callback);
