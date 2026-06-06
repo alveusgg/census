@@ -1,7 +1,7 @@
 import { S3Client } from '@aws-sdk/client-s3';
 import Mux from '@mux/mux-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
-import { BatchSpanProcessor, SpanProcessor } from '@opentelemetry/sdk-trace-base';
+import { BatchSpanProcessor, ConsoleSpanExporter, SpanProcessor } from '@opentelemetry/sdk-trace-base';
 import * as Sentry from '@sentry/node';
 import { ApiClient } from '@twurple/api';
 import { AppTokenAuthProvider } from '@twurple/auth';
@@ -27,6 +27,7 @@ export const config = z.object({
   POSTGRES_PASSWORD: z.string(),
   POSTGRES_DB: z.string(),
   POSTGRES_SSL: z.coerce.boolean().default(false),
+  POSTGRES_PORT: z.coerce.number().optional(),
 
   API_URL: z.string().optional(),
   CONTAINER_APP_NAME: z.string().optional(),
@@ -76,7 +77,8 @@ export const services = async (variables: z.infer<typeof config>) => {
 
     if (variables.NODE_ENV === 'development' && variables.LOCAL_OTEL_COLLECTOR_URL) {
       const processor = new BatchSpanProcessor(new OTLPTraceExporter({ url: variables.LOCAL_OTEL_COLLECTOR_URL }));
-      additionalProcessors.push(processor);
+      const consoleProcessor = new BatchSpanProcessor(new ConsoleSpanExporter());
+      additionalProcessors.push(processor, consoleProcessor);
     }
 
     return Sentry.init({
@@ -130,7 +132,8 @@ export const services = async (variables: z.infer<typeof config>) => {
     variables.POSTGRES_USER,
     variables.POSTGRES_PASSWORD,
     variables.POSTGRES_DB,
-    variables.POSTGRES_SSL
+    variables.POSTGRES_SSL,
+    variables.POSTGRES_PORT
   );
 
   const storage = new S3Client({

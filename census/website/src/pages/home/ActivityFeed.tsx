@@ -1,66 +1,69 @@
-import { Skeleton } from "@/components/ui/skeleton";
-import { UserLink } from "@/components/users/UserLink";
-import { RecentAchievement, useRecentAchievements } from "@/services/api/users";
-import { AnimatePresence, motion } from "framer-motion";
-import { FC } from "react";
+import { Skeleton } from '@/components/ui/skeleton';
+import { UserLink } from '@/components/users/UserLink';
+import { RecentAchievement, useRecentAchievements } from '@/services/api/users';
+import { AnimatePresence, motion } from 'framer-motion';
+import { FC } from 'react';
 
-const describe = (
-  achievement: RecentAchievement,
-): { emoji: string; message: React.ReactNode } => {
-  const username = (
-    <UserLink user={achievement.user} className="font-bold" />
-  );
+const describe = (achievement: RecentAchievement): { emoji: string; message: React.ReactNode } => {
+  const username = <UserLink user={achievement.user} className="font-bold" />;
   const target = achievement.identification?.nickname;
 
   switch (achievement.payload.type) {
-    case "onboard":
-      return { emoji: "🎉", message: <>{username} joined the census</> };
-    case "identify":
+    case 'onboard':
       return {
-        emoji: "🔬",
+        emoji: '🎉',
+        message: (
+          <>
+            {username} {achievement.payload.payload.publicMessage ?? 'joined the census'}
+          </>
+        )
+      };
+    case 'identify':
+      return {
+        emoji: '🔬',
         message: target ? (
           <>
             {username} identified <span className="font-bold">{target}</span>
           </>
         ) : (
           <>{username} made an identification</>
-        ),
+        )
       };
-    case "shiny":
+    case 'shiny':
       return {
-        emoji: "🌟",
+        emoji: '🌟',
         message: target ? (
           <>
             {username} found a shiny <span className="font-bold">{target}</span>
           </>
         ) : (
           <>{username} found a shiny</>
-        ),
+        )
       };
-    case "vote":
+    case 'vote':
       return {
-        emoji: "👍",
+        emoji: '👍',
         message: target ? (
           <>
             {username} voted on <span className="font-bold">{target}</span>
           </>
         ) : (
           <>{username} voted on an identification</>
-        ),
+        )
       };
-    case "comment":
+    case 'comment':
       return {
-        emoji: "💬",
+        emoji: '💬',
         message: target ? (
           <>
             {username} commented on <span className="font-bold">{target}</span>
           </>
         ) : (
           <>{username} commented on an identification</>
-        ),
+        )
       };
     default:
-      return { emoji: "✨", message: <>{username} earned an achievement</> };
+      return { emoji: '✨', message: <>{username} earned an achievement</> };
   }
 };
 
@@ -77,17 +80,10 @@ export const ActivityFeed: FC = () => {
       <div className="flex items-center gap-4 pb-5">
         <h2 className="text-2xl font-bold text-accent-900">Recent activity</h2>
       </div>
-      <ul
-        className="flex list-none flex-col gap-3"
-        style={{ height: LIST_HEIGHT + 20 }}
-      >
+      <ul className="flex list-none flex-col gap-3" style={{ height: LIST_HEIGHT + 20 }}>
         <AnimatePresence mode="popLayout" initial={false}>
           {achievements.data.map((achievement, index) => (
-            <ActivityItem
-              key={achievement.id.toString()}
-              achievement={achievement}
-              index={index}
-            />
+            <ActivityItem key={achievement.id.toString()} achievement={achievement} index={index} />
           ))}
         </AnimatePresence>
       </ul>
@@ -111,13 +107,13 @@ const ActivityItem: FC<ActivityItemProps> = ({ achievement, index }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{
         layout: {
-          type: "spring",
+          type: 'spring',
           stiffness: 420,
           damping: 40,
           mass: 0.8,
-          delay: 0.3 - index * 0.05,
+          delay: 0.3 - index * 0.05
         },
-        delay: 0.4,
+        delay: 0.4
       }}
       style={{ height: ITEM_HEIGHT }}
       className="flex shrink-0 items-center gap-3 rounded-lg border border-accent-200 bg-accent-100 px-4 text-accent-900 shadow-sm"
@@ -144,10 +140,7 @@ export const ActivityFeedSkeleton: FC = () => {
         <div className="size-8 shrink-0 rounded-sm bg-accent-300/60 shadow-sm" />
         <h2 className="text-2xl font-bold text-accent-900">Recent activity</h2>
       </div>
-      <ul
-        className="flex list-none flex-col gap-3"
-        style={{ height: LIST_HEIGHT + 20 }}
-      >
+      <ul className="flex list-none flex-col gap-3" style={{ height: LIST_HEIGHT + 20 }}>
         {Array.from({ length: MAX_ITEMS }).map((_, i) => (
           <li
             key={i}

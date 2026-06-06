@@ -209,7 +209,7 @@ export const levels = {
 
 const vote = achievement('vote', 20, z.object({ identificationId: z.number() }));
 const comment = achievement('comment', 20, z.object({ identificationId: z.number() }));
-const onboard = achievement('onboard', 200, z.object({ message: z.string() }));
+const onboard = achievement('onboard', 200, z.object({ message: z.string(), publicMessage: z.string().optional() }));
 const identify = achievement('identify', 300, z.object({ identificationId: z.number() }));
 const shiny = achievement('shiny', 1000, z.object({ identificationId: z.number() }));
 

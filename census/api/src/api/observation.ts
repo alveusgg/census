@@ -10,7 +10,7 @@ import {
   mergeObservations,
   ObservationPayload
 } from '../services/observations/observations.js';
-import { procedure, procedureWithPermissions, router } from '../trpc/trpc.js';
+import { cache, procedure, procedureWithPermissions, router } from '../trpc/trpc.js';
 import { useUser } from '../utils/env/env.js';
 
 export const Pagination = z.object({
@@ -40,6 +40,11 @@ export type Query = z.infer<typeof Query>;
 export default router({
   createObservationsFromCapture: procedureWithPermissions('capture')
     .input(z.object({ captureId: z.number(), observations: z.array(ObservationPayload) }))
+    .use(
+      cache.mutation({
+        keys: [['observations'], ['captures'], ['users', 'identifications']]
+      })
+    )
     .mutation(async ({ input }) => {
       return await createObservationsFromCapture(input.captureId, input.observations);
     }),
@@ -52,18 +57,33 @@ export default router({
 
   delete: procedureWithPermissions('moderate')
     .input(z.object({ observationId: z.number() }))
+    .use(
+      cache.mutation({
+        keys: [['observations'], ['identifications'], ['users', 'identifications'], ['captures']]
+      })
+    )
     .mutation(async ({ input }) => {
       return await deleteObservation(input.observationId);
     }),
 
   locate: procedureWithPermissions('capture')
     .input(z.object({ id: z.number(), location: z.object({ x: z.number(), y: z.number() }) }))
+    .use(
+      cache.mutation({
+        keys: [['observations'], ['identifications']]
+      })
+    )
     .mutation(async ({ input }) => {
       return await locateObservation(input.id, input.location);
     }),
 
   merge: procedureWithPermissions('moderate')
     .input(z.object({ targetObservationId: z.number(), sourceObservationIds: z.array(z.number()).min(1) }))
+    .use(
+      cache.mutation({
+        keys: [['observations'], ['identifications'], ['users', 'identifications'], ['captures']]
+      })
+    )
     .mutation(async ({ input }) => {
       return await mergeObservations(input.targetObservationId, input.sourceObservationIds);
     }),
@@ -100,7 +120,9 @@ export default router({
     };
   }),
 
-  unconfirmedCount: procedure.query(async () => {
-    return await getUnconfirmedObservationCount();
-  })
+  unconfirmedCount: procedure
+    .use(cache.query({ key: ['observations', 'unconfirmedCount'], ttl: 30 }))
+    .query(async () => {
+      return await getUnconfirmedObservationCount();
+    })
 });

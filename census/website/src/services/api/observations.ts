@@ -1,4 +1,10 @@
-import { infiniteQueryOptions, keepPreviousData, queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  infiniteQueryOptions,
+  keepPreviousData,
+  queryOptions,
+  useMutation,
+  useQueryClient
+} from '@tanstack/react-query';
 import { key, useAPI } from '../query/hooks';
 import { RouterOutput, TypeFromOutput } from './helpers';
 
@@ -71,6 +77,8 @@ export const useLocateObservation = () => {
       await trpc.observation.locate.mutate({ id, location }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: key('observations') });
+      queryClient.invalidateQueries({ queryKey: key('identifications') });
+      queryClient.invalidateQueries({ queryKey: key('identification') });
     }
   });
 };
@@ -97,6 +105,10 @@ export const useDeleteObservation = () => {
     },
     onSuccess: () => {
       client.invalidateQueries({ queryKey: key('observations') });
+      client.invalidateQueries({ queryKey: key('identifications') });
+      client.invalidateQueries({ queryKey: key('identification') });
+      client.invalidateQueries({ queryKey: key('captures') });
+      client.invalidateQueries({ queryKey: key('users') });
     }
   });
 };

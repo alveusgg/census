@@ -11,7 +11,7 @@ import {
 import { getPlaceInLeaderboard, getPointsForUser } from '../services/points/points.js';
 import { getCurrentSeason } from '../services/seasons/season.js';
 import { getUser, onboardUser } from '../services/users/index.js';
-import { procedure, router } from '../trpc/trpc.js';
+import { cache, procedure, router } from '../trpc/trpc.js';
 import { useUser } from '../utils/env/env.js';
 
 export default router({
@@ -19,14 +19,21 @@ export default router({
     const user = useUser();
     return user;
   }),
-  onboard: procedure.input(OnboardingFormSchema).mutation(async ({ input, ctx }) => {
-    const { id } = useUser();
-    const user = await getUser(id);
-    if (user.status !== 'pending') throw new BadRequestError(`You have already been onboarded.`);
-    await onboardUser(id, input);
-    ctx.points();
-    ctx.achievements();
-  }),
+  onboard: procedure
+    .input(OnboardingFormSchema)
+    .use(
+      cache.mutation({
+        keys: [['users'], ['users', 'leaderboard'], ['users', 'leaderboardPage'], ['achievements']]
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { id } = useUser();
+      const user = await getUser(id);
+      if (user.status !== 'pending') throw new BadRequestError(`You have already been onboarded.`);
+      await onboardUser(id, input);
+      ctx.points();
+      ctx.achievements();
+    }),
   points: procedure.input(z.object({ from: z.date().optional() })).query(async ({ input }) => {
     const user = useUser();
     if (!input.from) {
@@ -52,17 +59,46 @@ export default router({
       const user = useUser();
       return getAllAchievements(user.id);
     }),
-    redeem: procedure.input(z.number()).mutation(async ({ input, ctx }) => {
-      const user = useUser();
-      await redeemAchievementAndAwardPoints(user.id, input);
-      ctx.points();
-    }),
-    redeemAll: procedure.mutation(async ({ ctx }) => {
-      const user = useUser();
-      await redeemAll(user.id);
-      ctx.points();
-      ctx.achievements();
-    })
+    redeem: procedure
+      .input(z.number())
+      .use(
+        cache.mutation({
+          keys: [
+            ['users', 'profile'],
+            ['users', 'leaderboard'],
+            ['users', 'leaderboardPage'],
+            ['achievements'],
+            ['seasons', 'shinies'],
+            ['identifications'],
+            ['observations']
+          ]
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        const user = useUser();
+        await redeemAchievementAndAwardPoints(user.id, input);
+        ctx.points();
+      }),
+    redeemAll: procedure
+      .use(
+        cache.mutation({
+          keys: [
+            ['users', 'profile'],
+            ['users', 'leaderboard'],
+            ['users', 'leaderboardPage'],
+            ['achievements'],
+            ['seasons', 'shinies'],
+            ['identifications'],
+            ['observations']
+          ]
+        })
+      )
+      .mutation(async ({ ctx }) => {
+        const user = useUser();
+        await redeemAll(user.id);
+        ctx.points();
+        ctx.achievements();
+      })
   },
   permissions: procedure.query(async () => {
     return getPermissions();

@@ -122,10 +122,20 @@ export const onboardUser = async (id: number, data: OnboardingFormSchema) => {
       await recordAchievement(
         'onboard',
         id,
-        { payload: { message: 'You signed up to the Alveus Pollinator Census!' } },
+        {
+          payload: {
+            message: 'You signed up to the Alveus Pollinator Census!',
+            publicMessage: 'signed up for the census'
+          }
+        },
         true
       );
-      await recordAchievement('onboard', id, { payload: { message: 'Click to redeem your first achievement!' } });
+      await recordAchievement('onboard', id, {
+        payload: {
+          message: 'Click to redeem your first achievement!',
+          publicMessage: 'redeemed their first achievement'
+        }
+      });
       await tx.insert(responses).values({ userId: id, type: 'onboarding', payload: data });
     });
   });

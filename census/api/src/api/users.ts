@@ -3,9 +3,13 @@ import { defineListener } from '../db/defineListener.js';
 import { getRecentRedeemedAchievements } from '../services/points/achievement.js';
 import { getLeaderboard, getLeaderboardPage } from '../services/points/points.js';
 import { getCurrentSeason } from '../services/seasons/season.js';
-import { getUserIdentifications, getUserPublicProfile, getUsers } from '../services/users/index.js';
-import { updateStickerPositionsForUser } from '../services/users/index.js';
-import { procedure, procedureWithPermissions, publicProcedure, router } from '../trpc/trpc.js';
+import {
+  getUserIdentifications,
+  getUserPublicProfile,
+  getUsers,
+  updateStickerPositionsForUser
+} from '../services/users/index.js';
+import { cache, procedure, procedureWithPermissions, publicProcedure, router } from '../trpc/trpc.js';
 import { useUser } from '../utils/env/env.js';
 import { Pagination } from './observation.js';
 
@@ -15,34 +19,71 @@ const recentAchievements = defineListener({
 });
 
 export default router({
-  users: procedureWithPermissions('moderate').query(async () => {
-    return await getUsers();
-  }),
+  users: procedureWithPermissions('moderate')
+    .use(cache.query({ key: ['users', 'list'], ttl: 60 }))
+    .query(async () => {
+      return await getUsers();
+    }),
 
-  profile: procedure.input(z.object({ id: z.number().int().positive() })).query(async ({ input }) => {
-    return getUserPublicProfile(input.id);
-  }),
+  profile: procedure
+    .input(z.object({ id: z.number().int().positive() }))
+    .use(cache.query({ key: ({ input }) => ['users', 'profile', input.id], ttl: 60 }))
+    .query(async ({ input }) => {
+      return getUserPublicProfile(input.id);
+    }),
 
   identifications: procedure
     .input(z.object({ id: z.number().int().positive(), meta: Pagination }))
+    .use(
+      cache.query({
+        key: ({ input }) => ['users', 'identifications', input.id, input.meta.page, input.meta.size],
+        ttl: 60
+      })
+    )
     .query(async ({ input }) => {
       return getUserIdentifications(input.id, input.meta.page, input.meta.size);
     }),
 
   updateStickerPositions: procedure.input(z.object({ positions: z.unknown() })).mutation(async ({ input }) => {
     const user = useUser();
-    return await updateStickerPositionsForUser(user.id, input.positions);
+    const result = await updateStickerPositionsForUser(user.id, input.positions);
+    cache.invalidate([
+      ['users', 'list'],
+      ['users', 'profile', user.id]
+    ]);
+    return result;
   }),
 
-  leaderboard: procedure.input(z.object({ from: z.date().optional() })).query(async ({ input }) => {
-    if (!input.from) {
-      const season = await getCurrentSeason();
-      return await getLeaderboard(season.startDate, { limit: 3 });
-    }
-    return await getLeaderboard(input.from, { limit: 3 });
-  }),
+  leaderboard: procedure
+    .input(z.object({ from: z.date().optional() }))
+    .use(
+      cache.query({
+        key: ({ input }) => ['users', 'leaderboard', input.from?.toISOString() ?? 'current'],
+        ttl: 60
+      })
+    )
+    .query(async ({ input }) => {
+      if (!input.from) {
+        const season = await getCurrentSeason();
+        return await getLeaderboard(season.startDate, { limit: 3 });
+      }
+      return await getLeaderboard(input.from, { limit: 3 });
+    }),
   leaderboardPage: procedure
     .input(z.object({ from: z.date().optional(), meta: Pagination, offset: z.number().default(0) }))
+    .use(
+      cache.query({
+        key: ({ input }) => [
+          'users',
+          'leaderboardPage',
+          input.from?.toISOString() ?? 'current',
+          input.meta.page,
+          input.meta.size,
+          input.offset
+        ],
+        ttl: 60
+      })
+    )
     .query(async ({ input }) => {
       if (!input.from) {
         const season = await getCurrentSeason();

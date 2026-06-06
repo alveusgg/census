@@ -47,9 +47,13 @@ interface CreateCaptureFromClipInput {
 
 export const useCreateCaptureFromClip = () => {
   const trpc = useAPI();
+  const client = useQueryClient();
   return useMutation({
     mutationFn: ({ id, userIsVerySureItIsNeeded }: CreateCaptureFromClipInput) => {
       return trpc.capture.createFromClip.mutate({ id, userIsVerySureItIsNeeded });
+    },
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: key('captures') });
     }
   });
 };
@@ -69,6 +73,9 @@ export const useCreateObservationsFromCapture = () => {
         observations
       });
       await client.invalidateQueries({ queryKey: key('capture', captureId.toString()) });
+      await client.invalidateQueries({ queryKey: key('captures') });
+      await client.invalidateQueries({ queryKey: key('observations') });
+      await client.invalidateQueries({ queryKey: key('users') });
       return result;
     }
   });

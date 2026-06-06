@@ -2,8 +2,8 @@ import { StickerValueMap } from '@/components/stickers';
 import { Breadcrumbs } from '@/layouts/Breadcrumbs';
 import { useMe } from '@/services/api/me';
 import { useUserProfile } from '@/services/api/users';
-import { useAPI } from '@/services/query/hooks';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { key, useAPI } from '@/services/query/hooks';
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { FC } from 'react';
 import { ProfileIdentificationFeed } from './ProfileIdentificationFeed';
 import { ProfilePageLayout } from './ProfilePageLayout';
@@ -15,10 +15,14 @@ export const MyProfile: FC = () => {
   const profile = useSuspenseQuery(useUserProfile(me.data.id));
 
   const api = useAPI();
+  const queryClient = useQueryClient();
   const mutation = useMutation({
     mutationFn: async (positions: StickerValueMap) => {
       await api.users.updateStickerPositions.mutate({ positions });
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: key('users') });
+    }
   });
 
   const stickers = useProfileStickers(profile.data, me.data.id);
