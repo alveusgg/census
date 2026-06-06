@@ -18,6 +18,8 @@ export const ShiniesForSeason = () => {
 
   const [ref, { height }] = useMeasure();
   const [expanded, setExpanded] = useState(false);
+  const shinyCount = shinies.data.length;
+  const shinyBugLabel = shinyCount === 1 ? 'special bug' : 'special bugs';
 
   const identificationModalProps = useModal<IdentificationProps>();
 
@@ -36,8 +38,8 @@ export const ShiniesForSeason = () => {
           <div className="flex-1 flex flex-col gap-2">
             <h1 className="text-4xl tracking-wide font-serif font-bold text-accent-900">Shiny Bugs</h1>
             <p className="text-balance">
-              our resident entomologists have selected 24 special bugs that they want to find. this resets every season
-              so get spotting and maybe you’ll unlock one and earn the{' '}
+              our resident entomologists have selected {shinyCount} {shinyBugLabel} that they want to find. this resets
+              every season so get spotting and maybe you’ll unlock one and earn the{' '}
               <span className="font-bold">rodential energy sticker!</span>
             </p>
           </div>
