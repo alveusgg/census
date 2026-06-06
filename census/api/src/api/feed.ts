@@ -3,7 +3,7 @@ import z from 'zod';
 import { subscribeToChanges } from '../db/listen.js';
 import { completeCaptureRequest, getCapture, getPendingCapturesForFeeds } from '../services/capture/index.js';
 import { ensureKeyForFeeds } from '../services/feed/index.js';
-import { publicProcedure, router } from '../trpc/trpc.js';
+import { cache, publicProcedure, router } from '../trpc/trpc.js';
 import { report } from '../utils/logs.js';
 import { getPresignedUploadURL } from '../utils/storage.js';
 
@@ -41,6 +41,11 @@ export default router({
 
   completeCaptureRequest: publicProcedure
     .input(z.object({ captureId: z.number(), videoUrl: z.string(), key: z.string() }))
+    .use(
+      cache.mutation({
+        keys: ({ input }) => [['captures'], ['captures', 'detail', input.captureId]]
+      })
+    )
     .mutation(async ({ input }) => {
       const capture = await getCapture(input.captureId);
       await ensureKeyForFeeds([capture.feedId], input.key);

@@ -1,12 +1,14 @@
-import { CustomError, ForbiddenError, NotAuthenticatedError } from '@alveusgg/error';
+import { CustomError, ForbiddenError, InternalServerError, NotAuthenticatedError } from '@alveusgg/error';
 import { context } from '@opentelemetry/api';
+import { TTLCache } from '@isaacs/ttlcache';
 import {
   SEMATTRS_HTTP_METHOD,
   SEMATTRS_HTTP_STATUS_CODE,
   SEMATTRS_HTTP_URL
 } from '@opentelemetry/semantic-conventions';
 import * as Sentry from '@sentry/node';
-import { initTRPC, TRPCError } from '@trpc/server';
+import { initTRPC, TRPCError, TRPCMiddlewareBuilder } from '@trpc/server';
+import { middlewareMarker } from '@trpc/server/unstable-core-do-not-import';
 import { eq } from 'drizzle-orm';
 import { flatten } from 'flat';
 import { createRemoteJWKSet, errors as joseErrors, jwtVerify } from 'jose';
@@ -33,6 +35,146 @@ const t = initTRPC.context<typeof createContext>().create({
   }
 });
 export const router = t.router;
+
+type CacheKeyPart = string | number | boolean | null;
+type CacheKey = readonly CacheKeyPart[];
+type CacheKeyResolver<TInput> = CacheKey | ((opts: { input: TInput; path: string }) => CacheKey);
+type CacheKeysResolver<TInput> = readonly CacheKey[] | ((opts: { input: TInput; path: string }) => readonly CacheKey[]);
+type Context = Awaited<ReturnType<typeof createContext>>;
+type CacheMiddleware<TInput> = TRPCMiddlewareBuilder<Context, object, object, TInput>;
+
+type CacheEntry = {
+  key: CacheKey;
+  data: unknown;
+};
+
+const operationCache = new TTLCache<string, CacheEntry>({
+  max: 1000,
+  checkAgeOnGet: true
+});
+
+function resolveCacheKey<TInput>(resolver: CacheKeyResolver<TInput>, opts: { input: TInput; path: string }) {
+  return typeof resolver === 'function' ? resolver(opts) : resolver;
+}
+
+function resolveCacheKeys<TInput>(resolver: CacheKeysResolver<TInput>, opts: { input: TInput; path: string }) {
+  return typeof resolver === 'function' ? resolver(opts) : resolver;
+}
+
+function validateCacheKey(key: CacheKey) {
+  if (!Array.isArray(key) || key.length === 0) {
+    throw new InternalServerError('Operation cache keys must be non-empty arrays.');
+  }
+
+  for (const part of key) {
+    if (part === null) continue;
+    const type = typeof part;
+    if (type !== 'string' && type !== 'number' && type !== 'boolean') {
+      throw new InternalServerError('Operation cache key parts must be strings, numbers, booleans, or null.');
+    }
+  }
+}
+
+function serializeCacheKey(key: CacheKey) {
+  validateCacheKey(key);
+  return JSON.stringify(key);
+}
+
+function cacheKeyStartsWith(key: CacheKey, prefix: CacheKey) {
+  if (prefix.length > key.length) return false;
+
+  return prefix.every((part, index) => part === key[index]);
+}
+
+function invalidateCacheKeys(keys: readonly CacheKey[]) {
+  for (const key of keys) {
+    validateCacheKey(key);
+  }
+
+  for (const [serialized, entry] of operationCache.entries()) {
+    if (keys.some(key => cacheKeyStartsWith(entry.key, key))) {
+      operationCache.delete(serialized);
+    }
+  }
+}
+
+function validateTTL(ttl: number) {
+  if (!Number.isFinite(ttl) || ttl <= 0) {
+    throw new InternalServerError('Operation cache ttl must be greater than 0 seconds.');
+  }
+}
+
+function flagOperationCache(status: 'hit' | 'miss', key: string, ttl: number) {
+  Sentry.getActiveSpan()?.setAttributes({
+    'cache.status': status,
+    'cache.key': key,
+    'cache.ttl': ttl
+  });
+}
+
+export const cache = {
+  query<TInput = unknown>(options: { key: CacheKeyResolver<TInput>; ttl: number }) {
+    validateTTL(options.ttl);
+
+    const middleware = t.middleware(async opts => {
+      if (opts.type !== 'query') {
+        throw new InternalServerError('cache.query can only be used on queries.');
+      }
+
+      const key = resolveCacheKey(options.key, { input: opts.input as TInput, path: opts.path });
+      const serialized = serializeCacheKey(key);
+      const cached = operationCache.get(serialized, { checkAgeOnGet: true });
+
+      if (cached) {
+        flagOperationCache('hit', serialized, options.ttl);
+
+        return {
+          ok: true,
+          data: cached.data,
+          marker: middlewareMarker
+        };
+      }
+
+      flagOperationCache('miss', serialized, options.ttl);
+
+      const result = await opts.next();
+
+      if (result.ok) {
+        operationCache.set(serialized, { key, data: result.data }, { ttl: options.ttl * 1000 });
+      }
+
+      return result;
+    });
+
+    return middleware as unknown as CacheMiddleware<TInput>;
+  },
+
+  invalidate(keys: readonly CacheKey[]) {
+    invalidateCacheKeys(keys);
+  },
+
+  mutation<TInput = unknown>(options: { key: CacheKeyResolver<TInput> } | { keys: CacheKeysResolver<TInput> }) {
+    const middleware = t.middleware(async opts => {
+      if (opts.type !== 'mutation') {
+        throw new InternalServerError('cache.mutation can only be used on mutations.');
+      }
+
+      const result = await opts.next();
+
+      if (result.ok) {
+        const keys =
+          'keys' in options
+            ? resolveCacheKeys(options.keys, { input: opts.input as TInput, path: opts.path })
+            : [resolveCacheKey(options.key, { input: opts.input as TInput, path: opts.path })];
+        invalidateCacheKeys(keys);
+      }
+
+      return result;
+    });
+
+    return middleware as unknown as CacheMiddleware<TInput>;
+  }
+};
 
 const AlveusAuthProviderMetadata = z.object({
   issuer: z.string(),

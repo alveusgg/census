@@ -10,7 +10,7 @@ import {
   getCaptures,
   processingCaptureRequest
 } from '../services/capture/index.js';
-import { procedure, procedureWithPermissions, publicProcedure, router } from '../trpc/trpc.js';
+import { cache, procedure, procedureWithPermissions, publicProcedure, router } from '../trpc/trpc.js';
 import { report } from '../utils/logs.js';
 import { Pagination } from './observation.js';
 
@@ -43,17 +43,21 @@ export default router({
     })
   },
 
-  captures: procedure.input(z.object({ meta: Pagination })).query(async ({ input }) => {
-    const data = await getCaptures(input.meta);
-    const count = await getCaptureCount();
-    return {
-      meta: { ...input.meta, total: count },
-      data
-    };
-  }),
+  captures: procedure
+    .input(z.object({ meta: Pagination }))
+    .use(cache.query({ key: ({ input }) => ['captures', 'list', input.meta.page, input.meta.size], ttl: 30 }))
+    .query(async ({ input }) => {
+      const data = await getCaptures(input.meta);
+      const count = await getCaptureCount();
+      return {
+        meta: { ...input.meta, total: count },
+        data
+      };
+    }),
 
   createFromClip: procedureWithPermissions('capture')
     .input(z.object({ id: z.string(), userIsVerySureItIsNeeded: z.boolean().optional() }))
+    .use(cache.mutation({ key: ['captures'] }))
     .mutation(async ({ input }) => {
       const clip = await createFromClip(input.id, input.userIsVerySureItIsNeeded);
 
@@ -62,9 +66,11 @@ export default router({
         requestClipFromCamManager(clip.capture.startCaptureAt, clip.capture.endCaptureAt)
           .then(async url => {
             await completeCaptureRequest(clip.capture.id, url);
+            cache.invalidate([['captures']]);
           })
           .catch(async e => {
             await failCaptureRequest(clip.capture.id);
+            cache.invalidate([['captures']]);
             report(e);
             console.error(e);
           });

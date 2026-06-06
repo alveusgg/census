@@ -54,15 +54,35 @@ export const useAllAchievements = () => {
 
 export const useRedeemAchievement = () => {
   const api = useAPI();
+  const client = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) => api.me.achievements.redeem.mutate(id)
+    mutationFn: (id: number) => api.me.achievements.redeem.mutate(id),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: key('achievements') });
+      client.invalidateQueries({ queryKey: key('points') });
+      client.invalidateQueries({ queryKey: key('users') });
+      client.invalidateQueries({ queryKey: key('seasons') });
+      client.invalidateQueries({ queryKey: key('identifications') });
+      client.invalidateQueries({ queryKey: key('identification') });
+      client.invalidateQueries({ queryKey: key('observations') });
+    }
   });
 };
 
 export const useRedeemAllAchievements = () => {
   const api = useAPI();
+  const client = useQueryClient();
   return useMutation({
-    mutationFn: () => api.me.achievements.redeemAll.mutate()
+    mutationFn: () => api.me.achievements.redeemAll.mutate(),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: key('achievements') });
+      client.invalidateQueries({ queryKey: key('points') });
+      client.invalidateQueries({ queryKey: key('users') });
+      client.invalidateQueries({ queryKey: key('seasons') });
+      client.invalidateQueries({ queryKey: key('identifications') });
+      client.invalidateQueries({ queryKey: key('identification') });
+      client.invalidateQueries({ queryKey: key('observations') });
+    }
   });
 };
 
@@ -105,6 +125,9 @@ export const useOnboardUser = () => {
     },
     onSuccess: () => {
       client.invalidateQueries({ queryKey: key('permissions') });
+      client.invalidateQueries({ queryKey: key('users') });
+      client.invalidateQueries({ queryKey: key('points') });
+      client.invalidateQueries({ queryKey: key('achievements') });
     }
   });
 };

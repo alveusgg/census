@@ -9,6 +9,8 @@ export const useSuggestIdentification = () => {
     mutationFn: async ({ observationId, iNatId }: { observationId: number; iNatId: number }) => {
       const results = await trpc.identification.suggest.mutate({ observationId, iNatId });
       await queryClient.invalidateQueries({ queryKey: key('observations') });
+      await queryClient.invalidateQueries({ queryKey: key('identifications') });
+      await queryClient.invalidateQueries({ queryKey: key('users') });
       return results;
     }
   });
@@ -22,6 +24,8 @@ export const useSuggestAccessoryIdentification = () => {
     mutationFn: async ({ observationId, iNatId }: { observationId: number; iNatId: number }) => {
       const results = await trpc.identification.suggestAccessory.mutate({ observationId, iNatId });
       await queryClient.invalidateQueries({ queryKey: key('observations') });
+      await queryClient.invalidateQueries({ queryKey: key('identifications') });
+      await queryClient.invalidateQueries({ queryKey: key('users') });
       return results;
     }
   });
@@ -35,6 +39,10 @@ export const useAddFeedbackToIdentification = () => {
     mutationFn: async ({ id, type, comment }: { id: number; type: 'agree' | 'disagree'; comment?: string }) => {
       const results = await trpc.identification.feedback.mutate({ id, type, comment });
       await queryClient.invalidateQueries({ queryKey: key('observations') });
+      await queryClient.invalidateQueries({ queryKey: key('identifications') });
+      await queryClient.invalidateQueries({ queryKey: key('identification', id.toString()) });
+      await queryClient.invalidateQueries({ queryKey: key('users') });
+      await queryClient.invalidateQueries({ queryKey: key('points') });
       return results;
     }
   });
@@ -73,6 +81,9 @@ export const useConfirmIdentification = () => {
       await trpc.identification.confirm.mutate({ id, comment }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: key('observations') });
+      queryClient.invalidateQueries({ queryKey: key('identifications') });
+      queryClient.invalidateQueries({ queryKey: key('identification') });
+      queryClient.invalidateQueries({ queryKey: key('users') });
     }
   });
 };
