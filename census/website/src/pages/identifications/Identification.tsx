@@ -155,12 +155,6 @@ const Identification: FC<IdentificationProps> = ({ identificationId }) => {
                   image={{ width: image.width, height: image.height }}
                   options={{ extract: image.boundingBox }}
                 />
-                <Square
-                  className="absolute inset-0 w-full h-full blur-2xl"
-                  src={image.url}
-                  image={{ width: image.width, height: image.height }}
-                  options={{ extract: image.boundingBox, width: 25, height: 25 }}
-                />
               </div>
             </Slide>
           ))}
