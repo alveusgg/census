@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { subscribeToChanges } from '../db/listen.js';
+import { defineListener, defineParameterizedListener } from '../db/defineListener.js';
 import { requestClipFromCamManager } from '../services/cams/index.js';
 import {
   completeCaptureRequest,
@@ -14,22 +14,32 @@ import { procedure, procedureWithPermissions, publicProcedure, router } from '..
 import { report } from '../utils/logs.js';
 import { Pagination } from './observation.js';
 
+const captures = defineParameterizedListener({
+  key: (id: number) => id.toString(),
+  create: (id: number) =>
+    defineListener({
+      changes: { table: 'captures', id, events: ['update'] },
+      handler: async ({ end }) => {
+        const capture = await getCapture(id);
+
+        if (capture.status === 'complete') {
+          end.abort();
+        }
+
+        return capture;
+      }
+    })
+});
+
 export default router({
   // Keep this public with the matching SSE subscription; see docs/dev/api/sse-subscriptions.md.
   capture: publicProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
-    return getCapture(input.id);
+    return await captures.get(input.id);
   }),
   live: {
     // Public because EventSource reconnects can reuse stale auth; see docs/dev/api/sse-subscriptions.md.
-    capture: publicProcedure.input(z.object({ id: z.number() })).subscription(async function* ({ input }) {
-      const capture = await getCapture(input.id);
-      if (capture.status === 'complete') return;
-
-      for await (const _ of subscribeToChanges({ table: 'captures', events: ['update'], id: input.id })) {
-        const capture = await getCapture(input.id);
-        yield capture;
-        if (capture.status === 'complete') return;
-      }
+    capture: publicProcedure.input(z.object({ id: z.number() })).subscription(async function* ({ input, signal }) {
+      yield* captures.subscribe(input.id, { signal });
     })
   },
 

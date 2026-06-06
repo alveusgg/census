@@ -6,39 +6,36 @@ import { assert } from '../utils/assert.js';
 export const ee = new EventEmitterAsyncResource({
   name: 'Database Changes'
 });
+ee.setMaxListeners(1_000);
 
 interface SubscribeParams {
   events: ('insert' | 'update' | 'delete')[];
 }
 
-export const subscribeToChanges = async function* (params: SubscribeParams & KeyParams) {
-  for await (const [payload] of on(ee, '*')) {
-    const { name, change } = payload as Event;
-    if (getReceiveKey(params) === name && params.events.includes(change.event)) {
-      yield change;
+export const subscribeToChanges = async function* (params: SubscribeParams & KeyParams, options?: { signal?: AbortSignal }) {
+  const key = getReceiveKey(params);
+
+  for await (const [change] of on(ee, key, { signal: options?.signal })) {
+    if (params.events.includes((change as Change).event)) {
+      yield change as Change;
     }
   }
 };
 
 export const getReceiveKey = (params: KeyParams) => {
-  if (params.id) return `${params.table}:${params.id}`;
+  if (params.id !== undefined) return `${params.table}:${params.id}`;
   return params.table;
 };
 
 export const getEmitKeys = (params: KeyParams) => {
   const keys: string[] = [params.table];
-  if (params.id) keys.push(`${params.table}:${params.id}`);
+  if (params.id !== undefined) keys.push(`${params.table}:${params.id}`);
   return keys;
 };
 
 interface KeyParams {
   table: string;
   id?: number | string;
-}
-
-interface Event {
-  name: string;
-  change: Change;
 }
 
 interface Change {
@@ -57,5 +54,5 @@ export const listen = async (row: Row | null, info: ReplicationEvent) => {
   };
 
   const keys = getEmitKeys({ table: info.relation.table, id: row.id });
-  keys.forEach(key => ee.emit('*', { name: key, change }));
+  keys.forEach(key => ee.emit(key, change));
 };

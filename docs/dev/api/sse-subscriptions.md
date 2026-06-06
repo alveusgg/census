@@ -9,3 +9,5 @@ For this reason, prefer `publicProcedure` for SSE subscriptions whose data is sa
 Public subscriptions should also have matching public snapshot queries when the same UI first loads data with a query and then keeps it updated with a subscription.
 
 Before making an SSE subscription public, verify that the handler and everything it calls does not use `useUser()`, `getPermissions()`, or user-specific side effects.
+
+For the planned listener fan-out and coalescing implementation, see [SSE listener scalability implementation plan](./sse-listener-scalability-plan.md).
