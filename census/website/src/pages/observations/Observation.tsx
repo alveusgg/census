@@ -100,8 +100,7 @@ interface ObservationImageProps {
 
 const ObservationImage: FC<ObservationImageProps> = ({ image }) => {
   const [hasLoadedHighResolutionImage, setHasLoadedHighResolutionImage] = useState(false);
-  const [hasLoadedLowResolutionImage, setHasLoadedLowResolutionImage] = useState(false);
-  const isProcessingImages = !hasLoadedHighResolutionImage && !hasLoadedLowResolutionImage;
+  const isProcessingImages = !hasLoadedHighResolutionImage;
 
   return (
     <div className="w-full h-full overflow-clip relative">
@@ -121,17 +120,6 @@ const ObservationImage: FC<ObservationImageProps> = ({ image }) => {
         image={{ width: image.width, height: image.height }}
         options={{ extract: image.boundingBox }}
         onLoad={() => setHasLoadedHighResolutionImage(true)}
-      />
-      <Square
-        className="absolute inset-0 z-[1] w-full h-full blur-2xl"
-        src={image.url}
-        image={{ width: image.width, height: image.height }}
-        options={{
-          extract: image.boundingBox,
-          width: 25,
-          height: 25
-        }}
-        onLoad={() => setHasLoadedLowResolutionImage(true)}
       />
     </div>
   );
