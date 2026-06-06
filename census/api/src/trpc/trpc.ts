@@ -76,7 +76,6 @@ const validateJWT = async (token: string) => {
       payload
     };
   } catch (error) {
-    console.error('error', error);
     if (error instanceof joseErrors.JWTExpired) {
       throw new NotAuthenticatedError('Your token has expired.');
     }
@@ -179,10 +178,10 @@ export const procedure = loggedProcedure.use(async ({ ctx, next }) => {
     context.active().setValue(Symbol.for('ai.user.authUserId'), user.id);
     return withUser({ ...payload.data, ...user, points: ctx.points, achievements: ctx.achievements }, next);
   } catch (error) {
-    console.error('error', error);
     // Preserve the specific auth failure reason; only wrap unexpected errors
     // (e.g. downstream user lookup failures) as a generic auth error.
     if (error instanceof NotAuthenticatedError) throw error;
+    console.error('error', error);
     throw new NotAuthenticatedError('Your token could not be authenticated.');
   }
 });

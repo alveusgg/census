@@ -48,6 +48,7 @@ export const useRecentAchievements = () => {
     }
   });
 
+  // The matching server subscription is intentionally public; see docs/dev/api/sse-subscriptions.md.
   useEffect(() => {
     const subscription = api.users.live.recentAchievements.subscribe(undefined, callback);
     return () => subscription.unsubscribe();

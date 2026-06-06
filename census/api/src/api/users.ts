@@ -4,7 +4,7 @@ import { getRecentRedeemedAchievements } from '../services/points/achievement.js
 import { getLeaderboard, getLeaderboardPage } from '../services/points/points.js';
 import { getCurrentSeason } from '../services/seasons/season.js';
 import { getUserIdentifications, getUserPublicProfile, getUsers } from '../services/users/index.js';
-import { procedure, procedureWithPermissions, router } from '../trpc/trpc.js';
+import { procedure, procedureWithPermissions, publicProcedure, router } from '../trpc/trpc.js';
 import { Pagination } from './observation.js';
 import { useUser } from '../utils/env/env.js';
 import { updateStickerPositionsForUser } from '../services/users/index.js';
@@ -46,11 +46,13 @@ export default router({
 
       return await getLeaderboardPage(input.from, input.meta.page, input.meta.size, input.offset);
     }),
-  recentAchievements: procedure.query(async () => {
+  // Keep this public with the matching SSE subscription; see docs/dev/api/sse-subscriptions.md.
+  recentAchievements: publicProcedure.query(async () => {
     return await getRecentRedeemedAchievements(7);
   }),
   live: {
-    recentAchievements: procedure.subscription(async function* () {
+    // Public because EventSource reconnects can reuse stale auth; see docs/dev/api/sse-subscriptions.md.
+    recentAchievements: publicProcedure.subscription(async function* () {
       yield await getRecentRedeemedAchievements(7);
 
       for await (const _ of subscribeToChanges({ table: 'achievements', events: ['insert', 'update'] })) {
