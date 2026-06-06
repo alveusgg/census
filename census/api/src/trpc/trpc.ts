@@ -20,7 +20,18 @@ import { getUserByProviderId } from '../services/users/index.js';
 import { useEnvironment, withUser } from '../utils/env/env.js';
 import { createContext } from './context.js';
 
-const t = initTRPC.context<typeof createContext>().create({ transformer: SuperJSON });
+const t = initTRPC.context<typeof createContext>().create({
+  transformer: SuperJSON,
+  sse: {
+    ping: {
+      enabled: true,
+      intervalMs: 15_000
+    },
+    client: {
+      reconnectAfterInactivityMs: 45_000
+    }
+  }
+});
 export const router = t.router;
 
 const AlveusAuthProviderMetadata = z.object({

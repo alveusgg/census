@@ -100,8 +100,7 @@ export const APIProvider: FC<PropsWithChildren> = ({ children }) => {
           condition: op => op.type === 'subscription',
           true: httpSubscriptionLink({
             url,
-            transformer: SuperJSON,
-            connectionParams: async () => ({ authorization: `Bearer ${await requestToken()}` })
+            transformer: SuperJSON
           }),
           false: httpBatchLink({
             url,
