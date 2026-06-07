@@ -4,9 +4,6 @@ import { randomUUID } from 'crypto';
 import { and, count, desc, eq, gte, inArray, lte, or, SQL, sql } from 'drizzle-orm';
 import ffmpeg from 'fluent-ffmpeg';
 import { createReadStream } from 'fs';
-import { writeFile } from 'fs/promises';
-import { ReadableStream } from 'node:stream/web';
-import { Readable } from 'stream';
 import { z } from 'zod';
 import { Pagination, Query } from '../../api/observation.js';
 import { BoundingBox, identifications, images, observations, sightings } from '../../db/schema/index.js';
@@ -16,7 +13,7 @@ import { createConcurrencyLimiter, createRetrier } from '../../utils/concurrency
 import { useEnvironment, useUser } from '../../utils/env/env.js';
 import { buildObjectUrl } from '../../utils/storage.js';
 import { runLongOperation } from '../../utils/teardown.js';
-import { getTemporaryFile, TemporaryFile } from '../../utils/tmp.js';
+import { TemporaryFile } from '../../utils/tmp.js';
 import { getPermissions } from '../auth/role.js';
 import { getCapture } from '../capture/index.js';
 
@@ -119,6 +116,7 @@ const createObservations = async (captureId: number, selections: Selection[], ni
     const capture = await getCapture(captureId);
     if (capture.status !== 'complete') throw new BadRequestError('Capture is not completed');
     assert(capture.videoUrl, 'Capture has no video URL');
+    const videoUrl = capture.videoUrl;
 
     await new Promise(resolve => setTimeout(resolve, 4000));
 
@@ -141,8 +139,7 @@ const createObservations = async (captureId: number, selections: Selection[], ni
       })
       .returning();
 
-    const video = await downloadVideo(capture.videoUrl);
-    const stats = await getStreamStats(video.path);
+    const stats = await getStreamStats(videoUrl);
     const width = stats.width;
     const height = stats.height;
     assert(width && height, 'Failed to get stream stats');
@@ -150,7 +147,7 @@ const createObservations = async (captureId: number, selections: Selection[], ni
     await Promise.all(
       selections.map(async ({ timestamp, boundingBox }) => {
         console.log(`Getting frame from video for timestamp ${timestamp}`);
-        const url = await getFrameFromVideo(video, stats, timestamp);
+        const url = await getFrameFromVideo(videoUrl, timestamp);
 
         await db.insert(images).values({
           sightingId: sighting.id,
@@ -164,7 +161,7 @@ const createObservations = async (captureId: number, selections: Selection[], ni
     );
 
     return await getObservation(observation.id);
-  }, 'Download clip & process images');
+  }, 'Processing capture images');
 };
 
 export const getImagesForObservationId = async (observationId: number) => {
@@ -322,69 +319,44 @@ const scaleBoundingBox = (boundingBox: BoundingBox, width: number, height: numbe
   };
 };
 
-export const getFrameFromVideo = async (video: TemporaryFile, stats: ffmpeg.FfprobeStream, timestamp: number) => {
+export const getFrameFromVideo = async (videoUrl: string, timestamp: number) => {
   const { storage, variables } = useEnvironment();
   console.log(`Extracting frame from video for timestamp ${timestamp}`);
-  const frame = await extractFrameFromVideo(video, timestamp, stats);
-  return await frameUploadLimiter.run(async () => {
-    return await frameUploadRetrier.run(async () => {
-      console.log(`Uploading frame to S3: ${frame.name}`);
-      try {
-        await storage.send(
-          new PutObjectCommand({
-            Bucket: variables.S3_BUCKET,
-            Key: frame.name,
-            Body: createReadStream(frame.path)
-          })
-        );
-        console.log(`Uploaded frame to S3: ${frame.name}`);
-        return buildObjectUrl(variables, frame.name);
-      } catch (error) {
-        console.error(`Failed to upload frame to S3: ${frame.name}`, error);
-        throw new DownstreamError('s3', `Failed to upload frame to S3: ${frame.name}`);
-      }
+  return await TemporaryFile.with(`${randomUUID()}.jpg`, async frame => {
+    await extractFrameFromVideo(videoUrl, timestamp, frame);
+    return await frameUploadLimiter.run(async () => {
+      return await frameUploadRetrier.run(async () => {
+        try {
+          await storage.send(
+            new PutObjectCommand({
+              Bucket: variables.S3_BUCKET,
+              Key: frame.name,
+              Body: createReadStream(frame.path)
+            })
+          );
+          return buildObjectUrl(variables, frame.name);
+        } catch (error) {
+          console.error(`Failed to upload frame to S3: ${frame.name}`, error);
+          throw new DownstreamError('s3', `Failed to upload frame to S3: ${frame.name}`);
+        }
+      });
     });
   });
 };
 
-// TODO: This should be promise memoized so videos aren't downloaded multiple times for one process
-export const downloadVideo = async (videoUrl: string) => {
-  return runLongOperation(async () => {
-    // The container has a limited amount of local storage, so we need to download the video to a temporary file
-    // but not keep it around for too long.
-    const url = new URL(videoUrl);
-    console.log(`Looking for existing video at ${url.pathname}`);
-    const existing = getTemporaryFile(url.pathname);
-    if (existing) {
-      console.log('Existing video found, returning...');
-      return await existing;
-    }
-    console.log('No existing video found, downloading...');
-
-    const response = await fetch(url);
-    if (!response.ok || !response.body) throw new DownstreamError('ffmpeg', 'Failed to download video');
-    const file = await TemporaryFile.create(url.pathname, 10 * 60 * 1000, async file => {
-      await writeFile(file.path, Readable.fromWeb(response.body as ReadableStream<Uint8Array>));
-    });
-    console.log('Downloaded video', file.path);
-    return file;
-  }, 'Download video');
+export const extractFrameFromVideo = async (videoUrl: string, timestamp: number, frame: TemporaryFile) => {
+  await takeScreenshot(videoUrl, timestamp, frame);
 };
 
-export const extractFrameFromVideo = async (video: TemporaryFile, timestamp: number, stats: ffmpeg.FfprobeStream) => {
-  if (!stats.avg_frame_rate) throw new DownstreamError('ffmpeg', 'Failed to get frame rate');
-  return await takeScreenshot(video, timestamp, `${stats.width}x${stats.height}`);
-};
-
-export const getStreamStats = async (videoPath: string) => {
+export const getStreamStats = async (videoUrl: string) => {
   return new Promise<ffmpeg.FfprobeStream>((resolve, reject) => {
-    ffmpeg.ffprobe(videoPath, (err, data) => {
+    ffmpeg.ffprobe(videoUrl, (err, data) => {
       if (err) {
         if (err instanceof Error) {
-          reject(new DownstreamError('ffmpeg', `Failed to get stream stats for ${videoPath}: ${err.message}`));
+          reject(new DownstreamError('ffmpeg', `Failed to get stream stats for ${videoUrl}: ${err.message}`));
           return;
         }
-        reject(new DownstreamError('ffmpeg', `Failed to get stream stats for ${videoPath}`));
+        reject(new DownstreamError('ffmpeg', `Failed to get stream stats for ${videoUrl}`));
         return;
       }
       const streams = data.streams;
@@ -398,21 +370,17 @@ export const getStreamStats = async (videoPath: string) => {
     });
   });
 };
-export const takeScreenshot = async (video: TemporaryFile, timestamps: number, size: string) => {
-  return new Promise<TemporaryFile>((resolve, reject) => {
-    void TemporaryFile.create(`${randomUUID()}.png`, 120 * 1000, async file => {
-      ffmpeg(video.path)
-        .screenshot({
-          timestamps: [timestamps],
-          folder: file.dir,
-          filename: file.name,
-          size
-        })
-        .on('end', () => resolve(file))
-        .on('error', err => {
-          console.error('Failed to take screenshot', err);
-          reject(err);
-        });
-    });
+export const takeScreenshot = async (videoUrl: string, timestamp: number, frame: TemporaryFile) => {
+  return new Promise<void>((resolve, reject) => {
+    ffmpeg(videoUrl)
+      .inputOptions(['-ss', timestamp.toString()])
+      .outputOptions(['-frames:v', '1', '-q:v', '2', '-update', '1'])
+      .output(frame.path)
+      .on('end', () => resolve())
+      .on('error', err => {
+        console.error('Failed to take screenshot', err);
+        reject(err);
+      })
+      .run();
   });
 };

@@ -1,17 +1,15 @@
 import { z } from 'zod';
 import { defineListener, defineParameterizedListener } from '../db/defineListener.js';
-import { requestClipFromCamManager } from '../services/cams/index.js';
 import {
-  completeCaptureRequest,
   createFromClip,
-  failCaptureRequest,
   getCapture,
   getCaptureCount,
   getCaptures,
-  processingCaptureRequest
+  getUnconvertedCapturesForUser,
+  markCaptureDeadForUser
 } from '../services/capture/index.js';
 import { cache, procedure, procedureWithPermissions, publicProcedure, router } from '../trpc/trpc.js';
-import { report } from '../utils/logs.js';
+import { useUser } from '../utils/env/env.js';
 import { Pagination } from './observation.js';
 
 const captures = defineParameterizedListener({
@@ -55,26 +53,24 @@ export default router({
       };
     }),
 
+  unconvertedCaptures: procedure.query(async () => {
+    const user = useUser();
+    return await getUnconvertedCapturesForUser(user.id);
+  }),
+
+  markDead: procedureWithPermissions('capture')
+    .input(z.object({ id: z.number() }))
+    .use(cache.mutation({ key: ['captures'] }))
+    .mutation(async ({ input }) => {
+      const user = useUser();
+      return await markCaptureDeadForUser(input.id, user.id);
+    }),
+
   createFromClip: procedureWithPermissions('capture')
     .input(z.object({ id: z.string(), userIsVerySureItIsNeeded: z.boolean().optional() }))
     .use(cache.mutation({ key: ['captures'] }))
     .mutation(async ({ input }) => {
       const clip = await createFromClip(input.id, input.userIsVerySureItIsNeeded);
-
-      if (clip.result === 'success') {
-        await processingCaptureRequest(clip.capture.id);
-        requestClipFromCamManager(clip.capture.startCaptureAt, clip.capture.endCaptureAt)
-          .then(async url => {
-            await completeCaptureRequest(clip.capture.id, url);
-            cache.invalidate([['captures']]);
-          })
-          .catch(async e => {
-            await failCaptureRequest(clip.capture.id);
-            cache.invalidate([['captures']]);
-            report(e);
-            console.error(e);
-          });
-      }
       return clip;
     })
 });

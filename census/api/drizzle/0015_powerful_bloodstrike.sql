@@ -1,0 +1,1 @@
+ALTER TABLE "captures" ADD COLUMN "low_quality_video_url" text;

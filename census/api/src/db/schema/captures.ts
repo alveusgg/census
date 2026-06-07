@@ -10,7 +10,8 @@ export const captureStatusEnum = pgEnum('capture_status', [
   'processing',
   'complete',
   'archived',
-  'failed'
+  'failed',
+  'dead'
 ]);
 
 export const captures = pgTable(
@@ -28,8 +29,11 @@ export const captures = pgTable(
     startCaptureAt: timestamp('start_capture_at').notNull(),
     endCaptureAt: timestamp('end_capture_at').notNull(),
     videoUrl: text('video_url'),
+    lowQualityVideoUrl: text('low_quality_video_url'),
     muxAssetId: text('mux_asset_id'),
     muxPlaybackId: text('mux_playback_id'),
+    upgradeAttemptCount: integer('upgrade_attempt_count').default(1).notNull(),
+    retryUpgradeFrom: timestamp('retry_upgrade_from'),
     clipId: text('clip_id').unique().notNull(),
     clipMetadata: json('clip_metadata').$type<{ views: number; thumbnail: string }>().notNull()
   },

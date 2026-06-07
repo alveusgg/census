@@ -1,7 +1,7 @@
 import { S3Client } from '@aws-sdk/client-s3';
 import Mux from '@mux/mux-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
-import { BatchSpanProcessor, ConsoleSpanExporter, SpanProcessor } from '@opentelemetry/sdk-trace-base';
+import { BatchSpanProcessor, SpanProcessor } from '@opentelemetry/sdk-trace-base';
 import * as Sentry from '@sentry/node';
 import { ApiClient } from '@twurple/api';
 import { AppTokenAuthProvider } from '@twurple/auth';
@@ -77,8 +77,8 @@ export const services = async (variables: z.infer<typeof config>) => {
 
     if (variables.NODE_ENV === 'development' && variables.LOCAL_OTEL_COLLECTOR_URL) {
       const processor = new BatchSpanProcessor(new OTLPTraceExporter({ url: variables.LOCAL_OTEL_COLLECTOR_URL }));
-      const consoleProcessor = new BatchSpanProcessor(new ConsoleSpanExporter());
-      additionalProcessors.push(processor, consoleProcessor);
+      // const consoleProcessor = new BatchSpanProcessor(new ConsoleSpanExporter());
+      additionalProcessors.push(processor /* consoleProcessor */);
     }
 
     return Sentry.init({
