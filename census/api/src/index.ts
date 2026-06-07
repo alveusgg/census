@@ -7,6 +7,7 @@ const environment = await createEnvironment();
 import cors from '@fastify/cors';
 import websocket from '@fastify/websocket';
 import { fastifyTRPCPlugin, FastifyTRPCPluginOptions } from '@trpc/server/adapters/fastify';
+import * as Sentry from '@sentry/node';
 import fastify from 'fastify';
 import router from './api/index.js';
 import { tearDownDatabase } from './db/db.js';
@@ -65,16 +66,32 @@ await withEnvironment(environment, async () => {
           continue;
         }
 
-        await processingCaptureRequest(capture.id);
-
-        try {
-          const videoUrl = await requestClipFromCamManager(capture.startCaptureAt, capture.endCaptureAt);
-          await completeCaptureRequest(capture.id, videoUrl);
-          backoff.success();
-        } catch (error) {
-          await failCaptureRequest(capture.id);
-          backoff.failure(error);
-        }
+        await Sentry.startSpan(
+          {
+            name: 'capture-leader.process',
+            op: 'capture.leader',
+            forceTransaction: true,
+            attributes: {
+              'capture.id': capture.id,
+              'capture.status': capture.status,
+              'capture.feed_id': capture.feedId,
+              'capture.upgrade_attempt_count': capture.upgradeAttemptCount
+            }
+          },
+          async span => {
+            try {
+              await processingCaptureRequest(capture.id);
+              const videoUrl = await requestClipFromCamManager(capture.startCaptureAt, capture.endCaptureAt, capture.id);
+              await completeCaptureRequest(capture.id, videoUrl);
+              backoff.success();
+              span.setStatus({ code: 1, message: 'ok' });
+            } catch (error) {
+              span.setStatus({ code: 2, message: 'error' });
+              await failCaptureRequest(capture.id);
+              backoff.failure(error);
+            }
+          }
+        );
       }
     });
 
