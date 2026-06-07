@@ -33,12 +33,13 @@ export const identifications = pgTable(
   table => {
     return {
       sourceIdx: index('source_idx').on(table.sourceId),
-      observationSourceAccessoryIdx: index('identifications_observation_source_accessory_idx')
-        .on(table.observationId, table.sourceId, table.isAccessory)
-        .concurrently(),
+      observationSourceAccessoryIdx: index('identifications_observation_source_accessory_idx').on(
+        table.observationId,
+        table.sourceId,
+        table.isAccessory
+      ),
       suggestedConfirmedPrimaryIdIdx: index('identifications_suggested_confirmed_primary_id_idx')
         .on(table.suggestedBy, table.id.desc())
-        .concurrently()
         .where(sql`${table.confirmedBy} IS NOT NULL AND ${table.isAccessory} IS NOT TRUE`)
     };
   }

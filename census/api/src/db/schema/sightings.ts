@@ -22,10 +22,8 @@ export const sightings = pgTable(
       .references(() => users.id)
   },
   table => ({
-    observationIdIdx: index('sightings_observation_id_idx').on(table.observationId).concurrently(),
-    captureIdObservedByIdx: index('sightings_capture_id_observed_by_idx')
-      .on(table.captureId, table.observedBy)
-      .concurrently()
+    observationIdIdx: index('sightings_observation_id_idx').on(table.observationId),
+    captureIdObservedByIdx: index('sightings_capture_id_observed_by_idx').on(table.captureId, table.observedBy)
   })
 );
 

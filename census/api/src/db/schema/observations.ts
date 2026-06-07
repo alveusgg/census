@@ -17,7 +17,7 @@ export const observations = pgTable(
   table => {
     return {
       locationGistIdx: index('location_gist_idx').using('gist', table.location),
-      observedAtDescIdx: index('observations_observed_at_desc_idx').on(table.observedAt.desc()).concurrently()
+      observedAtDescIdx: index('observations_observed_at_desc_idx').on(table.observedAt.desc())
     };
   }
 );
