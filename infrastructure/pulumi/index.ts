@@ -82,6 +82,7 @@ export = async () => {
       SENTRY_DSN: config.require('sentry-dsn')
     },
     image: config.require('image'),
+    sessionAffinity: true,
     scale: {
       min: 1,
       max: 1,
