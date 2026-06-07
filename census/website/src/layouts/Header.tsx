@@ -3,6 +3,7 @@ import SiTwitch from '@/components/icons/SiTwitch';
 import { useModal } from '@/components/modal/useModal';
 import { CreateFromClipModal } from '@/pages/captures/create/CreateFromClipModal';
 import { useHasPermission } from '@/services/permissions/hooks';
+import { CaptureUpgradesPopover } from './CaptureUpgradesPopover';
 import { MenuTrigger } from './sidebars/Menu';
 
 export const Header = () => {
@@ -19,10 +20,13 @@ export const Header = () => {
       </div>
       <div className="flex items-center gap-2">
         {hasCapturePermission && (
-          <Button variant="alveus" onClick={() => createFromClipModalProps.open()}>
-            <SiTwitch className="text-xl" />
-            <span>submit new clip</span>
-          </Button>
+          <>
+            <CaptureUpgradesPopover />
+            <Button variant="alveus" onClick={() => createFromClipModalProps.open()}>
+              <SiTwitch className="text-xl" />
+              <span>submit new clip</span>
+            </Button>
+          </>
         )}
         {!hasBeenOnboarded && (
           <Link variant="alveus" to="/forms/onboarding">

@@ -40,7 +40,14 @@ export default router({
     }),
 
   completeCaptureRequest: publicProcedure
-    .input(z.object({ captureId: z.number(), videoUrl: z.string(), key: z.string() }))
+    .input(
+      z.object({
+        captureId: z.number(),
+        videoUrl: z.string(),
+        lowQualityVideoUrl: z.string().optional(),
+        key: z.string()
+      })
+    )
     .use(
       cache.mutation({
         keys: ({ input }) => [['captures'], ['captures', 'detail', input.captureId]]
@@ -49,6 +56,6 @@ export default router({
     .mutation(async ({ input }) => {
       const capture = await getCapture(input.captureId);
       await ensureKeyForFeeds([capture.feedId], input.key);
-      await completeCaptureRequest(input.captureId, input.videoUrl);
+      await completeCaptureRequest(input.captureId, input.videoUrl, input.lowQualityVideoUrl);
     })
 });

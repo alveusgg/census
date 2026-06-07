@@ -1,0 +1,1 @@
+ALTER TABLE "captures" ADD COLUMN IF NOT EXISTS "retry_upgrade_from" timestamp;

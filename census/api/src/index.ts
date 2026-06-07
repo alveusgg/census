@@ -10,12 +10,23 @@ import { fastifyTRPCPlugin, FastifyTRPCPluginOptions } from '@trpc/server/adapte
 import fastify from 'fastify';
 import router from './api/index.js';
 import { tearDownDatabase } from './db/db.js';
+import { PostgresLeader } from './db/leader.js';
 import authRouter from './services/auth/router.js';
+import { requestClipFromCamManager } from './services/cams/index.js';
+import {
+  completeCaptureRequest,
+  failCaptureRequest,
+  getNextCaptureRequest,
+  processingCaptureRequest
+} from './services/capture/index.js';
 import { createContext } from './trpc/context.js';
+import { ExponentialBackoffStrategy } from './utils/backoff.js';
 import { tearDown, waitForLongOperations } from './utils/teardown.js';
 // Export type router type signature,
 // NOT the router itself.
 export type AppRouter = typeof router;
+
+const leader = new PostgresLeader(703, 1);
 
 await withEnvironment(environment, async () => {
   const options = { maxParamLength: 5000 };
@@ -42,7 +53,40 @@ await withEnvironment(environment, async () => {
     }
     console.log(`Server listening on ${address}`);
 
+    leader.acquire(async ({ signal }) => {
+      const backoff = new ExponentialBackoffStrategy({ name: 'capture-leader', timeoutMs: 4_000 });
+
+      while (!signal.aborted) {
+        await backoff.wait();
+
+        const capture = await getNextCaptureRequest();
+        if (!capture) {
+          await backoff.timeout();
+          continue;
+        }
+
+        await processingCaptureRequest(capture.id);
+
+        try {
+          const videoUrl = await requestClipFromCamManager(capture.startCaptureAt, capture.endCaptureAt);
+          await completeCaptureRequest(capture.id, videoUrl);
+          backoff.success();
+        } catch (error) {
+          await failCaptureRequest(capture.id);
+          backoff.failure(error);
+        }
+      }
+    });
+
     const tearDownHandler = await tearDown([
+      {
+        name: 'leader',
+        fn: () => leader.stop()
+      },
+      {
+        name: 'long operations',
+        fn: waitForLongOperations
+      },
       {
         name: 'fastify',
         fn: () => server.close()
@@ -50,10 +94,6 @@ await withEnvironment(environment, async () => {
       {
         name: 'database',
         fn: tearDownDatabase
-      },
-      {
-        name: 'long operations',
-        fn: waitForLongOperations
       }
     ]);
 

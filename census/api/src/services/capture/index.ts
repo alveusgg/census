@@ -1,15 +1,15 @@
 import { DownstreamError, NotFoundError } from '@alveusgg/error';
-import Mux from '@mux/mux-node';
-import { and, count, desc, eq, gte, inArray, lte, or } from 'drizzle-orm';
+import { Mux } from '@mux/mux-node';
+import { and, asc, count, desc, eq, gte, inArray, isNull, lte, ne, or, sql } from 'drizzle-orm';
 import { Pagination } from '../../api/observation.js';
-import { Capture, captures } from '../../db/schema/index.js';
+import { Capture, captures, sightings } from '../../db/schema/index.js';
 import { useDB } from '../../db/transaction.js';
 import { assert } from '../../utils/assert.js';
 import { useEnvironment, useUser } from '../../utils/env/env.js';
-import { report } from '../../utils/logs.js';
 import { getFeed } from '../feed/index.js';
-import { downloadVideo } from '../observations/observations.js';
 import { getClip } from '../twitch/index.js';
+
+const MAX_UPGRADE_ATTEMPTS = 15;
 
 interface ClipAlreadyUsedResult {
   result: 'error';
@@ -186,6 +186,25 @@ export const getPendingCapturesForFeeds = async (feeds: string[]) => {
   });
 };
 
+export const getNextCaptureRequest = async () => {
+  const db = useDB();
+
+  return await db.query.captures.findFirst({
+    where: or(
+      eq(captures.status, 'pending'),
+      and(
+        eq(captures.status, 'failed'),
+        or(isNull(captures.retryUpgradeFrom), sql`${captures.retryUpgradeFrom} <= now()`)
+      )
+    ),
+    orderBy: [
+      sql`case when ${captures.status} = 'pending' then 0 else 1 end`,
+      sql`coalesce(${captures.retryUpgradeFrom}, ${captures.capturedAt})`,
+      asc(captures.capturedAt)
+    ]
+  });
+};
+
 export const getCaptureCount = async () => {
   const db = useDB();
   const [result] = await db.select({ count: count() }).from(captures);
@@ -201,6 +220,31 @@ export const getCaptures = async (pagination: Pagination) => {
   });
 };
 
+export const getUnconvertedCapturesForUser = async (userId: number) => {
+  const db = useDB();
+  const rows = await db
+    .select({ capture: captures })
+    .from(captures)
+    .leftJoin(sightings, and(eq(sightings.captureId, captures.id), eq(sightings.observedBy, userId)))
+    .where(and(eq(captures.capturedBy, userId), ne(captures.status, 'dead'), isNull(sightings.id)))
+    .orderBy(desc(captures.capturedAt))
+    .limit(10);
+
+  return rows.map(row => row.capture);
+};
+
+export const markCaptureDeadForUser = async (id: number, userId: number) => {
+  const db = useDB();
+  const [capture] = await db
+    .update(captures)
+    .set({ status: 'dead', retryUpgradeFrom: null })
+    .where(and(eq(captures.id, id), eq(captures.capturedBy, userId)))
+    .returning();
+
+  if (!capture) throw new NotFoundError('Capture not found');
+  return capture;
+};
+
 export const getCaptureByClipId = async (id: string) => {
   const db = useDB();
   return await db.query.captures.findFirst({
@@ -212,7 +256,11 @@ export const getCaptureByClipId = async (id: string) => {
 export const getEncompassingCaptures = async (startDate: Date, endDate: Date) => {
   const db = useDB();
   return await db.query.captures.findMany({
-    where: and(lte(captures.startCaptureAt, startDate), gte(captures.endCaptureAt, endDate))
+    where: and(
+      ne(captures.status, 'dead'),
+      lte(captures.startCaptureAt, startDate),
+      gte(captures.endCaptureAt, endDate)
+    )
   });
 };
 
@@ -220,7 +268,11 @@ export const getEncompassingCaptures = async (startDate: Date, endDate: Date) =>
 export const getEncompassedByCaptures = async (startDate: Date, endDate: Date) => {
   const db = useDB();
   return await db.query.captures.findMany({
-    where: and(gte(captures.startCaptureAt, startDate), lte(captures.endCaptureAt, endDate))
+    where: and(
+      ne(captures.status, 'dead'),
+      gte(captures.startCaptureAt, startDate),
+      lte(captures.endCaptureAt, endDate)
+    )
   });
 };
 
@@ -228,20 +280,25 @@ export const getEncompassedByCaptures = async (startDate: Date, endDate: Date) =
 export const getOverlappingCaptures = async (startDate: Date, endDate: Date) => {
   const db = useDB();
   return await db.query.captures.findMany({
-    where: or(
-      and(gte(captures.endCaptureAt, startDate), lte(captures.startCaptureAt, startDate)),
-      and(gte(captures.startCaptureAt, endDate), lte(captures.endCaptureAt, endDate))
+    where: and(
+      ne(captures.status, 'dead'),
+      or(
+        and(gte(captures.endCaptureAt, startDate), lte(captures.startCaptureAt, startDate)),
+        and(gte(captures.startCaptureAt, endDate), lte(captures.endCaptureAt, endDate))
+      )
     )
   });
 };
 
-export const completeCaptureRequest = async (id: number, videoUrl: string) => {
+export const completeCaptureRequest = async (id: number, videoUrl: string, lowQualityVideoUrl?: string) => {
   const db = useDB();
   const { mux } = useEnvironment();
 
   const updated: Partial<Capture> = {
     status: 'complete',
-    videoUrl
+    videoUrl,
+    lowQualityVideoUrl: lowQualityVideoUrl ?? null,
+    retryUpgradeFrom: null
   };
 
   if (mux) {
@@ -266,26 +323,34 @@ export const completeCaptureRequest = async (id: number, videoUrl: string) => {
 
   const [capture] = await db.update(captures).set(updated).where(eq(captures.id, id)).returning();
 
-  console.log(`Pre-downloading video for capture ${capture.id} for future processing. TTL: 10 minutes`);
-  downloadVideo(videoUrl)
-    .then(() => {
-      console.log(`Downloaded video for capture ${capture.id}`);
-    })
-    .catch(error => {
-      console.error(`Failed to download video for capture ${capture.id}`, error);
-      report(error);
-    });
   return capture;
 };
 
 export const processingCaptureRequest = async (id: number) => {
   const db = useDB();
-  await db.update(captures).set({ status: 'processing' }).where(eq(captures.id, id));
+  await db.update(captures).set({ status: 'processing', retryUpgradeFrom: null }).where(eq(captures.id, id));
 };
 
 export const failCaptureRequest = async (id: number) => {
   const db = useDB();
-  await db.update(captures).set({ status: 'failed' }).where(eq(captures.id, id));
+  await db
+    .update(captures)
+    .set({
+      status: sql`
+        case
+          when ${captures.upgradeAttemptCount} + 1 > ${MAX_UPGRADE_ATTEMPTS} then 'dead'::capture_status
+          else 'failed'::capture_status
+        end
+      `,
+      upgradeAttemptCount: sql`${captures.upgradeAttemptCount} + 1`,
+      retryUpgradeFrom: sql`
+        case
+          when ${captures.upgradeAttemptCount} + 1 > ${MAX_UPGRADE_ATTEMPTS} then null
+          else now() + (${captures.upgradeAttemptCount} * interval '30 seconds')
+        end
+      `
+    })
+    .where(eq(captures.id, id));
 };
 
 const waitForMuxAsset = async (mux: Mux, assetId: string) => {

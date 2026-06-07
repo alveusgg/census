@@ -1,5 +1,11 @@
 import type { ObservationPayload } from '@alveusgg/census-api/src/services/observations/observations';
-import { infiniteQueryOptions, useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import {
+  infiniteQueryOptions,
+  queryOptions,
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery
+} from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { key, useAPI, useLiveQuery } from '../query/hooks';
 
@@ -40,6 +46,15 @@ export const useCaptures = () => {
   });
 };
 
+export const useUnconvertedCaptures = () => {
+  const trpc = useAPI();
+  return queryOptions({
+    queryKey: key('captures', 'unconverted'),
+    queryFn: () => trpc.capture.unconvertedCaptures.query(),
+    refetchOnWindowFocus: true
+  });
+};
+
 interface CreateCaptureFromClipInput {
   id: string;
   userIsVerySureItIsNeeded?: boolean;
@@ -54,6 +69,18 @@ export const useCreateCaptureFromClip = () => {
     },
     onSuccess: () => {
       client.invalidateQueries({ queryKey: key('captures') });
+    }
+  });
+};
+
+export const useMarkCaptureDead = () => {
+  const trpc = useAPI();
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => trpc.capture.markDead.mutate({ id }),
+    onSuccess: async capture => {
+      await client.invalidateQueries({ queryKey: key('capture', capture.id.toString()) });
+      await client.invalidateQueries({ queryKey: key('captures') });
     }
   });
 };
