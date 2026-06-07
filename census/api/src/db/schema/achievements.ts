@@ -30,15 +30,12 @@ export const achievements = pgTable(
       pointsIdx: index('points_achievements_idx').on(table.points),
       validCreatedUserPointsIdx: index('achievements_valid_created_user_points_idx')
         .on(table.createdAt, table.userId)
-        .concurrently()
         .where(sql`${table.redeemed} = true AND ${table.revoked} = false`),
       validUserCreatedPointsIdx: index('achievements_valid_user_created_points_idx')
         .on(table.userId, table.createdAt)
-        .concurrently()
         .where(sql`${table.redeemed} = true AND ${table.revoked} = false`),
       pendingByUserIdx: index('achievements_pending_by_user_idx')
         .on(table.userId)
-        .concurrently()
         .where(sql`${table.redeemed} = false AND ${table.revoked} = false`)
     };
   }

@@ -39,14 +39,12 @@ export const captures = pgTable(
   },
   table => ({
     clipIdIdx: index('clip_id_idx').on(table.clipId),
-    capturedAtDescIdx: index('captures_captured_at_desc_idx').on(table.capturedAt.desc()).concurrently(),
+    capturedAtDescIdx: index('captures_captured_at_desc_idx').on(table.capturedAt.desc()),
     capturedByCapturedAtNotDeadIdx: index('captures_captured_by_captured_at_not_dead_idx')
       .on(table.capturedBy, table.capturedAt.desc())
-      .concurrently()
       .where(sql`${table.status} != 'dead'`),
     pendingFeedIdx: index('captures_pending_feed_idx')
       .on(table.feedId)
-      .concurrently()
       .where(sql`${table.status} = 'pending'`)
   })
 );

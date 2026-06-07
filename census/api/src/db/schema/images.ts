@@ -29,8 +29,8 @@ export const images = pgTable(
     boundingBox: json('bounding_box').$type<BoundingBox>().notNull()
   },
   table => ({
-    sightingIdIdx: index('images_sighting_id_idx').on(table.sightingId).concurrently(),
-    identificationIdIdx: index('images_identification_id_idx').on(table.identificationId).concurrently()
+    sightingIdIdx: index('images_sighting_id_idx').on(table.sightingId),
+    identificationIdIdx: index('images_identification_id_idx').on(table.identificationId)
   })
 );
 
