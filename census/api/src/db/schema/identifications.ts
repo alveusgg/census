@@ -1,4 +1,4 @@
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 import { boolean, index, integer, pgEnum, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
 import { observations } from './observations.js';
 import { shinies } from './seasons.js';
@@ -32,7 +32,14 @@ export const identifications = pgTable(
   },
   table => {
     return {
-      sourceIdx: index('source_idx').on(table.sourceId)
+      sourceIdx: index('source_idx').on(table.sourceId),
+      observationSourceAccessoryIdx: index('identifications_observation_source_accessory_idx')
+        .on(table.observationId, table.sourceId, table.isAccessory)
+        .concurrently(),
+      suggestedConfirmedPrimaryIdIdx: index('identifications_suggested_confirmed_primary_id_idx')
+        .on(table.suggestedBy, table.id.desc())
+        .concurrently()
+        .where(sql`${table.confirmedBy} IS NOT NULL AND ${table.isAccessory} IS NOT TRUE`)
     };
   }
 );

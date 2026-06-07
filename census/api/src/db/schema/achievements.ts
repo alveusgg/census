@@ -1,5 +1,5 @@
 import { Actions, AnyAchievementPayload } from '@alveusgg/census-levels';
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 import { boolean, index, integer, json, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
 import { Sticker } from '../../services/points/achievement.js';
 import { identifications } from './identifications.js';
@@ -27,7 +27,19 @@ export const achievements = pgTable(
     return {
       userIdIdx: index('user_id_achievements_idx').on(table.userId),
       typeIdx: index('type_achievements_idx').on(table.type),
-      pointsIdx: index('points_achievements_idx').on(table.points)
+      pointsIdx: index('points_achievements_idx').on(table.points),
+      validCreatedUserPointsIdx: index('achievements_valid_created_user_points_idx')
+        .on(table.createdAt, table.userId)
+        .concurrently()
+        .where(sql`${table.redeemed} = true AND ${table.revoked} = false`),
+      validUserCreatedPointsIdx: index('achievements_valid_user_created_points_idx')
+        .on(table.userId, table.createdAt)
+        .concurrently()
+        .where(sql`${table.redeemed} = true AND ${table.revoked} = false`),
+      pendingByUserIdx: index('achievements_pending_by_user_idx')
+        .on(table.userId)
+        .concurrently()
+        .where(sql`${table.redeemed} = false AND ${table.revoked} = false`)
     };
   }
 );
