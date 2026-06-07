@@ -1,4 +1,5 @@
-import { BindingType, ContainerApp, ManagedEnvironmentsStorage } from '@pulumi/azure-native/app';
+import { ManagedEnvironmentsStorage } from '@pulumi/azure-native/app';
+import { BindingType, ContainerApp } from '@pulumi/azure-native/app/v20240301';
 import { getClientConfig } from '@pulumi/azure-native/authorization';
 import { Record as CloudflareRecord } from '@pulumi/cloudflare';
 import { ComponentResource, Input, Output, ResourceOptions, interpolate, output } from '@pulumi/pulumi';
@@ -52,6 +53,7 @@ interface APIArgs {
   volumes?: Record<string, Volume>;
   sidecars?: RawContainerArgs[];
   subdomain?: string;
+  sessionAffinity?: boolean;
 }
 
 interface RegistryArgs {
@@ -190,7 +192,12 @@ export class API extends ComponentResource {
                   allowedHeaders: ['*'],
                   exposeHeaders: ['*'],
                   allowCredentials: true
-                }
+                },
+                stickySessions: args.sessionAffinity
+                  ? {
+                      affinity: 'sticky'
+                    }
+                  : undefined
               }
             : undefined,
           registries,
