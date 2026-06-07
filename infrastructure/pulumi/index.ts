@@ -96,7 +96,8 @@ export = async () => {
     cluster,
     subdomain: 'census-ipx',
     env: {
-      IPX_HTTP_DOMAINS: s3PublicUrl,
+      // Twitch clip thumbnails (CaptureUpgradesPopover) are served from static-cdn.jtvnw.net
+      IPX_HTTP_DOMAINS: `${s3PublicUrl},static-cdn.jtvnw.net`,
       IPX_HTTP_MAX_AGE: '86400'
     },
     image: config.require('ipx'),
