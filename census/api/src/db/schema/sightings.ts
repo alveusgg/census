@@ -1,24 +1,33 @@
 import { relations } from 'drizzle-orm';
-import { integer, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
+import { index, integer, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
 import { captures } from './captures.js';
 import { images } from './images.js';
 import { observations } from './observations.js';
 import { users } from './users.js';
 
-export const sightings = pgTable('sightings', {
-  id: serial('id').primaryKey(),
-  nickname: text('nickname'),
-  observationId: integer('observation_id')
-    .references(() => observations.id, { onDelete: 'cascade' })
-    .notNull(),
-  captureId: integer('capture_id')
-    .references(() => captures.id)
-    .notNull(),
-  observedAt: timestamp('observed_at').notNull(),
-  observedBy: integer('observed_by')
-    .notNull()
-    .references(() => users.id)
-});
+export const sightings = pgTable(
+  'sightings',
+  {
+    id: serial('id').primaryKey(),
+    nickname: text('nickname'),
+    observationId: integer('observation_id')
+      .references(() => observations.id, { onDelete: 'cascade' })
+      .notNull(),
+    captureId: integer('capture_id')
+      .references(() => captures.id)
+      .notNull(),
+    observedAt: timestamp('observed_at').notNull(),
+    observedBy: integer('observed_by')
+      .notNull()
+      .references(() => users.id)
+  },
+  table => ({
+    observationIdIdx: index('sightings_observation_id_idx').on(table.observationId).concurrently(),
+    captureIdObservedByIdx: index('sightings_capture_id_observed_by_idx')
+      .on(table.captureId, table.observedBy)
+      .concurrently()
+  })
+);
 
 export type Sighting = typeof sightings.$inferSelect;
 

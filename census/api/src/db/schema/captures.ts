@@ -1,4 +1,4 @@
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 import { index, integer, json, pgEnum, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
 import { feeds } from './feeds.js';
 import { sightings } from './sightings.js';
@@ -38,7 +38,16 @@ export const captures = pgTable(
     clipMetadata: json('clip_metadata').$type<{ views: number; thumbnail: string }>().notNull()
   },
   table => ({
-    clipIdIdx: index('clip_id_idx').on(table.clipId)
+    clipIdIdx: index('clip_id_idx').on(table.clipId),
+    capturedAtDescIdx: index('captures_captured_at_desc_idx').on(table.capturedAt.desc()).concurrently(),
+    capturedByCapturedAtNotDeadIdx: index('captures_captured_by_captured_at_not_dead_idx')
+      .on(table.capturedBy, table.capturedAt.desc())
+      .concurrently()
+      .where(sql`${table.status} != 'dead'`),
+    pendingFeedIdx: index('captures_pending_feed_idx')
+      .on(table.feedId)
+      .concurrently()
+      .where(sql`${table.status} = 'pending'`)
   })
 );
 
