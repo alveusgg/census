@@ -33,7 +33,7 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
 FROM deps AS builder
 COPY . .
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-    pnpm --filter=@alveusgg/census-api --prod deploy /prod/api
+    pnpm --filter=@alveusgg/census-api --prod deploy --legacy /prod/api
 
 # ---- runtime -------------------------------------------------------------
 # Final image. Only ships node + ffmpeg + the deployed api. Everything from
