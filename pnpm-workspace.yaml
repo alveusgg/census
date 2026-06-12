@@ -6,6 +6,12 @@ packages:
   - 'infrastructure/pulumi'
   - 'shared/*'
 
+allowBuilds:
+  '@parcel/watcher': true
+  esbuild: true
+  protobufjs: true
+  sharp: true
+
 catalog:
   '@trpc/client': ^11.16.0
   '@trpc/server': ^11.16.0
