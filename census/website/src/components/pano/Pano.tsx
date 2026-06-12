@@ -1,4 +1,4 @@
-import { Canvas, type ThreeEvent } from '@react-three/fiber';
+import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 
 import { enablePatches } from 'immer';
 enablePatches();
@@ -7,8 +7,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { PropsWithChildren, useMemo, useRef, type Dispatch, type FC, type SetStateAction } from 'react';
 import * as THREE from 'three';
 import { createPanoControlOptions, type ControlOptions, type View } from './controls';
-import equirectangularImage from './garden-high.jpg';
-import equirectangularImageLow from './garden-low.jpg';
+import { gardenPanoManifest } from './garden.tiles';
 import { useViewControls } from './lib/controls';
 import { defaultPanoMapManagerOptions, PanoMapManager } from './lib/PanoMapManager';
 import { useWithSimulation, type Simulation } from './lib/simulation';
@@ -28,10 +27,7 @@ interface PanoViewProps {
 
 const manager = new PanoMapManager(
   {
-    pano: {
-      low: equirectangularImageLow,
-      high: equirectangularImage
-    }
+    manifest: gardenPanoManifest
   },
   defaultPanoMapManagerOptions
 );
@@ -96,6 +92,7 @@ export const Pano: FC<PropsWithChildren<PanoViewProps>> = ({ state, onClick, onI
             <sphereGeometry args={sphere} />
             <meshBasicMaterial side={THREE.BackSide} map={result.data.texture} color="#ffffff" />
           </mesh>
+          <PanoTiles manager={result.data} />
           {children}
         </Canvas>
       </motion.div>
@@ -109,6 +106,16 @@ export function panTiltToPoint(pan: number, tilt: number, radius: number = PIP_R
     radius * Math.sin(tilt),
     radius * Math.cos(tilt) * Math.cos(pan)
   );
+}
+
+function PanoTiles({ manager }: { manager: PanoMapManager }) {
+  const { camera } = useThree();
+
+  useFrame(() => {
+    manager.update(camera);
+  });
+
+  return <primitive object={manager.tileRoot} />;
 }
 
 // Converts a click on the inverted-X sphere mesh into a (pan, tilt) pair that

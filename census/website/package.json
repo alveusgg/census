@@ -9,6 +9,7 @@
     "build": "tsc -b && vite build",
     "ipx:local": "IPX_HTTP_ALLOW_ALL_DOMAINS=true IPX_HTTP_MAX_AGE=86400 ipx serve --port 2209",
     "images:process": "tsx src/scripts/images.ts",
+    "pano:process": "tsx src/scripts/pano-tiles.ts",
     "test": "tsx --test \"src/**/*.test.ts\"",
     "lint": "eslint ."
   },
