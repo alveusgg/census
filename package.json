@@ -1,7 +1,7 @@
 {
   "name": "@alveusgg/census",
   "version": "1.0.0",
-  "packageManager": "pnpm@9.14.2",
+  "packageManager": "pnpm@11.6.0",
   "scripts": {
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
