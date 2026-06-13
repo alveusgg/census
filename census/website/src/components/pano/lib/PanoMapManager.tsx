@@ -9,7 +9,7 @@ export interface PanoTileLevel {
   columns: number;
   rows: number;
   showBelowFov: number;
-  urlTemplate: string;
+  tiles: string[][];
 }
 
 export interface PanoTileManifest {
@@ -51,23 +51,17 @@ interface TileRecord {
   visibleWanted: boolean;
 }
 
-interface UvInterval {
-  start: number;
-  end: number;
-}
-
-interface VisibleUvBounds {
-  u: UvInterval[];
-  v: UvInterval;
-}
-
 export const defaultPanoMapManagerOptions: PanoMapManagerOptions = {
   baseCanvasWidth: 4096,
   radius: 10,
   tileRadiusOffset: 0.025,
-  preloadTileMargin: 1,
+  preloadTileMargin: 0,
   tilePatchSegments: 10
 };
+
+const TILE_VISIBILITY_SAMPLE_COUNT = 5;
+const VIEWPORT_UV_SAMPLE_COUNT = 5;
+const UV_EDGE_EPSILON = 1e-6;
 
 export class PanoMapManager {
   texture: THREE.CanvasTexture<OffscreenCanvas>;
@@ -249,21 +243,18 @@ export class PanoMapManager {
 }
 
 export function getVisibleTiles(camera: THREE.PerspectiveCamera, level: PanoTileLevel, preloadTileMargin: number) {
-  const bounds = getVisibleUvBounds(camera);
-  const uPad = (level.tileWidth / level.width) * preloadTileMargin;
-  const vPad = (level.tileHeight / level.height) * preloadTileMargin;
-  const uIntervals = expandUvIntervals(bounds.u, uPad);
-  const vInterval = {
-    start: clamp01(bounds.v.start - vPad),
-    end: clamp01(bounds.v.end + vPad)
-  };
-  const rows = getLinearTileRange(vInterval, level.rows);
+  camera.updateMatrixWorld();
+  camera.updateProjectionMatrix();
+
+  const viewportMargin = Math.max(0, preloadTileMargin);
+  const viewportUvSamples = getViewportUvSamples(camera);
   const descriptors: TileDescriptor[] = [];
 
-  for (const interval of uIntervals) {
-    for (const column of getWrappedTileRange(interval, level.columns)) {
-      for (const row of rows) {
-        descriptors.push(createTileDescriptor(level, column, row));
+  for (let column = 0; column < level.columns; column++) {
+    for (let row = 0; row < level.rows; row++) {
+      const descriptor = createTileDescriptor(level, column, row);
+      if (isTileVisible(camera, descriptor, viewportMargin, viewportUvSamples)) {
+        descriptors.push(descriptor);
       }
     }
   }
@@ -330,32 +321,81 @@ function createTileGeometry(descriptor: TileDescriptor, radius: number, patchSeg
   return geometry;
 }
 
-function getVisibleUvBounds(camera: THREE.PerspectiveCamera): VisibleUvBounds {
-  camera.updateMatrixWorld();
-  camera.updateProjectionMatrix();
-
-  const samples = 5;
-  const uSamples: number[] = [];
-  const vSamples: number[] = [];
-
-  for (let y = 0; y < samples; y++) {
-    for (let x = 0; x < samples; x++) {
-      const ndcX = -1 + (2 * x) / (samples - 1);
-      const ndcY = -1 + (2 * y) / (samples - 1);
-      const direction = new THREE.Vector3(ndcX, ndcY, 0.5).unproject(camera).sub(camera.position).normalize();
-      const uv = directionToEquirectangularUv(direction);
-      uSamples.push(uv.x);
-      vSamples.push(uv.y);
+function isTileVisible(
+  camera: THREE.PerspectiveCamera,
+  descriptor: TileDescriptor,
+  viewportMargin: number,
+  viewportUvSamples: THREE.Vector2[]
+) {
+  for (const uv of getTileUvSamples(descriptor, TILE_VISIBILITY_SAMPLE_COUNT)) {
+    if (isWorldPointInCameraView(uvToWorldPoint(uv, camera.far * 0.5), camera, viewportMargin)) {
+      return true;
     }
   }
 
-  return {
-    u: getCircularIntervals(uSamples),
-    v: {
-      start: Math.min(...vSamples),
-      end: Math.max(...vSamples)
+  return viewportUvSamples.some(uv => isUvInTile(uv, descriptor));
+}
+
+function getTileUvSamples(descriptor: TileDescriptor, samples: number) {
+  const u0 = descriptor.x / descriptor.level.width;
+  const u1 = (descriptor.x + descriptor.width) / descriptor.level.width;
+  const v0 = descriptor.y / descriptor.level.height;
+  const v1 = (descriptor.y + descriptor.height) / descriptor.level.height;
+  const uvs: THREE.Vector2[] = [];
+
+  for (let y = 0; y < samples; y++) {
+    for (let x = 0; x < samples; x++) {
+      uvs.push(
+        new THREE.Vector2(
+          THREE.MathUtils.lerp(u0, u1, x / (samples - 1)),
+          THREE.MathUtils.lerp(v0, v1, y / (samples - 1))
+        )
+      );
     }
-  };
+  }
+
+  return uvs;
+}
+
+function getViewportUvSamples(camera: THREE.PerspectiveCamera) {
+  const uvs: THREE.Vector2[] = [];
+
+  for (let y = 0; y < VIEWPORT_UV_SAMPLE_COUNT; y++) {
+    for (let x = 0; x < VIEWPORT_UV_SAMPLE_COUNT; x++) {
+      const ndcX = -1 + (2 * x) / (VIEWPORT_UV_SAMPLE_COUNT - 1);
+      const ndcY = -1 + (2 * y) / (VIEWPORT_UV_SAMPLE_COUNT - 1);
+      const direction = new THREE.Vector3(ndcX, ndcY, 0.5).unproject(camera).sub(camera.position).normalize();
+      uvs.push(directionToEquirectangularUv(direction));
+    }
+  }
+
+  return uvs;
+}
+
+function isWorldPointInCameraView(point: THREE.Vector3, camera: THREE.PerspectiveCamera, margin: number) {
+  const projected = point.clone().project(camera);
+
+  return (
+    Number.isFinite(projected.x) &&
+    Number.isFinite(projected.y) &&
+    Number.isFinite(projected.z) &&
+    projected.z >= -1 &&
+    projected.z <= 1 &&
+    Math.abs(projected.x) <= 1 + margin &&
+    Math.abs(projected.y) <= 1 + margin
+  );
+}
+
+function uvToWorldPoint(uv: THREE.Vector2, radius: number) {
+  const theta = uv.y * Math.PI;
+  const phi = uv.x * Math.PI * 2;
+  const sinTheta = Math.sin(theta);
+
+  return new THREE.Vector3(
+    radius * Math.cos(phi) * sinTheta,
+    radius * Math.cos(theta),
+    radius * Math.sin(phi) * sinTheta
+  );
 }
 
 function directionToEquirectangularUv(direction: THREE.Vector3) {
@@ -366,77 +406,20 @@ function directionToEquirectangularUv(direction: THREE.Vector3) {
   return new THREE.Vector2(phi / (Math.PI * 2), theta / Math.PI);
 }
 
-function getCircularIntervals(values: number[]): UvInterval[] {
-  const sorted = values.map(normalize01).sort((a, b) => a - b);
-  let largestGap = -1;
-  let largestGapIndex = 0;
+function isUvInTile(uv: THREE.Vector2, descriptor: TileDescriptor) {
+  const u = normalize01(uv.x);
+  const v = THREE.MathUtils.clamp(uv.y, 0, 1);
+  const u0 = descriptor.x / descriptor.level.width;
+  const u1 = (descriptor.x + descriptor.width) / descriptor.level.width;
+  const v0 = descriptor.y / descriptor.level.height;
+  const v1 = (descriptor.y + descriptor.height) / descriptor.level.height;
 
-  for (let i = 0; i < sorted.length; i++) {
-    const current = sorted[i] ?? 0;
-    const next = sorted[(i + 1) % sorted.length] ?? 0;
-    const gap = i === sorted.length - 1 ? next + 1 - current : next - current;
-
-    if (gap > largestGap) {
-      largestGap = gap;
-      largestGapIndex = i;
-    }
-  }
-
-  const start = sorted[(largestGapIndex + 1) % sorted.length] ?? 0;
-  const end = sorted[largestGapIndex] ?? 0;
-
-  if (largestGap <= 0 || 1 - largestGap >= 0.98) {
-    return [{ start: 0, end: 1 }];
-  }
-
-  if (start <= end) return [{ start, end }];
-  return [
-    { start, end: 1 },
-    { start: 0, end }
-  ];
-}
-
-function expandUvIntervals(intervals: UvInterval[], padding: number) {
-  const expanded: UvInterval[] = [];
-
-  for (const interval of intervals) {
-    const start = interval.start - padding;
-    const end = interval.end + padding;
-
-    if (start <= 0 && end >= 1) return [{ start: 0, end: 1 }];
-    if (start < 0) {
-      expanded.push({ start: normalize01(start), end: 1 }, { start: 0, end });
-    } else if (end > 1) {
-      expanded.push({ start, end: 1 }, { start: 0, end: normalize01(end) });
-    } else {
-      expanded.push({ start, end });
-    }
-  }
-
-  return expanded;
-}
-
-function getWrappedTileRange(interval: UvInterval, count: number) {
-  if (interval.start <= 0 && interval.end >= 1) {
-    return Array.from({ length: count }, (_, index) => index);
-  }
-
-  const start = Math.floor(interval.start * count);
-  const end = Math.max(start, Math.ceil(interval.end * count) - 1);
-  const columns: number[] = [];
-
-  for (let column = start; column <= end; column++) {
-    columns.push(THREE.MathUtils.euclideanModulo(column, count));
-  }
-
-  return [...new Set(columns)];
-}
-
-function getLinearTileRange(interval: UvInterval, count: number) {
-  const start = Math.max(0, Math.floor(interval.start * count));
-  const end = Math.min(count - 1, Math.ceil(interval.end * count) - 1);
-
-  return Array.from({ length: end - start + 1 }, (_, index) => start + index);
+  return (
+    u >= u0 - UV_EDGE_EPSILON &&
+    u <= u1 + UV_EDGE_EPSILON &&
+    v >= v0 - UV_EDGE_EPSILON &&
+    v <= v1 + UV_EDGE_EPSILON
+  );
 }
 
 function getTileKey(descriptor: TileDescriptor) {
@@ -444,18 +427,14 @@ function getTileKey(descriptor: TileDescriptor) {
 }
 
 function getTileUrl(descriptor: TileDescriptor) {
-  return descriptor.level.urlTemplate
-    .replace('{z}', descriptor.level.id)
-    .replace('{x}', String(descriptor.column))
-    .replace('{y}', String(descriptor.row));
+  const url = descriptor.level.tiles[descriptor.row]?.[descriptor.column];
+  if (!url) throw new Error(`Missing pano tile URL: ${descriptor.level.id}/${descriptor.row}/${descriptor.column}`);
+
+  return url;
 }
 
 function normalize01(value: number) {
   return THREE.MathUtils.euclideanModulo(value, 1);
-}
-
-function clamp01(value: number) {
-  return THREE.MathUtils.clamp(value, 0, 1);
 }
 
 async function loadImage(src: string) {
