@@ -1,7 +1,7 @@
 import { spawn } from 'child_process';
 import { mkdir, mkdtemp, rm, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
-import { basename, dirname, isAbsolute, join, resolve } from 'path';
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'path';
 
 interface LevelConfig {
   id: string;
@@ -16,36 +16,38 @@ interface PanoTileConfig {
   source: string;
   output: string;
   manifest: string;
-  publicPath: string;
   baseWidth: number;
   tileFormat: string;
   panOffsetDeg: number;
   tiltOffsetDeg: number;
+  manifestOnly: boolean;
   levels: LevelConfig[];
 }
 
 const DEFAULT_SOURCE = '../../scratch/source.exr';
-const DEFAULT_OUTPUT = 'public/pano/garden';
+const DEFAULT_OUTPUT = 'src/components/pano/tiles/garden';
 const DEFAULT_MANIFEST = 'src/components/pano/garden.tiles.ts';
-const DEFAULT_PUBLIC_PATH = '/pano/garden';
 
 async function main() {
   const config = parseArgs(process.argv.slice(2));
   const source = resolvePath(config.source);
   const output = resolvePath(config.output);
   const manifest = resolvePath(config.manifest);
-  const sourceInfo = await getImageInfo(source);
   const tempDir = await mkdtemp(join(tmpdir(), 'pano-tiles-'));
 
   try {
-    await mkdir(output, { recursive: true });
-    await renderBase({ source, sourceInfo, config, output });
+    if (!config.manifestOnly) {
+      const sourceInfo = await getImageInfo(source);
 
-    for (const level of config.levels) {
-      await renderLevel({ source, sourceInfo, config, output, tempDir, level });
+      await mkdir(output, { recursive: true });
+      await renderBase({ source, sourceInfo, config, output });
+
+      for (const level of config.levels) {
+        await renderLevel({ source, sourceInfo, config, output, tempDir, level });
+      }
     }
 
-    await writeManifest({ config, manifest });
+    await writeManifest({ config, manifest, output });
   } finally {
     await rm(tempDir, { recursive: true, force: true });
   }
@@ -136,36 +138,84 @@ async function renderLevel({
   }
 }
 
-async function writeManifest({ config, manifest }: { config: PanoTileConfig; manifest: string }) {
+async function writeManifest({ config, manifest, output }: { config: PanoTileConfig; manifest: string; output: string }) {
   await mkdir(dirname(manifest), { recursive: true });
 
   const baseHeight = Math.round(config.baseWidth / 2);
-  const levels = config.levels.map(level => ({
-    ...level,
-    columns: Math.ceil(level.width / level.tileWidth),
-    rows: Math.ceil(level.height / level.tileHeight),
-    urlTemplate: `${config.publicPath}/{z}/{y}/{x}.${config.tileFormat}`
-  }));
+  const imports = [
+    `import type { PanoTileManifest } from './lib/PanoMapManager';`,
+    `import baseUrl from '${getAssetImportPath(manifest, join(output, `base.${config.tileFormat}`))}';`
+  ];
+  const levels = config.levels.map(level => {
+    const columns = Math.ceil(level.width / level.tileWidth);
+    const rows = Math.ceil(level.height / level.tileHeight);
+    const tileRows: string[][] = [];
+
+    for (let row = 0; row < rows; row++) {
+      const tileRow: string[] = [];
+
+      for (let column = 0; column < columns; column++) {
+        const importName = `${level.id}Tile${row}_${column}Url`;
+        imports.push(
+          `import ${importName} from '${getAssetImportPath(
+            manifest,
+            join(output, level.id, String(row), `${column}.${config.tileFormat}`)
+          )}';`
+        );
+        tileRow.push(importName);
+      }
+
+      tileRows.push(tileRow);
+    }
+
+    return {
+      ...level,
+      columns,
+      rows,
+      tiles: tileRows
+    };
+  });
 
   await writeFile(
     manifest,
-    `import type { PanoTileManifest } from './lib/PanoMapManager';
+    `${imports.join('\n')}
 
-export const gardenPanoManifest: PanoTileManifest = ${JSON.stringify(
-      {
-        projection: 'equirectangular',
-        base: {
-          src: `${config.publicPath}/base.${config.tileFormat}`,
-          width: config.baseWidth,
-          height: baseHeight
-        },
-        levels
-      },
-      null,
-      2
-    )};
+export const gardenPanoManifest: PanoTileManifest = {
+  projection: 'equirectangular',
+  base: {
+    src: baseUrl,
+    width: ${config.baseWidth},
+    height: ${baseHeight}
+  },
+  levels: [
+${levels.map(formatLevelManifest).join(',\n')}
+  ]
+};
 `
   );
+}
+
+function formatLevelManifest(level: LevelConfig & { columns: number; rows: number; tiles: string[][] }) {
+  return `    {
+      id: ${JSON.stringify(level.id)},
+      width: ${level.width},
+      height: ${level.height},
+      tileWidth: ${level.tileWidth},
+      tileHeight: ${level.tileHeight},
+      showBelowFov: ${level.showBelowFov},
+      columns: ${level.columns},
+      rows: ${level.rows},
+      tiles: [
+${level.tiles.map(row => `        [${row.join(', ')}]`).join(',\n')}
+      ]
+    }`;
+}
+
+function getAssetImportPath(manifest: string, asset: string) {
+  const path = relative(dirname(manifest), asset).split(sep).join('/');
+  const relativePath = path.startsWith('.') ? path : `./${path}`;
+
+  return `${relativePath}?url`;
 }
 
 interface ImageInfo {
@@ -243,11 +293,11 @@ function parseArgs(args: string[]): PanoTileConfig {
     source: values.get('source') ?? DEFAULT_SOURCE,
     output: values.get('output') ?? DEFAULT_OUTPUT,
     manifest: values.get('manifest') ?? DEFAULT_MANIFEST,
-    publicPath: values.get('public-path') ?? DEFAULT_PUBLIC_PATH,
     baseWidth: numberArg(values, 'base-width', 4096),
     tileFormat: values.get('format') ?? 'webp',
     panOffsetDeg: numberArg(values, 'pan-offset-deg', 0),
     tiltOffsetDeg: numberArg(values, 'tilt-offset-deg', 0),
+    manifestOnly: booleanArg(values, 'manifest-only', false),
     levels: [
       {
         id: 'medium',
@@ -267,6 +317,16 @@ function parseArgs(args: string[]): PanoTileConfig {
       }
     ]
   };
+}
+
+function booleanArg(values: Map<string, string>, key: string, fallback: boolean) {
+  const value = values.get(key);
+  if (value === undefined) return fallback;
+
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+
+  throw new Error(`Invalid boolean for --${key}: ${value}`);
 }
 
 function numberArg(values: Map<string, string>, key: string, fallback: number) {

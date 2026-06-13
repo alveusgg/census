@@ -30,6 +30,7 @@ export class SPAWorker extends ComponentResource {
       () => interpolate`export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const isImageAsset = /\\.(?:avif|gif|ico|jpe?g|png|svg|webp)$/i.test(url.pathname);
 
     if (url.pathname === '/backstage') {
       return Response.json({
@@ -38,7 +39,21 @@ export class SPAWorker extends ComponentResource {
       });
     }
 
-    return env.ASSETS.fetch(request);
+    const response = await env.ASSETS.fetch(request);
+    const contentType = response.headers.get('Content-Type') ?? '';
+
+    if (response.ok && isImageAsset && contentType.startsWith('image/')) {
+      const headers = new Headers(response.headers);
+      headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+
+      return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers
+      });
+    }
+
+    return response;
   }
 };`
     );
