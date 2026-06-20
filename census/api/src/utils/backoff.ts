@@ -31,24 +31,7 @@ export class ExponentialBackoffStrategy {
 
   async wait() {
     const delay = this.attempt === 0 ? 0 : this.baseDelayMs * this.multiplier ** (this.attempt - 1);
-
-    return Sentry.startSpan(
-      {
-        name: `${this.name}.wait`,
-        op: 'backoff.wait',
-        attributes: this.attributes({ delayMs: delay })
-      },
-      async () => {
-        Sentry.addBreadcrumb({
-          category: 'backoff',
-          level: 'info',
-          message: `${this.name} waiting before retry`,
-          data: this.attributes({ delayMs: delay })
-        });
-        Sentry.metrics.count('backoff.wait', 1, { attributes: this.metricAttributes() });
-        await new Promise(resolve => setTimeout(resolve, delay));
-      }
-    );
+    await new Promise(resolve => setTimeout(resolve, delay));
   }
 
   async timeout() {
