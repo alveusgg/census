@@ -7,6 +7,7 @@ export const config: DeepPartial<Config> = {
     ipxBaseUrl: 'http://localhost:2209'
   },
   flags: {
+    cloudflareImages: false,
     crop: false
   }
 };
