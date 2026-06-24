@@ -25,9 +25,7 @@ export class SPAWorker extends ComponentResource {
     this.name = interpolate`${args.name}-${args.env}`;
     this.hostname = output(args.route);
 
-    const flags = jsonStringify(args.backstage.flags);
-    const workerSource = flags.apply(
-      () => interpolate`export default {
+    const workerSource = interpolate`export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const isImageAsset = /\\.(?:avif|gif|ico|jpe?g|png|svg|webp)$/i.test(url.pathname);
@@ -35,7 +33,7 @@ export class SPAWorker extends ComponentResource {
     if (url.pathname === '/backstage') {
       return Response.json({
         variables: ${jsonStringify(args.backstage.variables)},
-        flags: ${jsonStringify(flags)}
+        flags: ${jsonStringify(args.backstage.flags)}
       });
     }
 
@@ -55,8 +53,7 @@ export class SPAWorker extends ComponentResource {
 
     return response;
   }
-};`
-    );
+};`;
 
     this.workerSourceBase64 = workerSource.apply(source => Buffer.from(source, 'utf8').toString('base64'));
 
