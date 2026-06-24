@@ -91,25 +91,25 @@ export = async () => {
   });
 
   // MARK: Image Optimisation
-  const imageOptimisation = new API(`${id}-ipx`, {
-    name: 'ipx',
-    project,
-    cluster,
-    subdomain: 'census-ipx',
-    env: {
-      // Twitch clip thumbnails (CaptureUpgradesPopover) are served from static-cdn.jtvnw.net
-      IPX_HTTP_DOMAINS: `${s3PublicUrl},static-cdn.jtvnw.net`,
-      IPX_HTTP_MAX_AGE: '86400'
-    },
-    image: config.require('ipx'),
-    size: 'micro',
-    scale: {
-      min: 1,
-      max: 1,
-      noOfRequestsPerInstance: 50
-    },
-    port: 3000
-  });
+  // const imageOptimisation = new API(`${id}-ipx`, {
+  //   name: 'ipx',
+  //   project,
+  //   cluster,
+  //   subdomain: 'census-ipx',
+  //   env: {
+  //     // Twitch clip thumbnails (CaptureUpgradesPopover) are served from static-cdn.jtvnw.net
+  //     IPX_HTTP_DOMAINS: `${s3PublicUrl},static-cdn.jtvnw.net`,
+  //     IPX_HTTP_MAX_AGE: '86400'
+  //   },
+  //   image: config.require('ipx'),
+  //   size: 'micro',
+  //   scale: {
+  //     min: 1,
+  //     max: 1,
+  //     noOfRequestsPerInstance: 50
+  //   },
+  //   port: 3000
+  // });
 
   const worker = new SPAWorker(`${id}-worker`, {
     account_id: config.require('cf-account-id'),
@@ -119,11 +119,14 @@ export = async () => {
     assetsDirectory: 'ui',
     backstage: {
       variables: {
+        // ipxBaseUrl: imageOptimisation.defaultUrl,
+        sentryDSN: config.require('sentry-dsn'),
         apiBaseUrl: api.defaultUrl,
-        ipxBaseUrl: imageOptimisation.defaultUrl,
-        sentryDSN: config.require('sentry-dsn')
+        cloudflareImageBaseUrl: 'https://census.alveussanctuary.org'
       },
-      flags: {}
+      flags: {
+        cloudflareImages: true
+      }
     }
   });
   // MARK: Outputs
