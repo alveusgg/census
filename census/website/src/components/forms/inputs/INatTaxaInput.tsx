@@ -1,4 +1,5 @@
 import SiBinoculars from '@/components/icons/SiBinoculars';
+import SiSearchGlobe from '@/components/icons/SiSearchGlobe';
 import { useAPI } from '@/services/query/hooks';
 import { cn } from '@/utils/cn';
 import { useQuery } from '@tanstack/react-query';
@@ -12,6 +13,7 @@ export interface InputProps<T> {
   placeholder?: string;
   autoOpen?: boolean;
   icon?: ReactNode;
+  taxonId?: number;
 }
 
 interface TaxaSearchResult {
@@ -26,6 +28,7 @@ export const INatTaxaInput: FC<InputProps<TaxaSearchResult> & Omit<ComponentProp
   onSelect,
   placeholder,
   autoOpen,
+  taxonId,
   ...props
 }) => {
   const [query, setQuery] = useState('');
@@ -37,8 +40,8 @@ export const INatTaxaInput: FC<InputProps<TaxaSearchResult> & Omit<ComponentProp
   const api = useAPI();
 
   const results = useQuery({
-    queryKey: ['inat-taxa', search],
-    queryFn: () => api.identification.searchForTaxa.query({ query: search }),
+    queryKey: ['inat-taxa', search, taxonId],
+    queryFn: () => api.identification.searchForTaxa.query({ query: search, taxonId }),
     enabled: !!search
   });
 
@@ -93,7 +96,7 @@ export const INatTaxaInput: FC<InputProps<TaxaSearchResult> & Omit<ComponentProp
                     <Command.Group>
                       {results.data?.results.map(result => (
                         <Command.Item
-                          className="px-3 py-1 cursor-pointer data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent-100 data-[disabled=true]:opacity-50"
+                          className="flex cursor-pointer items-center justify-between gap-2 px-3 py-1 data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent-100 data-[disabled=true]:opacity-50"
                           key={result.id}
                           value={result.name}
                           onSelect={() => {
@@ -107,8 +110,27 @@ export const INatTaxaInput: FC<InputProps<TaxaSearchResult> & Omit<ComponentProp
                             setQuery('');
                           }}
                         >
-                          <p className="text-sm">{result.preferred_common_name}</p>
-                          <p className="text-xs opacity-75">{result.name}</p>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm">{result.preferred_common_name ?? result.name}</p>
+                            <p className="truncate text-xs opacity-75">{result.name}</p>
+                          </div>
+                          <a
+                            href={`https://www.inaturalist.org/taxa/${result.id}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            aria-label={`open ${result.name} on iNaturalist`}
+                            title="Open on iNaturalist"
+                            onPointerDown={event => event.stopPropagation()}
+                            onMouseDown={event => event.stopPropagation()}
+                            onClick={event => event.stopPropagation()}
+                            className="relative flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-accent-800 hover:bg-accent-200"
+                          >
+                            <span
+                              aria-hidden="true"
+                              className="pointer-events-none absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2 sm:hidden"
+                            />
+                            <SiSearchGlobe className="text-lg" />
+                          </a>
                         </Command.Item>
                       ))}
                     </Command.Group>

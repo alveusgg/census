@@ -58,15 +58,20 @@ export const createIdentificationRouter = () =>
         ctx.points();
       }),
     searchForTaxa: procedure
-      .input(z.object({ query: z.string() }))
+      .input(z.object({ query: z.string(), taxonId: z.number().optional() }))
       .use(
         cache.query({
-          key: ({ input }) => ['inat', 'taxaSearch', input.query.trim().toLowerCase()],
+          key: ({ input }) => [
+            'inat',
+            'taxaSearch',
+            input.query.trim().toLowerCase(),
+            input.taxonId?.toString() ?? 'all'
+          ],
           ttl: 60 * 60
         })
       )
       .query(async ({ input }) => {
-        return await getTaxaFromPartialSearch(input.query);
+        return await getTaxaFromPartialSearch(input.query, input.taxonId);
       }),
 
     identificationsGroupedBySource: procedure

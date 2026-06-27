@@ -32,8 +32,11 @@ const SearchResults = z.object({
 
 export type TaxaSearchResult = z.infer<typeof TaxaSearchResult>;
 
-export const getTaxaFromPartialSearch = async (search: string) => {
-  const response = await fetch(`https://api.inaturalist.org/v1/taxa/autocomplete?q=${encodeURIComponent(search)}`);
+export const getTaxaFromPartialSearch = async (search: string, taxonId?: number) => {
+  const params = new URLSearchParams({ q: search });
+  if (taxonId) params.set('taxon_id', taxonId.toString());
+
+  const response = await fetch(`https://api.inaturalist.org/v1/taxa/autocomplete?${params.toString()}`);
   const data = await response.json();
   return SearchResults.parse(data);
 };
