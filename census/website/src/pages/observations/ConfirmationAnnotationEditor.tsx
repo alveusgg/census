@@ -3,18 +3,6 @@ import { Observation } from '@/services/api/observations';
 import { cn } from '@/utils/cn';
 import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { FC, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  DefaultColorStyle,
-  DefaultSizeStyle,
-  Editor,
-  TLDrawShape,
-  TLEditorSnapshot,
-  TLShape,
-  TLShapeId,
-  Tldraw,
-  useEditor
-} from 'tldraw';
-import 'tldraw/tldraw.css';
 
 export type ConfirmationImage = Observation['sightings'][number]['images'][number];
 
@@ -37,12 +25,30 @@ export interface ConfirmationAnnotation {
 
 type AnnotationTool = 'draw';
 
+type AnnotationPoint = {
+  x: number;
+  y: number;
+};
+
+type AnnotationCanvasShape = {
+  box: ConfirmationAnnotationBox;
+  path: string;
+  points: AnnotationPoint[];
+  shapeId: string;
+};
+
+type AnnotationCanvasSnapshot = {
+  shapes: AnnotationCanvasShape[];
+};
+
 type AnnotationShape = {
   box: ConfirmationAnnotationBox;
   key: string;
   imageId: string;
   shape: string;
   shapeId: string;
+  path: string;
+  points: AnnotationPoint[];
   type: AnnotationTool;
 };
 
@@ -64,95 +70,75 @@ interface ConfirmationAnnotationEditorProps {
 
 interface AnnotationCanvasProps {
   imageId: string;
-  initialSnapshot?: TLEditorSnapshot;
+  initialSnapshot?: AnnotationCanvasSnapshot;
   pendingDelete: PendingDelete | null;
   onPendingDeleteHandled: () => void;
-  onSnapshotChange: (imageId: string, snapshot: TLEditorSnapshot, shapes: AnnotationShape[]) => void;
+  onSnapshotChange: (imageId: string, snapshot: AnnotationCanvasSnapshot, shapes: AnnotationShape[]) => void;
 }
-
-const isAnnotationShape = (shape: TLShape): shape is TLDrawShape & { type: AnnotationTool } => {
-  return shape.type === 'draw';
-};
-
-const isPresent = <T,>(value: T | undefined): value is T => value !== undefined;
-
-const isCompleteAnnotationShape = (shape: TLShape): shape is TLDrawShape & { type: AnnotationTool } => {
-  return isAnnotationShape(shape) && shape.props.isComplete;
-};
-
-const getAnnotationBox = (editor: Editor, shape: TLDrawShape): ConfirmationAnnotationBox | undefined => {
-  const bounds = editor.getShapePageBounds(shape);
-  if (!bounds) return undefined;
-
-  return {
-    height: bounds.h,
-    width: bounds.w,
-    x: bounds.x,
-    y: bounds.y
-  };
-};
 
 const isLargeEnoughAnnotation = (box: ConfirmationAnnotationBox) => {
   return Math.max(box.width, box.height) >= MINIMUM_ANNOTATION_SIZE;
 };
 
-const deleteSmallCompletedAnnotations = (editor: Editor) => {
-  const shapeIds = editor
-    .getCurrentPageShapes()
-    .filter(isCompleteAnnotationShape)
-    .filter(shape => {
-      const box = getAnnotationBox(editor, shape);
-      return !box || !isLargeEnoughAnnotation(box);
-    })
-    .map(shape => shape.id);
+const ANNOTATION_STROKE_WIDTH = 3.5;
+const ANNOTATION_HALO_WIDTH = ANNOTATION_STROKE_WIDTH + 4;
+const ANNOTATION_STROKE_COLOR = '#ef9e11';
+const ANNOTATION_HALO_COLOR = '#ffffff';
 
-  if (shapeIds.length === 0) return false;
-  editor.deleteShapes(shapeIds);
-  return true;
+const roundCoordinate = (value: number) => Math.round(value * 10) / 10;
+
+const getAnnotationPoint = (event: React.PointerEvent<SVGSVGElement>, element: SVGSVGElement): AnnotationPoint => {
+  const rect = element.getBoundingClientRect();
+
+  return {
+    x: roundCoordinate(Math.min(Math.max(event.clientX - rect.left, 0), rect.width)),
+    y: roundCoordinate(Math.min(Math.max(event.clientY - rect.top, 0), rect.height))
+  };
 };
 
-const getAnnotationShapes = async (imageId: string, editor: Editor): Promise<AnnotationShape[]> => {
-  const shapes = editor.getCurrentPageShapesSorted().filter(isCompleteAnnotationShape);
-  const annotations = await Promise.all(
-    shapes.map(async drawShape => {
-      const box = getAnnotationBox(editor, drawShape);
-      if (!box || !isLargeEnoughAnnotation(box)) return undefined;
+const getAnnotationBox = (points: AnnotationPoint[]): ConfirmationAnnotationBox | undefined => {
+  if (points.length === 0) return undefined;
 
-      const svg = await editor.getSvgString([drawShape.id], { background: false, padding: 'auto', scale: 1 });
-      if (!svg) return undefined;
+  const xs = points.map(point => point.x);
+  const ys = points.map(point => point.y);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
 
-      return {
-        box,
-        key: `${imageId}:${drawShape.id}`,
-        imageId,
-        shape: svg.svg,
-        shapeId: drawShape.id,
-        type: drawShape.type
-      };
-    })
-  );
-
-  return annotations.filter(isPresent);
+  return {
+    height: roundCoordinate(maxY - minY),
+    width: roundCoordinate(maxX - minX),
+    x: roundCoordinate(minX),
+    y: roundCoordinate(minY)
+  };
 };
 
-const PendingDeleteController = ({
-  pendingDelete,
-  imageId,
-  onHandled
-}: {
-  pendingDelete: PendingDelete | null;
-  imageId: string;
-  onHandled: () => void;
-}) => {
-  const editor = useEditor();
+const pointsToPath = (points: AnnotationPoint[]) => {
+  const [firstPoint, ...remainingPoints] = points;
+  if (!firstPoint) return '';
 
-  useEffect(() => {
-    if (!pendingDelete || pendingDelete.imageId !== imageId) return;
-    editor.deleteShapes([pendingDelete.shapeId as TLShapeId]);
-    onHandled();
-  }, [editor, imageId, onHandled, pendingDelete]);
+  return [`M ${firstPoint.x} ${firstPoint.y}`, ...remainingPoints.map(point => `L ${point.x} ${point.y}`)].join(' ');
+};
 
-  return null;
+const getShapeSvg = (shape: AnnotationCanvasShape) => {
+  const width = roundCoordinate(shape.box.width + ANNOTATION_HALO_WIDTH);
+  const height = roundCoordinate(shape.box.height + ANNOTATION_HALO_WIDTH);
+  const viewBox = [shape.box.x - ANNOTATION_HALO_WIDTH / 2, shape.box.y - ANNOTATION_HALO_WIDTH / 2, width, height]
+    .map(value => roundCoordinate(value))
+    .join(' ');
+
+  return `<svg width="${width}" height="${height}" viewBox="${viewBox}" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="${shape.path}" stroke="${ANNOTATION_HALO_COLOR}" stroke-width="${ANNOTATION_HALO_WIDTH}" stroke-linecap="round" stroke-linejoin="round"/><path d="${shape.path}" stroke="${ANNOTATION_STROKE_COLOR}" stroke-width="${ANNOTATION_STROKE_WIDTH}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+};
+
+const toAnnotationShape = (imageId: string, shape: AnnotationCanvasShape): AnnotationShape => {
+  return {
+    ...shape,
+    key: `${imageId}:${shape.shapeId}`,
+    imageId,
+    shape: getShapeSvg(shape),
+    type: 'draw'
+  };
 };
 
 const AnnotationCanvas: FC<AnnotationCanvasProps> = ({
@@ -162,100 +148,179 @@ const AnnotationCanvas: FC<AnnotationCanvasProps> = ({
   onPendingDeleteHandled,
   onSnapshotChange
 }) => {
-  const initialSnapshotRef = useRef(initialSnapshot);
-  const editorRef = useRef<Editor | null>(null);
-  const syncVersionRef = useRef(0);
+  const initialShapes = initialSnapshot?.shapes ?? [];
+  const [shapes, setShapes] = useState<AnnotationCanvasShape[]>(initialShapes);
+  const shapesRef = useRef<AnnotationCanvasShape[]>(initialShapes);
+  const [draftPoints, setDraftPointsState] = useState<AnnotationPoint[] | null>(null);
+  const draftPointsRef = useRef<AnnotationPoint[] | null>(null);
+  const activePointerIdRef = useRef<number | null>(null);
+  const nextShapeIdRef = useRef(Date.now());
 
-  const syncCanvas = useCallback(
-    (editor: Editor, options?: { force?: boolean }) => {
-      if (!options?.force && editor.inputs.getIsDragging()) return;
+  const setDraftPoints = useCallback((points: AnnotationPoint[] | null) => {
+    draftPointsRef.current = points;
+    setDraftPointsState(points);
+  }, []);
 
-      const syncVersion = ++syncVersionRef.current;
-      const unsupportedShapes = editor
-        .getCurrentPageShapes()
-        .filter(shape => !isAnnotationShape(shape))
-        .map(shape => shape.id);
-
-      if (unsupportedShapes.length > 0) {
-        editor.deleteShapes(unsupportedShapes);
-        queueMicrotask(() => syncCanvas(editor, { force: true }));
-        return;
-      }
-
-      if (deleteSmallCompletedAnnotations(editor)) {
-        queueMicrotask(() => syncCanvas(editor, { force: true }));
-        return;
-      }
-
-      const snapshot = editor.getSnapshot();
-      void getAnnotationShapes(imageId, editor)
-        .then(shapes => {
-          if (syncVersion !== syncVersionRef.current) return;
-          onSnapshotChange(imageId, snapshot, shapes);
-        })
-        .catch(error => {
-          console.error('Failed to export confirmation annotation SVGs', error);
-        });
+  const syncShapes = useCallback(
+    (nextShapes: AnnotationCanvasShape[]) => {
+      const snapshot = { shapes: nextShapes };
+      onSnapshotChange(
+        imageId,
+        snapshot,
+        nextShapes.map(shape => toAnnotationShape(imageId, shape))
+      );
     },
     [imageId, onSnapshotChange]
   );
 
-  const syncAfterPointerUp = useCallback(() => {
-    const editor = editorRef.current;
-    if (!editor) return;
-
-    requestAnimationFrame(() => {
-      if (editorRef.current === editor) syncCanvas(editor, { force: true });
-    });
-  }, [syncCanvas]);
-
-  useEffect(() => {
-    window.addEventListener('pointerup', syncAfterPointerUp);
-    window.addEventListener('pointercancel', syncAfterPointerUp);
-
-    return () => {
-      window.removeEventListener('pointerup', syncAfterPointerUp);
-      window.removeEventListener('pointercancel', syncAfterPointerUp);
-    };
-  }, [syncAfterPointerUp]);
-
-  const handleMount = useCallback(
-    (editor: Editor) => {
-      editorRef.current = editor;
-      editor.setCamera({ x: 0, y: 0, z: 1 }, { force: true, immediate: true });
-      editor.setCameraOptions({
-        isLocked: true,
-        panSpeed: 0,
-        wheelBehavior: 'none',
-        zoomSpeed: 0,
-        zoomSteps: [1]
-      });
-      editor.setStyleForNextShapes(DefaultColorStyle, 'orange');
-      editor.setStyleForNextShapes(DefaultSizeStyle, 'm');
-      editor.setCurrentTool('draw');
-      syncCanvas(editor);
-
-      const cleanup = editor.store.listen(() => syncCanvas(editor), { source: 'user', scope: 'all' });
-
-      return () => {
-        if (editorRef.current === editor) editorRef.current = null;
-        cleanup();
-      };
+  const replaceShapes = useCallback(
+    (getNextShapes: (currentShapes: AnnotationCanvasShape[]) => AnnotationCanvasShape[]) => {
+      const nextShapes = getNextShapes(shapesRef.current);
+      shapesRef.current = nextShapes;
+      setShapes(nextShapes);
+      syncShapes(nextShapes);
     },
-    [syncCanvas]
+    [syncShapes]
   );
 
+  useEffect(() => {
+    if (!pendingDelete || pendingDelete.imageId !== imageId) return;
+
+    replaceShapes(currentShapes => currentShapes.filter(shape => shape.shapeId !== pendingDelete.shapeId));
+    onPendingDeleteHandled();
+  }, [imageId, onPendingDeleteHandled, pendingDelete, replaceShapes]);
+
+  const finishDrawing = useCallback(
+    (points: AnnotationPoint[]) => {
+      activePointerIdRef.current = null;
+
+      const box = getAnnotationBox(points);
+      if (!box || !isLargeEnoughAnnotation(box)) return;
+
+      const nextShape: AnnotationCanvasShape = {
+        box,
+        path: pointsToPath(points),
+        points,
+        shapeId: `shape:${nextShapeIdRef.current++}`
+      };
+
+      replaceShapes(currentShapes => [...currentShapes, nextShape]);
+    },
+    [replaceShapes]
+  );
+
+  const handlePointerDown = useCallback(
+    (event: React.PointerEvent<SVGSVGElement>) => {
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+
+      event.preventDefault();
+      const point = getAnnotationPoint(event, event.currentTarget);
+      activePointerIdRef.current = event.pointerId;
+      event.currentTarget.setPointerCapture(event.pointerId);
+      setDraftPoints([point]);
+    },
+    [setDraftPoints]
+  );
+
+  const handlePointerMove = useCallback(
+    (event: React.PointerEvent<SVGSVGElement>) => {
+      if (activePointerIdRef.current !== event.pointerId) return;
+
+      event.preventDefault();
+      const point = getAnnotationPoint(event, event.currentTarget);
+      const currentPoints = draftPointsRef.current;
+      if (!currentPoints) return;
+
+      const previousPoint = currentPoints[currentPoints.length - 1];
+      if (previousPoint && previousPoint.x === point.x && previousPoint.y === point.y) return;
+
+      setDraftPoints([...currentPoints, point]);
+    },
+    [setDraftPoints]
+  );
+
+  const handlePointerUp = useCallback(
+    (event: React.PointerEvent<SVGSVGElement>) => {
+      if (activePointerIdRef.current !== event.pointerId) return;
+
+      event.preventDefault();
+      const point = getAnnotationPoint(event, event.currentTarget);
+      if (event.currentTarget.hasPointerCapture(event.pointerId))
+        event.currentTarget.releasePointerCapture(event.pointerId);
+
+      const currentPoints = draftPointsRef.current;
+      setDraftPoints(null);
+      if (currentPoints) finishDrawing([...currentPoints, point]);
+    },
+    [finishDrawing, setDraftPoints]
+  );
+
+  const handlePointerCancel = useCallback(
+    (event: React.PointerEvent<SVGSVGElement>) => {
+      if (activePointerIdRef.current !== event.pointerId) return;
+      event.preventDefault();
+      if (event.currentTarget.hasPointerCapture(event.pointerId))
+        event.currentTarget.releasePointerCapture(event.pointerId);
+
+      const currentPoints = draftPointsRef.current;
+      setDraftPoints(null);
+      if (currentPoints) finishDrawing(currentPoints);
+    },
+    [finishDrawing, setDraftPoints]
+  );
+
+  const draftPath = draftPoints ? pointsToPath(draftPoints) : undefined;
+
   return (
-    <Tldraw
-      hideUi
-      autoFocus={false}
-      className="confirmation-annotation-editor absolute inset-0 z-10"
-      initialState="draw"
-      snapshot={initialSnapshotRef.current}
-      onMount={handleMount}
+    <svg
+      aria-label="draw annotation"
+      className="confirmation-annotation-editor absolute inset-0 z-10 size-full touch-none cursor-crosshair"
+      onPointerCancel={handlePointerCancel}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
     >
-      <PendingDeleteController imageId={imageId} pendingDelete={pendingDelete} onHandled={onPendingDeleteHandled} />
-    </Tldraw>
+      {shapes.map(shape => (
+        <g key={shape.shapeId} className="confirmation-annotation-shape">
+          <path
+            d={shape.path}
+            className="stroke-white"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={ANNOTATION_HALO_WIDTH}
+          />
+          <path
+            d={shape.path}
+            className="stroke-accent-600"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={ANNOTATION_STROKE_WIDTH}
+          />
+        </g>
+      ))}
+      {draftPath && (
+        <g className="confirmation-annotation-shape">
+          <path
+            d={draftPath}
+            className="stroke-white"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={ANNOTATION_HALO_WIDTH}
+          />
+          <path
+            d={draftPath}
+            className="stroke-accent-600"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={ANNOTATION_STROKE_WIDTH}
+          />
+        </g>
+      )}
+    </svg>
   );
 };
 
@@ -269,7 +334,7 @@ export const ConfirmationAnnotationEditor: FC<ConfirmationAnnotationEditorProps>
 }) => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
-  const [snapshotsByImageId, setSnapshotsByImageId] = useState<Record<string, TLEditorSnapshot>>({});
+  const [snapshotsByImageId, setSnapshotsByImageId] = useState<Record<string, AnnotationCanvasSnapshot>>({});
   const [annotationsByImageId, setAnnotationsByImageId] = useState<Record<string, AnnotationShape[]>>({});
 
   const activeImage = images[activeImageIndex];
@@ -298,10 +363,13 @@ export const ConfirmationAnnotationEditor: FC<ConfirmationAnnotationEditorProps>
     onAnnotationsChange(annotations);
   }, [annotations, onAnnotationsChange]);
 
-  const handleSnapshotChange = useCallback((imageId: string, snapshot: TLEditorSnapshot, shapes: AnnotationShape[]) => {
-    setSnapshotsByImageId(current => ({ ...current, [imageId]: snapshot }));
-    setAnnotationsByImageId(current => ({ ...current, [imageId]: shapes }));
-  }, []);
+  const handleSnapshotChange = useCallback(
+    (imageId: string, snapshot: AnnotationCanvasSnapshot, shapes: AnnotationShape[]) => {
+      setSnapshotsByImageId(current => ({ ...current, [imageId]: snapshot }));
+      setAnnotationsByImageId(current => ({ ...current, [imageId]: shapes }));
+    },
+    []
+  );
 
   const goToImage = useCallback(
     (direction: -1 | 1) => {

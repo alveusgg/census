@@ -11,6 +11,7 @@ import { fastifyTRPCPlugin, FastifyTRPCPluginOptions } from '@trpc/server/adapte
 import fastify from 'fastify';
 import { createRouter } from './api/index.js';
 import { tearDownDatabase } from './db/db.js';
+import { defineListener } from './db/defineListener.js';
 import { PostgresLeader } from './db/leader.js';
 import type { Capture } from './db/schema/index.js';
 import authRouter from './services/auth/router.js';
@@ -29,6 +30,15 @@ import { runLongOperation, tearDown, waitForLongOperations } from './utils/teard
 export type AppRouter = ReturnType<typeof createRouter>;
 
 const leader = new PostgresLeader(703, 1);
+const CAPTURE_QUEUE_SAFETY_POLL_MS = 60_000;
+
+type CaptureQueueWaitResult = 'wake' | 'timeout' | 'closed' | 'aborted';
+
+const logCaptureQueueWorker = (message: string, details: Record<string, unknown> = {}) => {
+  if (environment.variables.NODE_ENV !== 'development') return;
+
+  console.log('[capture-leader]', message, details);
+};
 
 const completeCaptureRequestInBackground = (capture: Capture, videoUrl: string) => {
   void runLongOperation(async () => {
@@ -47,9 +57,12 @@ const completeCaptureRequestInBackground = (capture: Capture, videoUrl: string) 
         },
         async span => {
           try {
+            logCaptureQueueWorker('completing capture', { id: capture.id, videoUrl });
             await completeCaptureRequest(capture.id, videoUrl);
+            logCaptureQueueWorker('capture completed', { id: capture.id });
             span.setStatus({ code: 1, message: 'ok' });
           } catch (error) {
+            logCaptureQueueWorker('capture completion failed', { id: capture.id, error });
             span.setStatus({ code: 2, message: 'error' });
             Sentry.captureException(error, {
               tags: {
@@ -96,6 +109,168 @@ const completeCaptureRequestInBackground = (capture: Capture, videoUrl: string) 
   });
 };
 
+const processCaptureRequest = async (capture: Capture, backoff: ExponentialBackoffStrategy) => {
+  await Sentry.startSpan(
+    {
+      name: 'capture-leader.process',
+      op: 'capture.leader',
+      forceTransaction: true,
+      attributes: {
+        'capture.id': capture.id,
+        'capture.status': capture.status,
+        'capture.feed_id': capture.feedId,
+        'capture.upgrade_attempt_count': capture.upgradeAttemptCount
+      }
+    },
+    async span => {
+      try {
+        logCaptureQueueWorker('processing capture', {
+          id: capture.id,
+          status: capture.status,
+          feedId: capture.feedId,
+          upgradeAttemptCount: capture.upgradeAttemptCount
+        });
+        await processingCaptureRequest(capture.id);
+        const videoUrl = await requestClipFromCamManager(capture.startCaptureAt, capture.endCaptureAt, capture.id);
+        logCaptureQueueWorker('clip request completed', { id: capture.id, videoUrl });
+        completeCaptureRequestInBackground(capture, videoUrl);
+        span.setStatus({ code: 1, message: 'completion_queued' });
+        backoff.success();
+      } catch (error) {
+        logCaptureQueueWorker('capture processing failed', { id: capture.id, error });
+        span.setStatus({ code: 2, message: 'error' });
+        await failCaptureRequest(capture.id);
+        backoff.failure(error);
+      }
+    }
+  );
+};
+
+const drainCaptureQueue = async (signal: AbortSignal, backoff: ExponentialBackoffStrategy) => {
+  logCaptureQueueWorker('draining capture queue');
+
+  while (!signal.aborted) {
+    await backoff.wait();
+    if (signal.aborted) {
+      logCaptureQueueWorker('drain aborted');
+      return;
+    }
+
+    const capture = await getNextCaptureRequest();
+    if (!capture) {
+      logCaptureQueueWorker('no eligible capture found');
+      return;
+    }
+
+    logCaptureQueueWorker('eligible capture found', {
+      id: capture.id,
+      status: capture.status,
+      retryUpgradeFrom: capture.retryUpgradeFrom
+    });
+
+    await processCaptureRequest(capture, backoff);
+  }
+};
+
+const isAbortError = (error: unknown) => {
+  return error instanceof Error && error.name === 'AbortError';
+};
+
+const nextCaptureQueueWake = async (
+  wakeups: AsyncIterator<number>,
+  signal: AbortSignal
+): Promise<CaptureQueueWaitResult> => {
+  try {
+    const result = await wakeups.next();
+    if (result.done) return 'closed';
+    return 'wake';
+  } catch (error) {
+    if (signal.aborted || isAbortError(error)) return 'aborted';
+    throw error;
+  }
+};
+
+const createSafetyPollTimeout = (signal: AbortSignal) => {
+  let timer: NodeJS.Timeout | undefined;
+  let abort: (() => void) | undefined;
+
+  const cleanup = () => {
+    if (timer) clearTimeout(timer);
+    timer = undefined;
+
+    if (abort) signal.removeEventListener('abort', abort);
+    abort = undefined;
+  };
+
+  const promise = new Promise<CaptureQueueWaitResult>(resolve => {
+    if (signal.aborted) {
+      resolve('aborted');
+      return;
+    }
+
+    abort = () => {
+      cleanup();
+      resolve('aborted');
+    };
+
+    timer = setTimeout(() => {
+      cleanup();
+      resolve('timeout');
+    }, CAPTURE_QUEUE_SAFETY_POLL_MS);
+
+    signal.addEventListener('abort', abort, { once: true });
+  });
+
+  return {
+    promise,
+    cancel: cleanup
+  };
+};
+
+const waitForCaptureQueueWakeOrSafetyPoll = async (nextWake: Promise<CaptureQueueWaitResult>, signal: AbortSignal) => {
+  const timeout = createSafetyPollTimeout(signal);
+
+  try {
+    return await Promise.race([nextWake, timeout.promise]);
+  } finally {
+    timeout.cancel();
+  }
+};
+
+const runCaptureQueueWorker = async (signal: AbortSignal) => {
+  logCaptureQueueWorker('worker starting', { safetyPollMs: CAPTURE_QUEUE_SAFETY_POLL_MS });
+
+  const backoff = new ExponentialBackoffStrategy({
+    name: 'capture-leader',
+    timeoutMs: CAPTURE_QUEUE_SAFETY_POLL_MS
+  });
+  const captureQueueWake = defineListener({
+    changes: { table: 'captures', events: ['insert', 'update'] },
+    handler: () => Date.now()
+  });
+  const wakeups = captureQueueWake.subscribe({ signal })[Symbol.asyncIterator]();
+  let nextWake = nextCaptureQueueWake(wakeups, signal);
+
+  try {
+    while (!signal.aborted) {
+      const result = await waitForCaptureQueueWakeOrSafetyPoll(nextWake, signal);
+      logCaptureQueueWorker('worker wake result', { result });
+
+      if (result === 'aborted' || result === 'closed') return;
+
+      await drainCaptureQueue(signal, backoff);
+
+      if (result === 'wake') {
+        nextWake = nextCaptureQueueWake(wakeups, signal);
+      }
+    }
+  } finally {
+    logCaptureQueueWorker('worker stopping');
+    await wakeups.return?.();
+    captureQueueWake.close();
+  }
+};
+
 await withEnvironment(environment, async () => {
   const router = createRouter();
   const options = { maxParamLength: 5000 };
@@ -123,48 +298,7 @@ await withEnvironment(environment, async () => {
     console.log(`Server listening on ${address}`);
 
     leader.acquire(async ({ signal }) => {
-      const backoff = new ExponentialBackoffStrategy({ name: 'capture-leader', timeoutMs: 4_000 });
-
-      while (!signal.aborted) {
-        await backoff.wait();
-
-        const capture = await getNextCaptureRequest();
-        if (!capture) {
-          await backoff.timeout();
-          continue;
-        }
-
-        await Sentry.startSpan(
-          {
-            name: 'capture-leader.process',
-            op: 'capture.leader',
-            forceTransaction: true,
-            attributes: {
-              'capture.id': capture.id,
-              'capture.status': capture.status,
-              'capture.feed_id': capture.feedId,
-              'capture.upgrade_attempt_count': capture.upgradeAttemptCount
-            }
-          },
-          async span => {
-            try {
-              await processingCaptureRequest(capture.id);
-              const videoUrl = await requestClipFromCamManager(
-                capture.startCaptureAt,
-                capture.endCaptureAt,
-                capture.id
-              );
-              completeCaptureRequestInBackground(capture, videoUrl);
-              span.setStatus({ code: 1, message: 'completion_queued' });
-              backoff.success();
-            } catch (error) {
-              span.setStatus({ code: 2, message: 'error' });
-              await failCaptureRequest(capture.id);
-              backoff.failure(error);
-            }
-          }
-        );
-      }
+      await runCaptureQueueWorker(signal);
     });
 
     const tearDownHandler = await tearDown([
