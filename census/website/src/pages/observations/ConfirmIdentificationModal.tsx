@@ -93,7 +93,7 @@ const ConfirmIdentificationForm: FC<ModalProps<ConfirmIdentificationModalProps>>
 
   const globalCommentsField = (
     <Field name="comment">
-      <TextAreaField aria-label="additional comments" placeholder="Add additional comments" />
+      <TextAreaField aria-label="additional comments" className="text-sm" placeholder="Add additional comments" />
     </Field>
   );
 
@@ -116,7 +116,7 @@ const ConfirmIdentificationForm: FC<ModalProps<ConfirmIdentificationModalProps>>
       ) : (
         globalCommentsField
       )}
-      <Button loading={confirmIdentification.isPending} type="submit" className="self-end px-8">
+      <Button loading={confirmIdentification.isPending} type="submit" className="self-end">
         Confirm
       </Button>
     </Form>

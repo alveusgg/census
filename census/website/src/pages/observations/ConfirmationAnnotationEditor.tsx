@@ -336,7 +336,7 @@ export const ConfirmationAnnotationEditor: FC<ConfirmationAnnotationEditorProps>
                   placeholder="What should people notice?"
                   value={annotationTextByKey[annotation.key] ?? ''}
                   onChange={event => onAnnotationTextChange(annotation.key, event.target.value)}
-                  className="min-h-16 w-full resize-none rounded-md border border-accent-300 bg-accent-50 px-3 py-2 text-base font-semibold leading-snug text-accent-900 outline-none placeholder:text-accent-900/45 focus:border-accent-700"
+                  className="min-h-16 w-full resize-none rounded-md border border-accent-300 bg-accent-50 px-3 py-2 text-sm font-semibold leading-5 text-accent-900 outline-none placeholder:text-accent-900/45 focus:border-accent-700"
                 />
                 <button
                   type="button"
