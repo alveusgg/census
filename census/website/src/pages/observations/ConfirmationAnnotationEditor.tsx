@@ -19,6 +19,7 @@ import 'tldraw/tldraw.css';
 export type ConfirmationImage = Observation['sightings'][number]['images'][number];
 
 export interface ConfirmationAnnotation {
+  bounds?: AnnotationBounds;
   key: string;
   imageId: string;
   imageIndex: number;
@@ -28,7 +29,15 @@ export interface ConfirmationAnnotation {
 
 type AnnotationTool = 'draw' | 'arrow';
 
+type AnnotationBounds = {
+  height: number;
+  width: number;
+  x: number;
+  y: number;
+};
+
 type AnnotationShape = {
+  bounds?: AnnotationBounds;
   key: string;
   imageId: string;
   shapeId: string;
@@ -65,12 +74,23 @@ const getAnnotationShapes = (imageId: string, editor: Editor): AnnotationShape[]
   return editor
     .getCurrentPageShapesSorted()
     .filter(isAnnotationShape)
-    .map(shape => ({
-      key: `${imageId}:${shape.id}`,
-      imageId,
-      shapeId: shape.id,
-      type: shape.type
-    }));
+    .map(shape => {
+      const bounds = editor.getShapePageBounds(shape);
+      return {
+        bounds: bounds
+          ? {
+              height: bounds.h,
+              width: bounds.w,
+              x: bounds.x,
+              y: bounds.y
+            }
+          : undefined,
+        key: `${imageId}:${shape.id}`,
+        imageId,
+        shapeId: shape.id,
+        type: shape.type
+      };
+    });
 };
 
 const ToolController = track(({ tool }: { tool: AnnotationTool }) => {
@@ -222,6 +242,16 @@ export const ConfirmationAnnotationEditor: FC<ConfirmationAnnotationEditorProps>
     [annotationsByImageId, images]
   );
 
+  const activeDrawCitations = useMemo(
+    () =>
+      annotations
+        .map((annotation, index) => ({ annotation, number: index + 1 }))
+        .filter(
+          ({ annotation }) => annotation.imageId === activeImageId && annotation.type === 'draw' && annotation.bounds
+        ),
+    [activeImageId, annotations]
+  );
+
   useEffect(() => {
     onAnnotationsChange(annotations);
   }, [annotations, onAnnotationsChange]);
@@ -283,6 +313,19 @@ export const ConfirmationAnnotationEditor: FC<ConfirmationAnnotationEditorProps>
             onPendingDeleteHandled={() => setPendingDelete(null)}
             onSnapshotChange={handleSnapshotChange}
           />
+          {activeDrawCitations.map(({ annotation, number }) => (
+            <span
+              key={annotation.key}
+              className="pointer-events-none absolute z-20 flex h-7 min-w-7 items-center justify-center rounded-md border-2 border-accent-800 bg-accent-50 px-1.5 text-sm font-black leading-none text-accent-900 shadow-[0_0_0_2px_rgba(255,255,255,0.9)]"
+              style={{
+                left: `${annotation.bounds!.x + annotation.bounds!.width}px`,
+                top: `${annotation.bounds!.y}px`,
+                transform: 'translate(-65%, -35%)'
+              }}
+            >
+              {number}
+            </span>
+          ))}
           {images.length > 1 && (
             <>
               <button
