@@ -1,63 +1,51 @@
-import { Img } from "@/components/assets/images/Img";
-import { Button } from "@/components/controls/button/juicy";
-import SiClose from "@/components/icons/SiClose";
-import SiUploadCloud from "@/components/icons/SiUploadCloud";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  useMarkCaptureDead,
-  useUnconvertedCaptures,
-} from "@/services/api/capture";
-import { cn } from "@/utils/cn";
-import { useQuery } from "@tanstack/react-query";
-import { formatDistanceToNow } from "date-fns";
-import { Link } from "react-router-dom";
+import { Img } from '@/components/assets/images/Img';
+import { Button } from '@/components/controls/button/juicy';
+import SiClose from '@/components/icons/SiClose';
+import SiUploadCloud from '@/components/icons/SiUploadCloud';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useMarkCaptureDead, useUnconvertedCaptures } from '@/services/api/capture';
+import { cn } from '@/utils/cn';
+import { formatDistanceToNow } from 'date-fns';
+import { Link } from 'react-router-dom';
 
 const thumbnailSizeRegex = /-\d+x\d+(?=\.\w+$)/;
 const getThumbnailUrl = (url: string) => {
   if (thumbnailSizeRegex.test(url)) {
-    return url.replace(thumbnailSizeRegex, "-1920x1080");
+    return url.replace(thumbnailSizeRegex, '-1920x1080');
   }
 
-  return url.replace(/(\.\w+)$/, "-1920x1080$1");
+  return url.replace(/(\.\w+)$/, '-1920x1080$1');
 };
 
 const statusLabels = {
-  draft: "Waiting...",
-  pending: "Waiting...",
-  processing: "Upgrading...",
-  complete: "Ready",
-  archived: "Archived",
-  failed: "Failed",
-  dead: "Failed",
+  draft: 'Waiting...',
+  pending: 'Waiting...',
+  processing: 'Upgrading...',
+  complete: 'Ready',
+  archived: 'Archived',
+  failed: 'Failed',
+  dead: 'Failed'
 };
 
 const statusClasses = {
-  draft: "border-alveus-darker/20 bg-alveus-darker/30 text-white",
-  pending: "border-alveus-darker/20 bg-alveus-darker/30 text-white",
-  processing: "border-alveus-darker/20 bg-alveus-darker/30 text-white",
-  complete: "border-green-950/40 bg-green-700 text-white",
-  archived: "border-alveus-darker/20 bg-alveus-darker/30 text-white",
-  failed: "border-red-950/40 bg-red-700 text-white",
-  dead: "border-red-950/40 bg-red-700 text-white",
+  draft: 'border-alveus-darker/20 bg-alveus-darker/30 text-white',
+  pending: 'border-alveus-darker/20 bg-alveus-darker/30 text-white',
+  processing: 'border-alveus-darker/20 bg-alveus-darker/30 text-white',
+  complete: 'border-green-950/40 bg-green-700 text-white',
+  archived: 'border-alveus-darker/20 bg-alveus-darker/30 text-white',
+  failed: 'border-red-950/40 bg-red-700 text-white',
+  dead: 'border-red-950/40 bg-red-700 text-white'
 };
 
 export const CaptureUpgradesPopover = () => {
-  const query = useQuery(useUnconvertedCaptures());
+  const query = useUnconvertedCaptures();
   const markCaptureDead = useMarkCaptureDead();
   const captures = query.data ?? [];
 
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button
-          variant="alveus"
-          className="overflow-visible text-xl"
-          aria-label="View clip upgrades"
-        >
+        <Button variant="alveus" className="overflow-visible text-xl" aria-label="View clip upgrades">
           <SiUploadCloud />
           {captures.length > 0 && (
             <span className="absolute -right-1 -top-1 size-4 rounded-full border-2 border-accent-50 bg-red-600" />
@@ -81,20 +69,23 @@ export const CaptureUpgradesPopover = () => {
               No clips waiting for your upgrades.
             </p>
           )}
-          {captures.map((capture) => {
+          {captures.map(capture => {
             const thumbnail = getThumbnailUrl(capture.clipMetadata.thumbnail);
 
             return (
               <div key={capture.id} className="relative">
                 <Link
                   to={`/captures/${capture.id}`}
-                  className="grid grid-cols-[8.75rem_1fr] gap-3 rounded-xl border-2 border-white/15 bg-white/15 p-2 transition hover:bg-white/20"
+                  className={cn(
+                    `grid grid-cols-[8.75rem_1fr] gap-3 rounded-xl border-2 border-white/15 bg-white/15 p-2 transition hover:bg-white/20`,
+                    capture.status !== 'complete' && 'pointer-events-none'
+                  )}
                 >
                   <div className="aspect-video overflow-hidden rounded-lg bg-black">
                     {thumbnail && (
                       <Img
                         src={thumbnail}
-                        options={{ width: 280, height: 158, fit: "cover" }}
+                        options={{ width: 280, height: 158, fit: 'cover' }}
                         alt=""
                         className="h-full w-full object-cover"
                         loading="lazy"
@@ -106,13 +97,13 @@ export const CaptureUpgradesPopover = () => {
                     <p className="font-bold leading-none">Clip #{capture.id}</p>
                     <p className="text-sm font-medium text-white/90 leading-none">
                       {formatDistanceToNow(capture.capturedAt, {
-                        addSuffix: true,
+                        addSuffix: true
                       })}
                     </p>
                     <div
                       className={cn(
-                        "rounded-md border px-3 py-1 mt-1 text-center text-sm font-bold",
-                        statusClasses[capture.status],
+                        'rounded-md border px-3 py-1 mt-1 text-center text-sm font-bold',
+                        statusClasses[capture.status]
                       )}
                     >
                       {statusLabels[capture.status]}

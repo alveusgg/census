@@ -1,0 +1,1 @@
+ALTER TABLE "feedback" ADD COLUMN "annotations" json DEFAULT '[]'::json NOT NULL;

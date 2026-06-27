@@ -6,12 +6,13 @@ const environment = await createEnvironment();
 
 import cors from '@fastify/cors';
 import websocket from '@fastify/websocket';
-import { fastifyTRPCPlugin, FastifyTRPCPluginOptions } from '@trpc/server/adapters/fastify';
 import * as Sentry from '@sentry/node';
+import { fastifyTRPCPlugin, FastifyTRPCPluginOptions } from '@trpc/server/adapters/fastify';
 import fastify from 'fastify';
 import { createRouter } from './api/index.js';
 import { tearDownDatabase } from './db/db.js';
 import { PostgresLeader } from './db/leader.js';
+import type { Capture } from './db/schema/index.js';
 import authRouter from './services/auth/router.js';
 import { requestClipFromCamManager } from './services/cams/index.js';
 import {
@@ -22,12 +23,78 @@ import {
 } from './services/capture/index.js';
 import { createContext } from './trpc/context.js';
 import { ExponentialBackoffStrategy } from './utils/backoff.js';
-import { tearDown, waitForLongOperations } from './utils/teardown.js';
+import { runLongOperation, tearDown, waitForLongOperations } from './utils/teardown.js';
 // Export type router type signature,
 // NOT the router itself.
 export type AppRouter = ReturnType<typeof createRouter>;
 
 const leader = new PostgresLeader(703, 1);
+
+const completeCaptureRequestInBackground = (capture: Capture, videoUrl: string) => {
+  void runLongOperation(async () => {
+    await withEnvironment(environment, async () => {
+      await Sentry.startSpan(
+        {
+          name: 'capture-leader.complete',
+          op: 'capture.complete',
+          forceTransaction: true,
+          attributes: {
+            'capture.id': capture.id,
+            'capture.status': capture.status,
+            'capture.feed_id': capture.feedId,
+            'capture.upgrade_attempt_count': capture.upgradeAttemptCount
+          }
+        },
+        async span => {
+          try {
+            await completeCaptureRequest(capture.id, videoUrl);
+            span.setStatus({ code: 1, message: 'ok' });
+          } catch (error) {
+            span.setStatus({ code: 2, message: 'error' });
+            Sentry.captureException(error, {
+              tags: {
+                component: 'capture-leader',
+                phase: 'complete'
+              },
+              contexts: {
+                capture: {
+                  id: capture.id,
+                  feed_id: capture.feedId,
+                  video_url: videoUrl,
+                  upgrade_attempt_count: capture.upgradeAttemptCount
+                }
+              }
+            });
+
+            try {
+              await failCaptureRequest(capture.id);
+            } catch (failError) {
+              Sentry.captureException(failError, {
+                tags: {
+                  component: 'capture-leader',
+                  phase: 'mark_failed'
+                },
+                contexts: {
+                  capture: {
+                    id: capture.id,
+                    feed_id: capture.feedId,
+                    video_url: videoUrl,
+                    upgrade_attempt_count: capture.upgradeAttemptCount
+                  }
+                }
+              });
+              throw failError;
+            }
+
+            throw error;
+          }
+        }
+      );
+    });
+  }, `Complete capture ${capture.id}`).catch(error => {
+    console.error(`Failed to complete capture ${capture.id}`, error);
+  });
+};
 
 await withEnvironment(environment, async () => {
   const router = createRouter();
@@ -87,9 +154,9 @@ await withEnvironment(environment, async () => {
                 capture.endCaptureAt,
                 capture.id
               );
-              await completeCaptureRequest(capture.id, videoUrl);
+              completeCaptureRequestInBackground(capture, videoUrl);
+              span.setStatus({ code: 1, message: 'completion_queued' });
               backoff.success();
-              span.setStatus({ code: 1, message: 'ok' });
             } catch (error) {
               span.setStatus({ code: 2, message: 'error' });
               await failCaptureRequest(capture.id);
@@ -106,12 +173,12 @@ await withEnvironment(environment, async () => {
         fn: () => leader.stop()
       },
       {
-        name: 'long operations',
-        fn: waitForLongOperations
-      },
-      {
         name: 'fastify',
         fn: () => server.close()
+      },
+      {
+        name: 'long operations',
+        fn: waitForLongOperations
       },
       {
         name: 'database',

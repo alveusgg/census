@@ -1,6 +1,6 @@
 import { BadRequestError, NotFoundError } from '@alveusgg/error';
 import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm';
-import { feedback, identifications, observations } from '../../db/schema/index.js';
+import { feedback, identifications, observations, type ConfirmationAnnotation } from '../../db/schema/index.js';
 import { useDB, withTransaction } from '../../db/transaction.js';
 import { useUser } from '../../utils/env/env.js';
 import { getTaxaInfo } from '../inat/index.js';
@@ -24,7 +24,11 @@ export const suggestAccessoryIdentification = async (observationId: number, iNat
   });
 };
 
-export const confirmIdentification = async (identificationId: number, comment: string) => {
+export const confirmIdentification = async (
+  identificationId: number,
+  comment: string,
+  annotations: ConfirmationAnnotation[] = []
+) => {
   const db = useDB();
   const user = useUser();
   return db.transaction(async tx => {
@@ -40,7 +44,8 @@ export const confirmIdentification = async (identificationId: number, comment: s
         identificationId,
         userId: user.id,
         type: 'confirm',
-        comment: comment
+        comment: comment,
+        annotations
       });
       if (!identification.isAccessory) {
         await tx

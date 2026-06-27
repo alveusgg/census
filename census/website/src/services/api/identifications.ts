@@ -1,6 +1,19 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { key, useAPI } from '../query/hooks';
 
+export type ConfirmationAnnotationPayload = {
+  box: {
+    height: number;
+    width: number;
+    x: number;
+    y: number;
+  };
+  comment?: string;
+  imageId: string;
+  imageIndex: number;
+  shape: string;
+};
+
 export const useSuggestIdentification = () => {
   const trpc = useAPI();
   const queryClient = useQueryClient();
@@ -77,8 +90,15 @@ export const useConfirmIdentification = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, comment }: { id: number; comment: string }) =>
-      await trpc.identification.confirm.mutate({ id, comment }),
+    mutationFn: async ({
+      id,
+      comment,
+      annotations = []
+    }: {
+      id: number;
+      comment: string;
+      annotations?: ConfirmationAnnotationPayload[];
+    }) => await trpc.identification.confirm.mutate({ id, comment, annotations }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: key('observations') });
       queryClient.invalidateQueries({ queryKey: key('identifications') });

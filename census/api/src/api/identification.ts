@@ -13,6 +13,19 @@ import { recordAchievement } from '../services/points/achievement.js';
 import { cache, procedure, procedureWithPermissions, router } from '../trpc/trpc.js';
 import { useUser } from '../utils/env/env.js';
 
+const confirmationAnnotationSchema = z.object({
+  box: z.object({
+    height: z.number(),
+    width: z.number(),
+    x: z.number(),
+    y: z.number()
+  }),
+  comment: z.string().optional(),
+  imageId: z.string(),
+  imageIndex: z.number().int().nonnegative(),
+  shape: z.string()
+});
+
 export const createIdentificationRouter = () =>
   router({
     feedback: procedureWithPermissions('vote')
@@ -97,7 +110,13 @@ export const createIdentificationRouter = () =>
       }),
 
     confirm: procedureWithPermissions('confirm')
-      .input(z.object({ id: z.number(), comment: z.string() }))
+      .input(
+        z.object({
+          id: z.number(),
+          comment: z.string(),
+          annotations: z.array(confirmationAnnotationSchema).default([])
+        })
+      )
       .use(
         cache.mutation({
           keys: [
@@ -109,6 +128,6 @@ export const createIdentificationRouter = () =>
         })
       )
       .mutation(async ({ input }) => {
-        return await confirmIdentification(input.id, input.comment);
+        return await confirmIdentification(input.id, input.comment, input.annotations);
       })
   });

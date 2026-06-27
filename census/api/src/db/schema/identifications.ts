@@ -1,5 +1,5 @@
 import { relations, sql } from 'drizzle-orm';
-import { boolean, index, integer, pgEnum, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
+import { boolean, index, integer, json, pgEnum, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
 import { observations } from './observations.js';
 import { shinies } from './seasons.js';
 import { tagAssignments } from './tags.js';
@@ -9,6 +9,19 @@ export interface Feedback {
   type: 'agree' | 'disagree';
   userId: number;
   comment?: string;
+}
+
+export interface ConfirmationAnnotation {
+  box: {
+    height: number;
+    width: number;
+    x: number;
+    y: number;
+  };
+  comment?: string;
+  imageId: string;
+  imageIndex: number;
+  shape: string;
 }
 
 export const identifications = pgTable(
@@ -59,6 +72,7 @@ export const feedback = pgTable(
       .references(() => users.id)
       .notNull(),
     comment: text('comment'),
+    annotations: json('annotations').$type<ConfirmationAnnotation[]>().default([]).notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull()
   },
   table => {

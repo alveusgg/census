@@ -133,3 +133,18 @@ html {
     @apply bg-background text-foreground;
   }
 }
+
+.confirmation-annotation-editor {
+  --tl-color-background: transparent;
+}
+
+.confirmation-annotation-editor .tl-background,
+.confirmation-annotation-editor .tl-background__wrapper,
+.confirmation-annotation-editor .tl-canvas {
+  background: transparent;
+}
+
+.confirmation-annotation-editor .tl-shape[data-shape-type='draw'] {
+  filter: drop-shadow(1px 0 0 white) drop-shadow(-1px 0 0 white) drop-shadow(0 1px 0 white) drop-shadow(0 -1px 0 white)
+    drop-shadow(0 0 2px white);
+}
