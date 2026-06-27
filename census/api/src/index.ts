@@ -9,7 +9,7 @@ import websocket from '@fastify/websocket';
 import { fastifyTRPCPlugin, FastifyTRPCPluginOptions } from '@trpc/server/adapters/fastify';
 import * as Sentry from '@sentry/node';
 import fastify from 'fastify';
-import router from './api/index.js';
+import { createRouter } from './api/index.js';
 import { tearDownDatabase } from './db/db.js';
 import { PostgresLeader } from './db/leader.js';
 import authRouter from './services/auth/router.js';
@@ -25,11 +25,12 @@ import { ExponentialBackoffStrategy } from './utils/backoff.js';
 import { tearDown, waitForLongOperations } from './utils/teardown.js';
 // Export type router type signature,
 // NOT the router itself.
-export type AppRouter = typeof router;
+export type AppRouter = ReturnType<typeof createRouter>;
 
 const leader = new PostgresLeader(703, 1);
 
 await withEnvironment(environment, async () => {
+  const router = createRouter();
   const options = { maxParamLength: 5000 };
   const server = fastify(options);
 
@@ -81,7 +82,11 @@ await withEnvironment(environment, async () => {
           async span => {
             try {
               await processingCaptureRequest(capture.id);
-              const videoUrl = await requestClipFromCamManager(capture.startCaptureAt, capture.endCaptureAt, capture.id);
+              const videoUrl = await requestClipFromCamManager(
+                capture.startCaptureAt,
+                capture.endCaptureAt,
+                capture.id
+              );
               await completeCaptureRequest(capture.id, videoUrl);
               backoff.success();
               span.setStatus({ code: 1, message: 'ok' });

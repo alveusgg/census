@@ -1,4 +1,5 @@
 import { EventEmitterAsyncResource, on } from 'events';
+import { useEnvironment, withEnvironment } from '../utils/env/env.js';
 import { subscribeToChanges } from './listen.js';
 
 interface ChangeParams {
@@ -33,6 +34,7 @@ export const defineListener = <T>(options: {
   changes: ChangeParams;
   handler: (context: HandlerContext) => Promise<T> | T;
 }): Listener<T> => {
+  const environment = useEnvironment();
   const ee = new EventEmitterAsyncResource({ name: `Listener:${options.changes.table}` });
   ee.setMaxListeners(1_000);
 
@@ -45,7 +47,7 @@ export const defineListener = <T>(options: {
 
   const load = async (): Promise<LoadResult<T>> => {
     const end = new AbortController();
-    const value = await options.handler({ end });
+    const value = await withEnvironment(environment, () => options.handler({ end }));
 
     return { value, shouldEnd: end.signal.aborted };
   };

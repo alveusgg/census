@@ -1,21 +1,23 @@
 import { router } from '../trpc/trpc.js';
-import capture from './capture.js';
-import feed from './feed.js';
-import identification from './identification.js';
-import me from './me.js';
-import observation from './observation.js';
-import seasons from './seasons.js';
-import twitch from './twitch.js';
-import users from './users.js';
-import guides from './guides.js';
-export default router({
-  me,
-  feed,
-  capture,
-  observation,
-  identification,
-  twitch,
-  users,
-  seasons,
-  guides
-});
+import { createCaptureRouter } from './capture.js';
+import { createFeedRouter } from './feed.js';
+import { createGuidesRouter } from './guides.js';
+import { createIdentificationRouter } from './identification.js';
+import { createMeRouter } from './me.js';
+import { createObservationRouter } from './observation.js';
+import { createSeasonsRouter } from './seasons.js';
+import { createTwitchRouter } from './twitch.js';
+import { createUsersRouter } from './users.js';
+
+export const createRouter = () =>
+  router({
+    me: createMeRouter(),
+    feed: createFeedRouter(),
+    capture: createCaptureRouter(),
+    observation: createObservationRouter(),
+    identification: createIdentificationRouter(),
+    twitch: createTwitchRouter(),
+    users: createUsersRouter(),
+    seasons: createSeasonsRouter(),
+    guides: createGuidesRouter()
+  });
