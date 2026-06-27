@@ -92,13 +92,25 @@ const ConfirmIdentificationForm: FC<ModalProps<ConfirmIdentificationModalProps>>
   };
 
   const globalCommentsField = (
-    <Field name="comment">
-      <TextAreaField aria-label="additional comments" className="text-sm" placeholder="Add additional comments" />
-    </Field>
+    <div className="flex flex-col gap-3">
+      <label
+        htmlFor="confirmation-additional-comments"
+        className="border-b border-accent-300 pb-3 text-lg font-semibold text-accent-800"
+      >
+        Additional comments
+      </label>
+      <Field name="comment">
+        <TextAreaField
+          id="confirmation-additional-comments"
+          className="border border-accent-300 bg-accent-50 bg-opacity-100 text-sm font-semibold leading-5 ring-0 focus-within:border-accent-700 focus-within:ring-0"
+          placeholder="Add additional comments"
+        />
+      </Field>
+    </div>
   );
 
   return (
-    <Form className="flex min-h-0 flex-col gap-5" methods={methods} onSubmit={submitFeedback}>
+    <Form className="flex min-h-0 flex-col gap-4" methods={methods} onSubmit={submitFeedback}>
       <div className="flex flex-col">
         <h1 className="flex items-center justify-between gap-1 text-2xl font-bold md:text-3xl">
           <span>Confirm identification for {identification.name}</span>
@@ -126,7 +138,7 @@ const ConfirmIdentificationForm: FC<ModalProps<ConfirmIdentificationModalProps>>
 export const ConfirmIdentificationModal: FC<ModalProps<ConfirmIdentificationModalProps>> = props => {
   return (
     <Modal
-      className="max-h-[92vh] w-[calc(100vw-2rem)] max-w-6xl overflow-y-auto rounded-lg bg-accent-100 px-6 py-6 text-accent-900 ring-4 ring-inset ring-accent-300 md:px-8"
+      className="w-[calc(100vw-2rem)] max-w-5xl rounded-lg bg-accent-100 px-6 py-6 text-accent-900 ring-4 ring-inset ring-accent-300 md:px-8"
       {...props}
     >
       <ConfirmIdentificationForm {...props} />

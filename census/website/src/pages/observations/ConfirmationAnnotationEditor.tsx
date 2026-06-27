@@ -7,6 +7,7 @@ import {
   DefaultColorStyle,
   DefaultSizeStyle,
   Editor,
+  TLDrawShape,
   TLEditorSnapshot,
   TLShape,
   TLShapeId,
@@ -50,6 +51,8 @@ type PendingDelete = {
   shapeId: string;
 };
 
+const MINIMUM_ANNOTATION_SIZE = 16;
+
 interface ConfirmationAnnotationEditorProps {
   images: ConfirmationImage[];
   annotationError?: string;
@@ -67,29 +70,59 @@ interface AnnotationCanvasProps {
   onSnapshotChange: (imageId: string, snapshot: TLEditorSnapshot, shapes: AnnotationShape[]) => void;
 }
 
-const isAnnotationShape = (shape: TLShape): shape is TLShape & { type: AnnotationTool } => {
+const isAnnotationShape = (shape: TLShape): shape is TLDrawShape & { type: AnnotationTool } => {
   return shape.type === 'draw';
 };
 
 const isPresent = <T,>(value: T | undefined): value is T => value !== undefined;
 
+const isCompleteAnnotationShape = (shape: TLShape): shape is TLDrawShape & { type: AnnotationTool } => {
+  return isAnnotationShape(shape) && shape.props.isComplete;
+};
+
+const getAnnotationBox = (editor: Editor, shape: TLDrawShape): ConfirmationAnnotationBox | undefined => {
+  const bounds = editor.getShapePageBounds(shape);
+  if (!bounds) return undefined;
+
+  return {
+    height: bounds.h,
+    width: bounds.w,
+    x: bounds.x,
+    y: bounds.y
+  };
+};
+
+const isLargeEnoughAnnotation = (box: ConfirmationAnnotationBox) => {
+  return Math.max(box.width, box.height) >= MINIMUM_ANNOTATION_SIZE;
+};
+
+const deleteSmallCompletedAnnotations = (editor: Editor) => {
+  const shapeIds = editor
+    .getCurrentPageShapes()
+    .filter(isCompleteAnnotationShape)
+    .filter(shape => {
+      const box = getAnnotationBox(editor, shape);
+      return !box || !isLargeEnoughAnnotation(box);
+    })
+    .map(shape => shape.id);
+
+  if (shapeIds.length === 0) return false;
+  editor.deleteShapes(shapeIds);
+  return true;
+};
+
 const getAnnotationShapes = async (imageId: string, editor: Editor): Promise<AnnotationShape[]> => {
-  const shapes = editor.getCurrentPageShapesSorted().filter(isAnnotationShape);
+  const shapes = editor.getCurrentPageShapesSorted().filter(isCompleteAnnotationShape);
   const annotations = await Promise.all(
     shapes.map(async drawShape => {
-      const bounds = editor.getShapePageBounds(drawShape);
-      if (!bounds) return undefined;
+      const box = getAnnotationBox(editor, drawShape);
+      if (!box || !isLargeEnoughAnnotation(box)) return undefined;
 
       const svg = await editor.getSvgString([drawShape.id], { background: false, padding: 'auto', scale: 1 });
       if (!svg) return undefined;
 
       return {
-        box: {
-          height: bounds.h,
-          width: bounds.w,
-          x: bounds.x,
-          y: bounds.y
-        },
+        box,
         key: `${imageId}:${drawShape.id}`,
         imageId,
         shape: svg.svg,
@@ -130,10 +163,13 @@ const AnnotationCanvas: FC<AnnotationCanvasProps> = ({
   onSnapshotChange
 }) => {
   const initialSnapshotRef = useRef(initialSnapshot);
+  const editorRef = useRef<Editor | null>(null);
   const syncVersionRef = useRef(0);
 
   const syncCanvas = useCallback(
-    (editor: Editor) => {
+    (editor: Editor, options?: { force?: boolean }) => {
+      if (!options?.force && editor.inputs.getIsDragging()) return;
+
       const syncVersion = ++syncVersionRef.current;
       const unsupportedShapes = editor
         .getCurrentPageShapes()
@@ -142,6 +178,12 @@ const AnnotationCanvas: FC<AnnotationCanvasProps> = ({
 
       if (unsupportedShapes.length > 0) {
         editor.deleteShapes(unsupportedShapes);
+        queueMicrotask(() => syncCanvas(editor, { force: true }));
+        return;
+      }
+
+      if (deleteSmallCompletedAnnotations(editor)) {
+        queueMicrotask(() => syncCanvas(editor, { force: true }));
         return;
       }
 
@@ -158,8 +200,28 @@ const AnnotationCanvas: FC<AnnotationCanvasProps> = ({
     [imageId, onSnapshotChange]
   );
 
+  const syncAfterPointerUp = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    requestAnimationFrame(() => {
+      if (editorRef.current === editor) syncCanvas(editor, { force: true });
+    });
+  }, [syncCanvas]);
+
+  useEffect(() => {
+    window.addEventListener('pointerup', syncAfterPointerUp);
+    window.addEventListener('pointercancel', syncAfterPointerUp);
+
+    return () => {
+      window.removeEventListener('pointerup', syncAfterPointerUp);
+      window.removeEventListener('pointercancel', syncAfterPointerUp);
+    };
+  }, [syncAfterPointerUp]);
+
   const handleMount = useCallback(
     (editor: Editor) => {
+      editorRef.current = editor;
       editor.setCamera({ x: 0, y: 0, z: 1 }, { force: true, immediate: true });
       editor.setCameraOptions({
         isLocked: true,
@@ -173,7 +235,12 @@ const AnnotationCanvas: FC<AnnotationCanvasProps> = ({
       editor.setCurrentTool('draw');
       syncCanvas(editor);
 
-      return editor.store.listen(() => syncCanvas(editor), { source: 'user', scope: 'all' });
+      const cleanup = editor.store.listen(() => syncCanvas(editor), { source: 'user', scope: 'all' });
+
+      return () => {
+        if (editorRef.current === editor) editorRef.current = null;
+        cleanup();
+      };
     },
     [syncCanvas]
   );
@@ -251,9 +318,9 @@ export const ConfirmationAnnotationEditor: FC<ConfirmationAnnotationEditorProps>
   if (!activeImage || !activeImageId) return null;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(320px,520px)_minmax(280px,1fr)]">
+    <div className="grid gap-5 lg:grid-cols-[minmax(300px,460px)_minmax(280px,1fr)] lg:items-start">
       <div className="flex min-w-0 flex-col gap-3">
-        <div className="relative aspect-square w-full overflow-hidden bg-white shadow-sm">
+        <div className="relative mx-auto aspect-square w-full max-w-[460px] overflow-hidden bg-white shadow-sm">
           <Square
             className="absolute inset-0 h-full w-full select-none"
             draggable={false}
@@ -322,7 +389,7 @@ export const ConfirmationAnnotationEditor: FC<ConfirmationAnnotationEditorProps>
       </div>
       <div className="flex min-h-0 flex-col">
         <div className="border-b border-accent-300 pb-3 text-lg font-semibold text-accent-800">Annotation notes</div>
-        <div className="flex max-h-[520px] flex-col gap-3 overflow-y-auto py-4 pr-1">
+        <div className="flex flex-col gap-3 py-4 pr-1">
           {annotations.length === 0 ? (
             <p className="text-sm font-medium text-accent-800/70">No annotations yet</p>
           ) : (
