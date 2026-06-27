@@ -17,28 +17,30 @@ import 'tldraw/tldraw.css';
 
 export type ConfirmationImage = Observation['sightings'][number]['images'][number];
 
-export interface ConfirmationAnnotation {
-  bounds?: AnnotationBounds;
-  key: string;
-  imageId: string;
-  imageIndex: number;
-  shapeId: string;
-  type: AnnotationTool;
-}
-
-type AnnotationTool = 'draw';
-
-type AnnotationBounds = {
+export type ConfirmationAnnotationBox = {
   height: number;
   width: number;
   x: number;
   y: number;
 };
 
-type AnnotationShape = {
-  bounds?: AnnotationBounds;
+export interface ConfirmationAnnotation {
+  box: ConfirmationAnnotationBox;
   key: string;
   imageId: string;
+  imageIndex: number;
+  shape: string;
+  shapeId: string;
+  type: AnnotationTool;
+}
+
+type AnnotationTool = 'draw';
+
+type AnnotationShape = {
+  box: ConfirmationAnnotationBox;
+  key: string;
+  imageId: string;
+  shape: string;
   shapeId: string;
   type: AnnotationTool;
 };
@@ -69,27 +71,35 @@ const isAnnotationShape = (shape: TLShape): shape is TLShape & { type: Annotatio
   return shape.type === 'draw';
 };
 
-const getAnnotationShapes = (imageId: string, editor: Editor): AnnotationShape[] => {
-  return editor
-    .getCurrentPageShapesSorted()
-    .filter(isAnnotationShape)
-    .map(shape => {
-      const bounds = editor.getShapePageBounds(shape);
+const isPresent = <T,>(value: T | undefined): value is T => value !== undefined;
+
+const getAnnotationShapes = async (imageId: string, editor: Editor): Promise<AnnotationShape[]> => {
+  const shapes = editor.getCurrentPageShapesSorted().filter(isAnnotationShape);
+  const annotations = await Promise.all(
+    shapes.map(async drawShape => {
+      const bounds = editor.getShapePageBounds(drawShape);
+      if (!bounds) return undefined;
+
+      const svg = await editor.getSvgString([drawShape.id], { background: false, padding: 'auto', scale: 1 });
+      if (!svg) return undefined;
+
       return {
-        bounds: bounds
-          ? {
-              height: bounds.h,
-              width: bounds.w,
-              x: bounds.x,
-              y: bounds.y
-            }
-          : undefined,
-        key: `${imageId}:${shape.id}`,
+        box: {
+          height: bounds.h,
+          width: bounds.w,
+          x: bounds.x,
+          y: bounds.y
+        },
+        key: `${imageId}:${drawShape.id}`,
         imageId,
-        shapeId: shape.id,
-        type: shape.type
+        shape: svg.svg,
+        shapeId: drawShape.id,
+        type: drawShape.type
       };
-    });
+    })
+  );
+
+  return annotations.filter(isPresent);
 };
 
 const PendingDeleteController = ({
@@ -120,9 +130,11 @@ const AnnotationCanvas: FC<AnnotationCanvasProps> = ({
   onSnapshotChange
 }) => {
   const initialSnapshotRef = useRef(initialSnapshot);
+  const syncVersionRef = useRef(0);
 
   const syncCanvas = useCallback(
     (editor: Editor) => {
+      const syncVersion = ++syncVersionRef.current;
       const unsupportedShapes = editor
         .getCurrentPageShapes()
         .filter(shape => !isAnnotationShape(shape))
@@ -133,7 +145,15 @@ const AnnotationCanvas: FC<AnnotationCanvasProps> = ({
         return;
       }
 
-      onSnapshotChange(imageId, editor.getSnapshot(), getAnnotationShapes(imageId, editor));
+      const snapshot = editor.getSnapshot();
+      void getAnnotationShapes(imageId, editor)
+        .then(shapes => {
+          if (syncVersion !== syncVersionRef.current) return;
+          onSnapshotChange(imageId, snapshot, shapes);
+        })
+        .catch(error => {
+          console.error('Failed to export confirmation annotation SVGs', error);
+        });
     },
     [imageId, onSnapshotChange]
   );
@@ -203,9 +223,7 @@ export const ConfirmationAnnotationEditor: FC<ConfirmationAnnotationEditorProps>
     () =>
       annotations
         .map((annotation, index) => ({ annotation, number: index + 1 }))
-        .filter(
-          ({ annotation }) => annotation.imageId === activeImageId && annotation.type === 'draw' && annotation.bounds
-        ),
+        .filter(({ annotation }) => annotation.imageId === activeImageId && annotation.type === 'draw'),
     [activeImageId, annotations]
   );
 
@@ -256,8 +274,8 @@ export const ConfirmationAnnotationEditor: FC<ConfirmationAnnotationEditorProps>
               key={annotation.key}
               className="pointer-events-none absolute z-20 flex h-7 min-w-7 items-center justify-center rounded-md border-2 border-accent-800 bg-accent-50 px-1.5 text-sm font-black leading-none text-accent-900 shadow-[0_0_0_2px_rgba(255,255,255,0.9)]"
               style={{
-                left: `${annotation.bounds!.x + annotation.bounds!.width}px`,
-                top: `${annotation.bounds!.y}px`,
+                left: `${annotation.box.x + annotation.box.width}px`,
+                top: `${annotation.box.y}px`,
                 transform: 'translate(-65%, -35%)'
               }}
             >

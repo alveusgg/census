@@ -79,7 +79,15 @@ const ConfirmIdentificationForm: FC<ModalProps<ConfirmIdentificationModalProps>>
     }
 
     const comment = formatComment(data.comment, annotations, annotationTextByKey);
-    await confirmIdentification.mutateAsync({ id: identification.id, comment });
+    const confirmationAnnotations = annotations.map(annotation => ({
+      box: annotation.box,
+      comment: annotationTextByKey[annotation.key]?.trim() || undefined,
+      imageId: annotation.imageId,
+      imageIndex: annotation.imageIndex,
+      shape: annotation.shape
+    }));
+
+    await confirmIdentification.mutateAsync({ id: identification.id, comment, annotations: confirmationAnnotations });
     props.close();
   };
 
