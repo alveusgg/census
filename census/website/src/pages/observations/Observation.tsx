@@ -140,6 +140,7 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
   const identificationIdentifications = observation.identifications.filter(
     identification => !identification.isAccessory
   );
+  const observationImages = observation.sightings.flatMap(sighting => sighting.images);
 
   const accessoryTree = useMemo(() => {
     return buildIdentificationTree(accessoryIdentifications);
@@ -156,24 +157,20 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
       <div className="flex gap-4 flex-col @lg:flex-row" key={observation.id}>
         <Polaroid>
           <Preloader>
-            {observation.sightings
-              .flatMap(sighting => sighting.images)
-              .map(image => (
-                <Square
-                  key={image.id}
-                  src={image.url}
-                  image={{ width: image.width, height: image.height }}
-                  options={{ extract: image.boundingBox }}
-                />
-              ))}
-          </Preloader>
-          {observation.sightings
-            .flatMap(sighting => sighting.images)
-            .map(image => (
-              <Slide key={image.id} id={image.id.toString()}>
-                <ObservationImage image={image} />
-              </Slide>
+            {observationImages.map(image => (
+              <Square
+                key={image.id}
+                src={image.url}
+                image={{ width: image.width, height: image.height }}
+                options={{ extract: image.boundingBox }}
+              />
             ))}
+          </Preloader>
+          {observationImages.map(image => (
+            <Slide key={image.id} id={image.id.toString()}>
+              <ObservationImage image={image} />
+            </Slide>
+          ))}
           <Controls />
           <SlidePips />
         </Polaroid>
@@ -293,7 +290,11 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
                     <ConfirmedAccessoryIdentification identification={confirmedAccessoryIdentification} />
                   ) : (
                     accessoryTree.map(identification => (
-                      <TopLevelIdentificationTree key={identification.id} tree={identification} />
+                      <TopLevelIdentificationTree
+                        key={identification.id}
+                        observationImages={observationImages}
+                        tree={identification}
+                      />
                     ))
                   )}
                 </AnimatePresence>
@@ -321,7 +322,11 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
             <motion.div className="py-3 px-1 flex flex-col gap-1">
               <AnimatePresence initial={false}>
                 {tree.map(identification => (
-                  <TopLevelIdentificationTree key={identification.id} tree={identification} />
+                  <TopLevelIdentificationTree
+                    key={identification.id}
+                    observationImages={observationImages}
+                    tree={identification}
+                  />
                 ))}
               </AnimatePresence>
             </motion.div>
@@ -347,6 +352,7 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
 };
 
 interface TopLevelIdentificationTreeProps {
+  observationImages: ObservationType['sightings'][number]['images'];
   tree: Node<IdentificationType>;
 }
 
@@ -378,7 +384,7 @@ const ConfirmedAccessoryIdentification: FC<{
   );
 };
 
-const TopLevelIdentificationTree: FC<TopLevelIdentificationTreeProps> = ({ tree }) => {
+const TopLevelIdentificationTree: FC<TopLevelIdentificationTreeProps> = ({ observationImages, tree }) => {
   const minimizedTree = getMinimizedTree(tree);
 
   const [expanded, setExpanded] = useState(false);
@@ -402,7 +408,7 @@ const TopLevelIdentificationTree: FC<TopLevelIdentificationTreeProps> = ({ tree 
         </button>
       )}
       <div className="mx-3">
-        <IdentificationSuggestion tree={treeToRender} />
+        <IdentificationSuggestion observationImages={observationImages} tree={treeToRender} />
       </div>
     </div>
   );

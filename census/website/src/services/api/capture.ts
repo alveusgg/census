@@ -1,11 +1,5 @@
 import type { ObservationPayload } from '@alveusgg/census-api/src/services/observations/observations';
-import {
-  infiniteQueryOptions,
-  queryOptions,
-  useMutation,
-  useQueryClient,
-  useSuspenseQuery
-} from '@tanstack/react-query';
+import { infiniteQueryOptions, useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { key, useAPI, useLiveQuery } from '../query/hooks';
 
@@ -48,11 +42,23 @@ export const useCaptures = () => {
 
 export const useUnconvertedCaptures = () => {
   const trpc = useAPI();
-  return queryOptions({
-    queryKey: key('captures', 'unconverted'),
+  const snapshotQueryKey = key('captures', 'unconverted');
+  const callback = useLiveQuery(snapshotQueryKey);
+
+  const result = useQuery({
+    queryKey: snapshotQueryKey,
     queryFn: () => trpc.capture.unconvertedCaptures.query(),
     refetchOnWindowFocus: true
   });
+
+  useEffect(() => {
+    const subscription = trpc.capture.live.unconvertedCaptures.subscribe(undefined, callback);
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  return result;
 };
 
 interface CreateCaptureFromClipInput {

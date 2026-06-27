@@ -14,15 +14,17 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { FC } from 'react';
 import { ConfirmIdentificationModal, ConfirmIdentificationModalProps } from './ConfirmIdentificationModal';
+import { ConfirmationImage } from './ConfirmationAnnotationEditor';
 import { FeedbackModal, FeedbackModalProps } from './FeedbackModal';
 import { Node } from './helpers';
 import { IdentificationFeedbackModal, IdentificationFeedbackModalProps } from './ObservationFeedbackModal';
 
 interface IdentificationSuggestionProps {
+  observationImages: ConfirmationImage[];
   tree: Node<IdentificationType>;
 }
 
-export const IdentificationSuggestion: FC<IdentificationSuggestionProps> = ({ tree }) => {
+export const IdentificationSuggestion: FC<IdentificationSuggestionProps> = ({ observationImages, tree }) => {
   const { data: me } = useSuspenseQuery(useMe());
   const identificationFeedbackModalProps = useModal<IdentificationFeedbackModalProps>();
   const confirmIdentificationModalProps = useModal<ConfirmIdentificationModalProps>();
@@ -115,7 +117,7 @@ export const IdentificationSuggestion: FC<IdentificationSuggestionProps> = ({ tr
             )}
             {canConfirm && (
               <Button
-                onClick={() => confirmIdentificationModalProps.open({ identification })}
+                onClick={() => confirmIdentificationModalProps.open({ identification, observationImages })}
                 className="text-sm font-semibold px-2.5 py-1 gap-0.5"
                 variant="primary"
               >
@@ -129,7 +131,7 @@ export const IdentificationSuggestion: FC<IdentificationSuggestionProps> = ({ tr
       {tree.children && tree.children.size > 0 && (
         <div className={cn(tree.parent ? 'ml-8' : 'ml-2')}>
           {Array.from(tree.children).map(child => (
-            <IdentificationSuggestion key={child.id} tree={child} />
+            <IdentificationSuggestion key={child.id} observationImages={observationImages} tree={child} />
           ))}
         </div>
       )}
