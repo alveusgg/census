@@ -13,93 +13,95 @@ import { cache, procedure, procedureWithPermissions, publicProcedure, router } f
 import { useUser } from '../utils/env/env.js';
 import { Pagination } from './observation.js';
 
-const recentAchievements = defineListener({
-  changes: { table: 'achievements', events: ['insert', 'update'] },
-  handler: () => getRecentRedeemedAchievements(7)
-});
+export const createUsersRouter = () => {
+  const recentAchievements = defineListener({
+    changes: { table: 'achievements', events: ['insert', 'update'] },
+    handler: () => getRecentRedeemedAchievements(7)
+  });
 
-export default router({
-  users: procedureWithPermissions('moderate')
-    .use(cache.query({ key: ['users', 'list'], ttl: 60 }))
-    .query(async () => {
-      return await getUsers();
+  return router({
+    users: procedureWithPermissions('moderate')
+      .use(cache.query({ key: ['users', 'list'], ttl: 60 }))
+      .query(async () => {
+        return await getUsers();
+      }),
+
+    profile: procedure
+      .input(z.object({ id: z.number().int().positive() }))
+      .use(cache.query({ key: ({ input }) => ['users', 'profile', input.id], ttl: 60 }))
+      .query(async ({ input }) => {
+        return getUserPublicProfile(input.id);
+      }),
+
+    identifications: procedure
+      .input(z.object({ id: z.number().int().positive(), meta: Pagination }))
+      .use(
+        cache.query({
+          key: ({ input }) => ['users', 'identifications', input.id, input.meta.page, input.meta.size],
+          ttl: 60
+        })
+      )
+      .query(async ({ input }) => {
+        return getUserIdentifications(input.id, input.meta.page, input.meta.size);
+      }),
+
+    updateStickerPositions: procedure.input(z.object({ positions: z.unknown() })).mutation(async ({ input }) => {
+      const user = useUser();
+      const result = await updateStickerPositionsForUser(user.id, input.positions);
+      cache.invalidate([
+        ['users', 'list'],
+        ['users', 'profile', user.id]
+      ]);
+      return result;
     }),
 
-  profile: procedure
-    .input(z.object({ id: z.number().int().positive() }))
-    .use(cache.query({ key: ({ input }) => ['users', 'profile', input.id], ttl: 60 }))
-    .query(async ({ input }) => {
-      return getUserPublicProfile(input.id);
-    }),
+    leaderboard: procedure
+      .input(z.object({ from: z.date().optional() }))
+      .use(
+        cache.query({
+          key: ({ input }) => ['users', 'leaderboard', input.from?.toISOString() ?? 'current'],
+          ttl: 60
+        })
+      )
+      .query(async ({ input }) => {
+        if (!input.from) {
+          const season = await getCurrentSeason();
+          return await getLeaderboard(season.startDate, { limit: 3 });
+        }
+        return await getLeaderboard(input.from, { limit: 3 });
+      }),
+    leaderboardPage: procedure
+      .input(z.object({ from: z.date().optional(), meta: Pagination, offset: z.number().default(0) }))
+      .use(
+        cache.query({
+          key: ({ input }) => [
+            'users',
+            'leaderboardPage',
+            input.from?.toISOString() ?? 'current',
+            input.meta.page,
+            input.meta.size,
+            input.offset
+          ],
+          ttl: 60
+        })
+      )
+      .query(async ({ input }) => {
+        if (!input.from) {
+          const season = await getCurrentSeason();
+          return await getLeaderboardPage(season.startDate, input.meta.page, input.meta.size, input.offset);
+        }
 
-  identifications: procedure
-    .input(z.object({ id: z.number().int().positive(), meta: Pagination }))
-    .use(
-      cache.query({
-        key: ({ input }) => ['users', 'identifications', input.id, input.meta.page, input.meta.size],
-        ttl: 60
+        return await getLeaderboardPage(input.from, input.meta.page, input.meta.size, input.offset);
+      }),
+    // Keep this public with the matching SSE subscription; see docs/dev/api/sse-subscriptions.md.
+    recentAchievements: publicProcedure.query(async () => {
+      return await recentAchievements.get();
+    }),
+    live: {
+      // Public because EventSource reconnects can reuse stale auth; see docs/dev/api/sse-subscriptions.md.
+      recentAchievements: publicProcedure.subscription(async function* ({ signal }) {
+        yield* recentAchievements.subscribe({ signal });
       })
-    )
-    .query(async ({ input }) => {
-      return getUserIdentifications(input.id, input.meta.page, input.meta.size);
-    }),
-
-  updateStickerPositions: procedure.input(z.object({ positions: z.unknown() })).mutation(async ({ input }) => {
-    const user = useUser();
-    const result = await updateStickerPositionsForUser(user.id, input.positions);
-    cache.invalidate([
-      ['users', 'list'],
-      ['users', 'profile', user.id]
-    ]);
-    return result;
-  }),
-
-  leaderboard: procedure
-    .input(z.object({ from: z.date().optional() }))
-    .use(
-      cache.query({
-        key: ({ input }) => ['users', 'leaderboard', input.from?.toISOString() ?? 'current'],
-        ttl: 60
-      })
-    )
-    .query(async ({ input }) => {
-      if (!input.from) {
-        const season = await getCurrentSeason();
-        return await getLeaderboard(season.startDate, { limit: 3 });
-      }
-      return await getLeaderboard(input.from, { limit: 3 });
-    }),
-  leaderboardPage: procedure
-    .input(z.object({ from: z.date().optional(), meta: Pagination, offset: z.number().default(0) }))
-    .use(
-      cache.query({
-        key: ({ input }) => [
-          'users',
-          'leaderboardPage',
-          input.from?.toISOString() ?? 'current',
-          input.meta.page,
-          input.meta.size,
-          input.offset
-        ],
-        ttl: 60
-      })
-    )
-    .query(async ({ input }) => {
-      if (!input.from) {
-        const season = await getCurrentSeason();
-        return await getLeaderboardPage(season.startDate, input.meta.page, input.meta.size, input.offset);
-      }
-
-      return await getLeaderboardPage(input.from, input.meta.page, input.meta.size, input.offset);
-    }),
-  // Keep this public with the matching SSE subscription; see docs/dev/api/sse-subscriptions.md.
-  recentAchievements: publicProcedure.query(async () => {
-    return await recentAchievements.get();
-  }),
-  live: {
-    // Public because EventSource reconnects can reuse stale auth; see docs/dev/api/sse-subscriptions.md.
-    recentAchievements: publicProcedure.subscription(async function* ({ signal }) {
-      yield* recentAchievements.subscribe({ signal });
-    })
-  }
-});
+    }
+  });
+};

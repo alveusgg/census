@@ -7,55 +7,56 @@ import { cache, publicProcedure, router } from '../trpc/trpc.js';
 import { report } from '../utils/logs.js';
 import { getPresignedUploadURL } from '../utils/storage.js';
 
-export default router({
-  subscribeToRequestsForFeed: publicProcedure
-    .input(z.object({ feeds: z.string().array(), key: z.string() }))
-    .subscription(async function* ({ input }) {
-      try {
-        const targets = await ensureKeyForFeeds(input.feeds, input.key);
+export const createFeedRouter = () =>
+  router({
+    subscribeToRequestsForFeed: publicProcedure
+      .input(z.object({ feeds: z.string().array(), key: z.string() }))
+      .subscription(async function* ({ input }) {
+        try {
+          const targets = await ensureKeyForFeeds(input.feeds, input.key);
 
-        yield { type: 'started' as const };
+          yield { type: 'started' as const };
 
-        const pendingCaptures = await getPendingCapturesForFeeds(targets);
-        for (const request of pendingCaptures) {
-          const creds = await getPresignedUploadURL();
-          yield { type: 'data' as const, request, meta: { creds } };
-        }
-
-        for await (const change of subscribeToChanges({ table: 'captures', events: ['insert'] })) {
-          if (typeof change.id !== 'number') {
-            throw new ProcessingError('Invalid capture id');
+          const pendingCaptures = await getPendingCapturesForFeeds(targets);
+          for (const request of pendingCaptures) {
+            const creds = await getPresignedUploadURL();
+            yield { type: 'data' as const, request, meta: { creds } };
           }
-          const request = await getCapture(change.id);
-          if (!targets.includes(request.feedId) || request.status !== 'pending') break;
 
-          const creds = await getPresignedUploadURL();
-          yield { type: 'data' as const, request, meta: { creds } };
+          for await (const change of subscribeToChanges({ table: 'captures', events: ['insert'] })) {
+            if (typeof change.id !== 'number') {
+              throw new ProcessingError('Invalid capture id');
+            }
+            const request = await getCapture(change.id);
+            if (!targets.includes(request.feedId) || request.status !== 'pending') break;
+
+            const creds = await getPresignedUploadURL();
+            yield { type: 'data' as const, request, meta: { creds } };
+          }
+          yield { type: 'complete' as const };
+        } catch (error) {
+          if (error instanceof Error) report(error);
+          yield { type: 'error' as const, error };
         }
-        yield { type: 'complete' as const };
-      } catch (error) {
-        if (error instanceof Error) report(error);
-        yield { type: 'error' as const, error };
-      }
-    }),
+      }),
 
-  completeCaptureRequest: publicProcedure
-    .input(
-      z.object({
-        captureId: z.number(),
-        videoUrl: z.string(),
-        lowQualityVideoUrl: z.string().optional(),
-        key: z.string()
+    completeCaptureRequest: publicProcedure
+      .input(
+        z.object({
+          captureId: z.number(),
+          videoUrl: z.string(),
+          lowQualityVideoUrl: z.string().optional(),
+          key: z.string()
+        })
+      )
+      .use(
+        cache.mutation({
+          keys: ({ input }) => [['captures'], ['captures', 'detail', input.captureId]]
+        })
+      )
+      .mutation(async ({ input }) => {
+        const capture = await getCapture(input.captureId);
+        await ensureKeyForFeeds([capture.feedId], input.key);
+        await completeCaptureRequest(input.captureId, input.videoUrl, input.lowQualityVideoUrl);
       })
-    )
-    .use(
-      cache.mutation({
-        keys: ({ input }) => [['captures'], ['captures', 'detail', input.captureId]]
-      })
-    )
-    .mutation(async ({ input }) => {
-      const capture = await getCapture(input.captureId);
-      await ensureKeyForFeeds([capture.feedId], input.key);
-      await completeCaptureRequest(input.captureId, input.videoUrl, input.lowQualityVideoUrl);
-    })
-});
+  });
