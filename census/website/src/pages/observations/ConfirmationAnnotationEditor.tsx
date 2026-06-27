@@ -1,8 +1,8 @@
 import { Square } from '@/components/assets/images/Square';
 import { Observation } from '@/services/api/observations';
 import { cn } from '@/utils/cn';
-import { ArrowUpRight, ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react';
-import { FC, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   DefaultColorStyle,
   DefaultSizeStyle,
@@ -11,7 +11,6 @@ import {
   TLShape,
   TLShapeId,
   Tldraw,
-  track,
   useEditor
 } from 'tldraw';
 import 'tldraw/tldraw.css';
@@ -27,7 +26,7 @@ export interface ConfirmationAnnotation {
   type: AnnotationTool;
 }
 
-type AnnotationTool = 'draw' | 'arrow';
+type AnnotationTool = 'draw';
 
 type AnnotationBounds = {
   height: number;
@@ -61,13 +60,12 @@ interface AnnotationCanvasProps {
   imageId: string;
   initialSnapshot?: TLEditorSnapshot;
   pendingDelete: PendingDelete | null;
-  tool: AnnotationTool;
   onPendingDeleteHandled: () => void;
   onSnapshotChange: (imageId: string, snapshot: TLEditorSnapshot, shapes: AnnotationShape[]) => void;
 }
 
 const isAnnotationShape = (shape: TLShape): shape is TLShape & { type: AnnotationTool } => {
-  return shape.type === 'draw' || shape.type === 'arrow';
+  return shape.type === 'draw';
 };
 
 const getAnnotationShapes = (imageId: string, editor: Editor): AnnotationShape[] => {
@@ -93,16 +91,6 @@ const getAnnotationShapes = (imageId: string, editor: Editor): AnnotationShape[]
     });
 };
 
-const ToolController = track(({ tool }: { tool: AnnotationTool }) => {
-  const editor = useEditor();
-
-  useEffect(() => {
-    editor.setCurrentTool(tool);
-  }, [editor, tool]);
-
-  return null;
-});
-
 const PendingDeleteController = ({
   pendingDelete,
   imageId,
@@ -127,7 +115,6 @@ const AnnotationCanvas: FC<AnnotationCanvasProps> = ({
   imageId,
   initialSnapshot,
   pendingDelete,
-  tool,
   onPendingDeleteHandled,
   onSnapshotChange
 }) => {
@@ -162,12 +149,12 @@ const AnnotationCanvas: FC<AnnotationCanvasProps> = ({
       });
       editor.setStyleForNextShapes(DefaultColorStyle, 'orange');
       editor.setStyleForNextShapes(DefaultSizeStyle, 'm');
-      editor.setCurrentTool(tool);
+      editor.setCurrentTool('draw');
       syncCanvas(editor);
 
       return editor.store.listen(() => syncCanvas(editor), { source: 'user', scope: 'all' });
     },
-    [syncCanvas, tool]
+    [syncCanvas]
   );
 
   return (
@@ -175,43 +162,12 @@ const AnnotationCanvas: FC<AnnotationCanvasProps> = ({
       hideUi
       autoFocus={false}
       className="confirmation-annotation-editor absolute inset-0 z-10"
-      initialState={tool}
+      initialState="draw"
       snapshot={initialSnapshotRef.current}
       onMount={handleMount}
     >
-      <ToolController tool={tool} />
       <PendingDeleteController imageId={imageId} pendingDelete={pendingDelete} onHandled={onPendingDeleteHandled} />
     </Tldraw>
-  );
-};
-
-const ToolButton = ({
-  children,
-  icon,
-  selected,
-  title,
-  onClick
-}: {
-  children: string;
-  icon: ReactNode;
-  selected: boolean;
-  title: string;
-  onClick: () => void;
-}) => {
-  return (
-    <button
-      type="button"
-      title={title}
-      aria-pressed={selected}
-      onClick={onClick}
-      className={cn(
-        'flex h-10 items-center justify-center gap-2 rounded-md border border-accent-300 px-3 text-sm font-bold text-accent-900 transition-colors',
-        selected ? 'bg-accent-400 shadow-inner' : 'bg-accent-100 hover:bg-accent-200'
-      )}
-    >
-      {icon}
-      <span>{children}</span>
-    </button>
   );
 };
 
@@ -223,7 +179,6 @@ export const ConfirmationAnnotationEditor: FC<ConfirmationAnnotationEditorProps>
   onAnnotationsChange
 }) => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [tool, setTool] = useState<AnnotationTool>('draw');
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
   const [snapshotsByImageId, setSnapshotsByImageId] = useState<Record<string, TLEditorSnapshot>>({});
   const [annotationsByImageId, setAnnotationsByImageId] = useState<Record<string, AnnotationShape[]>>({});
@@ -278,24 +233,6 @@ export const ConfirmationAnnotationEditor: FC<ConfirmationAnnotationEditorProps>
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(320px,520px)_minmax(280px,1fr)]">
       <div className="flex min-w-0 flex-col gap-3">
-        <div className="flex items-center gap-2">
-          <ToolButton
-            title="Draw"
-            selected={tool === 'draw'}
-            icon={<Pencil className="h-4 w-4" />}
-            onClick={() => setTool('draw')}
-          >
-            Draw
-          </ToolButton>
-          <ToolButton
-            title="Arrow"
-            selected={tool === 'arrow'}
-            icon={<ArrowUpRight className="h-4 w-4" />}
-            onClick={() => setTool('arrow')}
-          >
-            Arrow
-          </ToolButton>
-        </div>
         <div className="relative aspect-square w-full overflow-hidden bg-white shadow-sm">
           <Square
             className="absolute inset-0 h-full w-full select-none"
@@ -309,7 +246,6 @@ export const ConfirmationAnnotationEditor: FC<ConfirmationAnnotationEditorProps>
             imageId={activeImageId}
             initialSnapshot={snapshotsByImageId[activeImageId]}
             pendingDelete={pendingDelete}
-            tool={tool}
             onPendingDeleteHandled={() => setPendingDelete(null)}
             onSnapshotChange={handleSnapshotChange}
           />
