@@ -1,8 +1,9 @@
-import { BadRequestError, NotFoundError } from '@alveusgg/error';
+import { BadRequestError, ForbiddenError, NotFoundError } from '@alveusgg/error';
 import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm';
 import { feedback, identifications, observations } from '../../db/schema/index.js';
 import { useDB, withTransaction } from '../../db/transaction.js';
 import { useUser } from '../../utils/env/env.js';
+import { getPermissions } from '../auth/role.js';
 import { getTaxaInfo } from '../inat/index.js';
 import { getObservation } from '../observations/observations.js';
 import { recordAchievement } from '../points/achievement.js';
@@ -145,6 +146,33 @@ export const addFeedbackToIdentification = async (
     type,
     comment
   });
+};
+
+export const removeIdentification = async (identificationId: number) => {
+  const db = useDB();
+  const user = useUser();
+  const permissions = getPermissions();
+
+  return await db.transaction(async tx =>
+    withTransaction(tx, async () => {
+      const identification = await tx.query.identifications.findFirst({
+        where: eq(identifications.id, identificationId)
+      });
+
+      if (!identification) throw new NotFoundError('Identification not found');
+      if (identification.suggestedBy !== user.id && !permissions.moderate) {
+        throw new ForbiddenError('You are not authorized to remove this suggestion.');
+      }
+
+      await tx
+        .update(identifications)
+        .set({ alternateForId: identification.alternateForId })
+        .where(eq(identifications.alternateForId, identification.id));
+
+      await tx.update(observations).set({ confirmedAs: null }).where(eq(observations.confirmedAs, identification.id));
+      await tx.delete(identifications).where(eq(identifications.id, identification.id));
+    })
+  );
 };
 
 export const getIdentification = async (identificationId: number) => {
