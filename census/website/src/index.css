@@ -133,3 +133,13 @@ html {
     @apply bg-background text-foreground;
   }
 }
+
+.confirmation-annotation-editor {
+  --tl-color-background: transparent;
+}
+
+.confirmation-annotation-editor .tl-background,
+.confirmation-annotation-editor .tl-background__wrapper,
+.confirmation-annotation-editor .tl-canvas {
+  background: transparent;
+}
