@@ -81,6 +81,8 @@ const buildIdentificationTree = (identifications: IdentificationType[]) => {
   return nodes.filter(node => node.isRoot());
 };
 
+const PLANT_TAXON_ID = 47126;
+
 const UserLinkList: FC<{ users: { id: number; username: string }[] }> = ({ users }) => {
   return (
     <>
@@ -306,6 +308,7 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
               <INatTaxaInput
                 icon={<SiLeaf className="text-2xl" />}
                 placeholder="suggest plant"
+                taxonId={PLANT_TAXON_ID}
                 onSelect={async taxon => {
                   await suggestAccessoryIdentification.mutateAsync({
                     observationId: observation.id,
