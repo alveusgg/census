@@ -1,13 +1,16 @@
 import { Button } from '@/components/controls/button/paper';
 import { DownThumb, UpThumb } from '@/components/controls/ObservationEntry';
 import SiBug2 from '@/components/icons/SiBug2';
+import SiClose from '@/components/icons/SiClose';
 import SiCommentCheck from '@/components/icons/SiCommentCheck';
 import SiLeaf from '@/components/icons/SiLeaf';
 import SiMessage from '@/components/icons/SiMessage';
+import { Confirm, useConfirm } from '@/components/modal/Confirm';
 import { useModal } from '@/components/modal/useModal';
 import { UserLink } from '@/components/users/UserLink';
-import { Identification as IdentificationType } from '@/services/api/observations';
+import { useRemoveIdentification } from '@/services/api/identifications';
 import { useMe } from '@/services/api/me';
+import { Identification as IdentificationType } from '@/services/api/observations';
 import { useHasPermission } from '@/services/permissions/hooks';
 import { cn } from '@/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -29,9 +32,12 @@ export const IdentificationSuggestion: FC<IdentificationSuggestionProps> = ({ ob
   const identificationFeedbackModalProps = useModal<IdentificationFeedbackModalProps>();
   const confirmIdentificationModalProps = useModal<ConfirmIdentificationModalProps>();
   const feedbackModalProps = useModal<FeedbackModalProps>();
+  const confirmRemove = useConfirm();
+  const removeIdentification = useRemoveIdentification();
 
   const canVote = useHasPermission('vote');
   const canConfirm = useHasPermission('confirm');
+  const canModerate = useHasPermission('moderate');
 
   const identification = tree.data;
 
@@ -40,6 +46,7 @@ export const IdentificationSuggestion: FC<IdentificationSuggestionProps> = ({ ob
   const feedbackWithComments = identification.feedback.filter(feedback => feedback.comment);
   const myFeedback = identification.feedback.find(feedback => feedback.userId === me.id);
   const isOwnSuggestion = identification.suggester?.id === me.id;
+  const canRemove = isOwnSuggestion || canModerate;
   const hasFeedback = identification.feedback.length > 0;
   const TaxonIcon = identification.isAccessory ? SiLeaf : SiBug2;
 
@@ -48,13 +55,14 @@ export const IdentificationSuggestion: FC<IdentificationSuggestionProps> = ({ ob
       <IdentificationFeedbackModal {...identificationFeedbackModalProps} />
       <ConfirmIdentificationModal {...confirmIdentificationModalProps} />
       <FeedbackModal {...feedbackModalProps} />
+      <Confirm {...confirmRemove} />
 
       <div className="flex gap-0.5">
         {tree.parent && <Connection />}
 
         <div className="flex flex-col gap-1 w-full">
           <div className="leading-tight w-full">
-            <div className="font-semibold flex items-start w-full justify-between">
+            <div className="font-semibold flex items-start w-full justify-between gap-2">
               <div>
                 <a
                   href={`https://www.inaturalist.org/taxa/${identification.sourceId}`}
@@ -68,31 +76,60 @@ export const IdentificationSuggestion: FC<IdentificationSuggestionProps> = ({ ob
                   suggested by <UserLink user={identification.suggester} className="font-semibold" />
                 </p>
               </div>
-              {hasFeedback && (
-                <Button
-                  compact
-                  onClick={() => feedbackModalProps.open({ feedback: identification.feedback })}
-                  className="flex items-center gap-1"
-                >
-                  {positiveFeedback.length > 0 && (
-                    <span className="flex items-center gap-0.5 text-purple-500 text-sm font-semibold">
-                      <UpThumb />
-                      <span>{positiveFeedback.length}</span>
-                    </span>
+              {(hasFeedback || canRemove) && (
+                <div className="flex shrink-0 items-center gap-1">
+                  {hasFeedback && (
+                    <Button
+                      compact
+                      onClick={() => feedbackModalProps.open({ feedback: identification.feedback })}
+                      className="flex items-center gap-1"
+                    >
+                      {positiveFeedback.length > 0 && (
+                        <span className="flex items-center gap-0.5 text-purple-500 text-sm font-semibold">
+                          <UpThumb />
+                          <span>{positiveFeedback.length}</span>
+                        </span>
+                      )}
+                      {negativeFeedback.length > 0 && (
+                        <span className="flex items-center gap-0.5 text-red-500 text-sm font-semibold">
+                          <DownThumb />
+                          <span>{negativeFeedback.length}</span>
+                        </span>
+                      )}
+                      {feedbackWithComments.length > 0 && (
+                        <span className="flex items-center text-accent-900 text-sm font-semibold">
+                          <SiMessage className="text-xl" />
+                          <span>{feedbackWithComments.length}</span>
+                        </span>
+                      )}
+                    </Button>
                   )}
-                  {negativeFeedback.length > 0 && (
-                    <span className="flex items-center gap-0.5 text-red-500 text-sm font-semibold">
-                      <DownThumb />
-                      <span>{negativeFeedback.length}</span>
-                    </span>
+                  {canRemove && (
+                    <button
+                      type="button"
+                      aria-label={`remove suggestion for ${identification.name}`}
+                      disabled={removeIdentification.isPending}
+                      onClick={() =>
+                        confirmRemove.open({
+                          title: 'Remove suggestion?',
+                          description: `This will remove the suggestion for ${identification.name}. Feedback on this suggestion will also be removed.`,
+                          onConfirm: async () => {
+                            await removeIdentification.mutateAsync(identification.id);
+                          }
+                        })
+                      }
+                      className={cn(
+                        'relative flex h-7 w-7 items-center justify-center rounded-full bg-red-100 text-red-800 hover:bg-red-200 disabled:pointer-events-none disabled:opacity-50'
+                      )}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2 sm:hidden"
+                      />
+                      <SiClose className="text-lg" />
+                    </button>
                   )}
-                  {feedbackWithComments.length > 0 && (
-                    <span className="flex items-center text-accent-900 text-sm font-semibold">
-                      <SiMessage className="text-xl" />
-                      <span>{feedbackWithComments.length}</span>
-                    </span>
-                  )}
-                </Button>
+                </div>
               )}
             </div>
           </div>

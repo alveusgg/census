@@ -61,6 +61,25 @@ export const useAddFeedbackToIdentification = () => {
   });
 };
 
+export const useRemoveIdentification = () => {
+  const trpc = useAPI();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      return await trpc.identification.remove.mutate({ id });
+    },
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: key('observations') });
+      queryClient.invalidateQueries({ queryKey: key('identifications') });
+      queryClient.invalidateQueries({ queryKey: key('identification') });
+      queryClient.invalidateQueries({ queryKey: key('identification', id.toString()) });
+      queryClient.invalidateQueries({ queryKey: key('users') });
+      queryClient.invalidateQueries({ queryKey: key('points') });
+    }
+  });
+};
+
 export const useIdentificationsGroupedBySource = (filterQuery = '') => {
   const trpc = useAPI();
   return queryOptions({
