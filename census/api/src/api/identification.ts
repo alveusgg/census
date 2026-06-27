@@ -4,6 +4,7 @@ import {
   confirmIdentification,
   getIdentification,
   getIdentificationsGroupedBySource,
+  removeIdentification,
   suggestAccessoryIdentification,
   suggestIdentification
 } from '../services/identifications/identifications.js';
@@ -112,6 +113,25 @@ export const createIdentificationRouter = () =>
       )
       .mutation(async ({ input }) => {
         return await suggestAccessoryIdentification(input.observationId, input.iNatId);
+      }),
+
+    remove: procedure
+      .input(z.object({ id: z.number() }))
+      .use(
+        cache.mutation({
+          keys: [
+            ['observations'],
+            ['identifications'],
+            ['users', 'identifications'],
+            ['users', 'profile'],
+            ['users', 'leaderboard'],
+            ['users', 'leaderboardPage'],
+            ['observations', 'unconfirmedCount']
+          ]
+        })
+      )
+      .mutation(async ({ input }) => {
+        return await removeIdentification(input.id);
       }),
 
     confirm: procedureWithPermissions('confirm')
