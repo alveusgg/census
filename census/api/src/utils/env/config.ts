@@ -89,7 +89,10 @@ export const services = async (variables: z.infer<typeof config>) => {
       dsn,
       release: variables.SENTRY_RELEASE,
 
-      integrations: [Sentry.consoleLoggingIntegration({ levels: ['log', 'warn', 'error'] })],
+      integrations: integrations => [
+        ...integrations.filter(integration => integration.name !== 'Fastify'),
+        Sentry.consoleLoggingIntegration({ levels: ['log', 'warn', 'error'] })
+      ],
       openTelemetrySpanProcessors: additionalProcessors
     });
   })();
