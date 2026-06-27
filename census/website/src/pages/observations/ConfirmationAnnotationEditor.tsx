@@ -2,7 +2,7 @@ import { Square } from '@/components/assets/images/Square';
 import { Observation } from '@/services/api/observations';
 import { cn } from '@/utils/cn';
 import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
-import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FC, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   DefaultColorStyle,
   DefaultSizeStyle,
@@ -52,6 +52,7 @@ interface ConfirmationAnnotationEditorProps {
   images: ConfirmationImage[];
   annotationError?: string;
   annotationTextByKey: Record<string, string>;
+  globalCommentsField?: ReactNode;
   onAnnotationTextChange: (key: string, value: string) => void;
   onAnnotationsChange: (annotations: ConfirmationAnnotation[]) => void;
 }
@@ -175,6 +176,7 @@ export const ConfirmationAnnotationEditor: FC<ConfirmationAnnotationEditorProps>
   images,
   annotationError,
   annotationTextByKey,
+  globalCommentsField,
   onAnnotationTextChange,
   onAnnotationsChange
 }) => {
@@ -333,6 +335,7 @@ export const ConfirmationAnnotationEditor: FC<ConfirmationAnnotationEditorProps>
         {annotationError && (
           <p className="border-t border-accent-300 pt-3 text-sm font-bold text-red-700">{annotationError}</p>
         )}
+        {globalCommentsField && <div className="border-t border-accent-300 pt-4">{globalCommentsField}</div>}
       </div>
     </div>
   );

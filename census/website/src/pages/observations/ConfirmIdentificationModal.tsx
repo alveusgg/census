@@ -83,6 +83,12 @@ const ConfirmIdentificationForm: FC<ModalProps<ConfirmIdentificationModalProps>>
     props.close();
   };
 
+  const globalCommentsField = (
+    <Field name="comment">
+      <TextAreaField aria-label="additional comments" placeholder="Add additional comments" />
+    </Field>
+  );
+
   return (
     <Form className="flex min-h-0 flex-col gap-5" methods={methods} onSubmit={submitFeedback}>
       <div className="flex flex-col">
@@ -90,17 +96,17 @@ const ConfirmIdentificationForm: FC<ModalProps<ConfirmIdentificationModalProps>>
           <span>Confirm identification for {identification.name}</span>
         </h1>
       </div>
-      <Field name="comment">
-        <TextAreaField aria-label="additional comments" placeholder="Add additional comments" />
-      </Field>
-      {observationImages.length > 0 && (
+      {observationImages.length > 0 ? (
         <ConfirmationAnnotationEditor
           images={observationImages}
           annotationError={annotationError}
           annotationTextByKey={annotationTextByKey}
+          globalCommentsField={globalCommentsField}
           onAnnotationTextChange={handleAnnotationTextChange}
           onAnnotationsChange={setAnnotations}
         />
+      ) : (
+        globalCommentsField
       )}
       <Button loading={confirmIdentification.isPending} type="submit" className="self-end px-8">
         Confirm
