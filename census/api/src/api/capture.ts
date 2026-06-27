@@ -30,6 +30,11 @@ export const createCaptureRouter = () => {
       })
   });
 
+  const unconvertedCaptureChanges = defineListener({
+    changes: { table: 'captures', events: ['insert', 'update'] },
+    handler: () => Date.now()
+  });
+
   return router({
     // Keep this public with the matching SSE subscription; see docs/dev/api/sse-subscriptions.md.
     capture: publicProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
@@ -39,6 +44,15 @@ export const createCaptureRouter = () => {
       // Public because EventSource reconnects can reuse stale auth; see docs/dev/api/sse-subscriptions.md.
       capture: publicProcedure.input(z.object({ id: z.number() })).subscription(async function* ({ input, signal }) {
         yield* captures.subscribe(input.id, { signal });
+      }),
+      unconvertedCaptures: procedure.subscription(({ signal }) => {
+        const user = useUser();
+
+        return (async function* () {
+          for await (const _ of unconvertedCaptureChanges.subscribe({ signal })) {
+            yield await getUnconvertedCapturesForUser(user.id);
+          }
+        })();
       })
     },
 

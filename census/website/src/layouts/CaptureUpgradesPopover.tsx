@@ -12,7 +12,6 @@ import {
   useUnconvertedCaptures,
 } from "@/services/api/capture";
 import { cn } from "@/utils/cn";
-import { useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { Link } from "react-router-dom";
 
@@ -46,7 +45,7 @@ const statusClasses = {
 };
 
 export const CaptureUpgradesPopover = () => {
-  const query = useQuery(useUnconvertedCaptures());
+  const query = useUnconvertedCaptures();
   const markCaptureDead = useMarkCaptureDead();
   const captures = query.data ?? [];
 

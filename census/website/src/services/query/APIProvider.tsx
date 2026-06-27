@@ -88,7 +88,9 @@ export const APIProvider: FC<PropsWithChildren> = ({ children }) => {
         pointsLink({
           invalidate: {
             achievements: () => {
-              queryClient.invalidateQueries({ queryKey: key('achievements', 'pending') });
+              queryClient.invalidateQueries({
+                queryKey: key('achievements', 'pending')
+              });
             },
             points: () => {
               queryClient.invalidateQueries({ queryKey: key('points') });
@@ -100,12 +102,17 @@ export const APIProvider: FC<PropsWithChildren> = ({ children }) => {
           condition: op => op.type === 'subscription',
           true: httpSubscriptionLink({
             url,
-            transformer: SuperJSON
+            transformer: SuperJSON,
+            connectionParams: async () => ({
+              authorization: `Bearer ${await requestToken()}`
+            })
           }),
           false: httpBatchLink({
             url,
             transformer: SuperJSON,
-            headers: async () => ({ authorization: `Bearer ${await requestToken()}` })
+            headers: async () => ({
+              authorization: `Bearer ${await requestToken()}`
+            })
           })
         })
       ]
