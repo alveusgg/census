@@ -1,5 +1,5 @@
 import { useUnconfirmedObservationCount } from "@/services/api/observations";
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { ChevronRight } from "lucide-react";
 import { FC } from "react";
 import { Link } from "react-router-dom";
@@ -7,8 +7,8 @@ import { Link } from "react-router-dom";
 import capture from "@/assets/capture.png";
 
 export const IdentifyCrittersTile: FC = () => {
-  const unconfirmedQuery = useQuery(useUnconfirmedObservationCount());
-  const unconfirmedCount = unconfirmedQuery.data ?? 0;
+  const unconfirmedQuery = useSuspenseQuery(useUnconfirmedObservationCount());
+  const unconfirmedCount = unconfirmedQuery.data;
 
   return (
     <Link

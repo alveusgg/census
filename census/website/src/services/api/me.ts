@@ -1,5 +1,5 @@
 import { handleTRPCError } from '@/components/feedback/ErrorBoundary';
-import { OnboardingFormSchema } from '@alveusgg/census-forms';
+import { OnboardingSubmissionSchema } from '@alveusgg/census-forms';
 import { infiniteQueryOptions, queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { toast } from 'sonner';
@@ -109,7 +109,7 @@ export const useOnboardUser = () => {
   const api = useAPI();
   const client = useQueryClient();
   return useMutation({
-    mutationFn: async (data: OnboardingFormSchema) => {
+    mutationFn: async (data: OnboardingSubmissionSchema) => {
       try {
         const results = await api.me.onboard.mutate(data);
         return results;

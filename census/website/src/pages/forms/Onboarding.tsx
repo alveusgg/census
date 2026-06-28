@@ -13,29 +13,23 @@ import { usePointAction } from '@/components/points/hooks';
 import { PointOrigin } from '@/components/points/PointOrigin';
 import { Clipboard } from '@/layouts/Clipboard';
 import { useOnboardUser } from '@/services/api/me';
-import { OnboardingFormSchema } from '@alveusgg/census-forms';
+import { OnboardingSubmissionSchema } from '@alveusgg/census-forms';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FC } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router';
-import { z } from 'zod';
 
 export const Onboarding: FC = () => {
   const navigate = useNavigate();
-  const methods = useForm<OnboardingFormSchema>({
-    resolver: zodResolver(
-      z.object({
-        onboarding: OnboardingFormSchema,
-        age: z.number()
-      })
-    )
+  const methods = useForm<OnboardingSubmissionSchema>({
+    resolver: zodResolver(OnboardingSubmissionSchema)
   });
   const action = usePointAction();
   const confetti = useConfetti();
   const onboard = useOnboardUser();
   const [, setOpen] = useAchievements();
 
-  const onSubmit = async (data: OnboardingFormSchema) => {
+  const onSubmit = async (data: OnboardingSubmissionSchema) => {
     setOpen(true);
     await action.add(200);
     await onboard.mutateAsync(data);

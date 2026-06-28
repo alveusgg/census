@@ -1,4 +1,4 @@
-import { OnboardingFormSchema } from '@alveusgg/census-forms';
+import { OnboardingSubmissionSchema } from '@alveusgg/census-forms';
 import { BadRequestError } from '@alveusgg/error';
 import { z } from 'zod';
 import { getPermissions } from '../services/auth/role.js';
@@ -21,12 +21,7 @@ export const createMeRouter = () =>
       return user;
     }),
     onboard: procedure
-      .input(
-        z.object({
-          onboarding: OnboardingFormSchema,
-          age: z.number()
-        })
-      )
+      .input(OnboardingSubmissionSchema)
       .use(
         cache.mutation({
           keys: [['users'], ['users', 'leaderboard'], ['users', 'leaderboardPage'], ['achievements']]
