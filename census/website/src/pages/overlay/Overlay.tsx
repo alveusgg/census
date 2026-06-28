@@ -1,10 +1,14 @@
+import { useVariable } from '@alveusgg/backstage';
+import type { AppRouter } from '@alveusgg/census-api';
+import { levels } from '@alveusgg/census-levels';
+import { createTRPCClient, httpSubscriptionLink } from '@trpc/client';
 import { motion, useAnimate } from 'framer-motion';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import SuperJSON from 'superjson';
 
 import butterfly from '@/assets/adult_butterfly.outlined.png';
 import { loadLevelArtwork } from '@/lib/levels';
-import { useAPI } from '@/services/query/hooks';
-import { levels } from '@alveusgg/census-levels';
+import { Variables } from '@/services/backstage/config';
 
 const PATH = 'M2.6,112.4c4.78-10.18,6.54-21.75,4.99-32.89-1.66-11.97-7.02-23.38-7.09-35.47C.41,29.07,8.44,14.99,8.68,0';
 
@@ -16,6 +20,21 @@ interface Alert {
 
 export const Overlay = () => {
   const [scope, animate] = useAnimate();
+  const url = useVariable<Variables>('apiBaseUrl');
+  if (!url) throw new Error('Missing apiBaseUrl');
+
+  const api = useMemo(
+    () =>
+      createTRPCClient<AppRouter>({
+        links: [
+          httpSubscriptionLink({
+            url,
+            transformer: SuperJSON
+          })
+        ]
+      }),
+    [url]
+  );
 
   const imageRef = useRef<HTMLImageElement>(null);
   const usernameRef = useRef<HTMLParagraphElement>(null);
@@ -78,8 +97,6 @@ export const Overlay = () => {
     },
     [run]
   );
-
-  const api = useAPI();
 
   useEffect(() => {
     const subscription = api.users.live.levelUps.subscribe(undefined, {
