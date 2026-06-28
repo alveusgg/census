@@ -1,8 +1,9 @@
 import { useVariable } from '@alveusgg/backstage';
+import * as Sentry from '@sentry/react';
 import { useMutation } from '@tanstack/react-query';
 import { isAfter, subSeconds } from 'date-fns';
 import { parseJWT } from 'oslo/jwt';
-import { FC, PropsWithChildren, useMemo } from 'react';
+import { FC, PropsWithChildren, useEffect, useMemo } from 'react';
 import { z } from 'zod';
 import { createStore } from 'zustand';
 import { Variables } from '../backstage/config';
@@ -143,6 +144,15 @@ export const CritterAuthenticationProvider: FC<PropsWithChildren> = ({ children 
       }
     }));
   }, [apiBaseUrl]);
+
+  useEffect(() => {
+    const syncSentryUser = ({ account }: AuthenticationStore) => {
+      Sentry.setUser(account ? { id: account.id } : null);
+    };
+
+    syncSentryUser(store.getState());
+    return store.subscribe(syncSentryUser);
+  }, [store]);
 
   return <AuthenticationContext.Provider value={store}>{children}</AuthenticationContext.Provider>;
 };

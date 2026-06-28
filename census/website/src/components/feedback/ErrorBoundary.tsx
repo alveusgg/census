@@ -11,6 +11,15 @@ import { ZodError, ZodIssue } from 'zod';
 import { Button } from '../controls/button/juicy';
 import { NotFoundPage } from './NotFoundError';
 
+type BoundaryKind = 'component' | 'route';
+
+interface SentryReference {
+  eventId: string;
+  traceId?: string;
+  spanId?: string;
+  userId?: string;
+}
+
 interface ErrorProps {
   error: Error;
 }
@@ -21,20 +30,64 @@ const Explanation: FC<PropsWithChildren> = ({ children }) => (
   </div>
 );
 
-const captureBoundaryError = (
-  error: unknown,
-  boundary: 'component' | 'route',
-  context: Record<string, unknown> = {}
-) => {
-  Sentry.withScope(scope => {
-    scope.setTag('error_boundary', boundary);
-    scope.setContext('error_boundary', { boundary, ...context });
-    Sentry.captureException(error);
-  });
+const getActiveSentryReference = (eventId: string): SentryReference => {
+  const span = Sentry.getActiveSpan()?.spanContext();
+  const user = Sentry.getCurrentScope().getUser();
+  return {
+    eventId,
+    traceId: span?.traceId,
+    spanId: span?.spanId,
+    userId: user?.id === undefined ? undefined : String(user.id)
+  };
 };
 
-const handleComponentBoundaryError = (error: Error, { componentStack }: ErrorInfo) => {
-  captureBoundaryError(error, 'component', { componentStack });
+const captureBoundaryError = (error: unknown, boundary: BoundaryKind, context: Record<string, unknown> = {}) => {
+  const eventId = Sentry.withScope(scope => {
+    scope.setTag('error_boundary', boundary);
+    scope.setContext('error_boundary', { boundary, ...context });
+    return Sentry.captureException(error);
+  });
+
+  return getActiveSentryReference(eventId);
+};
+
+const captureComponentBoundaryError = (error: Error, errorInfo: ErrorInfo) => {
+  const eventId = Sentry.withScope(scope => {
+    scope.setTag('error_boundary', 'component');
+    scope.setContext('error_boundary', { boundary: 'component' });
+    return Sentry.captureReactException(error, errorInfo);
+  });
+
+  return getActiveSentryReference(eventId);
+};
+
+const SupportReference: FC<{ sentry?: SentryReference }> = ({ sentry }) => {
+  if (!sentry) return null;
+
+  const references: [string, string | undefined][] = [
+    ['Event ID', sentry.eventId],
+    ['Trace ID', sentry.traceId],
+    ['Span ID', sentry.spanId],
+    ['User ID', sentry.userId]
+  ].filter((reference): reference is [string, string] => Boolean(reference[1]));
+
+  if (!references.length) return null;
+
+  return (
+    <Explanation>
+      <h2 className="font-medium">Support reference</h2>
+      <dl className="flex flex-col gap-1">
+        {references.map(([label, value]) => (
+          <div className="min-w-0 text-sm" key={label}>
+            <dt className="font-medium">{label}:</dt>
+            <dd>
+              <code className="break-all text-secondary-std text-xs font-medium">{value}</code>
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </Explanation>
+  );
 };
 
 export const ErrorExplanation: FC<ErrorProps> = ({ error }) => {
@@ -144,7 +197,11 @@ const getExplanationForError = (error: unknown) => {
   return null;
 };
 
-export const CriticalErrorBoundary: FC<FallbackProps> = ({ error, resetErrorBoundary }) => {
+interface CriticalErrorBoundaryProps extends FallbackProps {
+  sentry?: SentryReference;
+}
+
+export const CriticalErrorBoundary: FC<CriticalErrorBoundaryProps> = ({ error, resetErrorBoundary, sentry }) => {
   const location = useLocation();
 
   return (
@@ -160,6 +217,7 @@ export const CriticalErrorBoundary: FC<FallbackProps> = ({ error, resetErrorBoun
           </p>
         </div>
         {getExplanationForError(error)}
+        <SupportReference sentry={sentry} />
         <div className="flex flex-col gap-3">
           <p className="leading-5 text-balance">
             If this is your first time having problems please try again to see if the problem is resolved.
@@ -178,32 +236,50 @@ export const RouteErrorBoundary: FC<PropsWithChildren> = () => {
   const validator = useRevalidator();
   const location = useLocation();
   const locationKey = `${location.pathname}${location.search}${location.hash}`;
+  const [sentryReference, setSentryReference] = useState<SentryReference>();
 
   useEffect(() => {
-    if (isRouteErrorResponse(error) && error.status < 500) return;
+    if (isRouteErrorResponse(error) && error.status < 500) {
+      setSentryReference(undefined);
+      return;
+    }
 
-    captureBoundaryError(error, 'route', {
-      location: locationKey,
-      ...(isRouteErrorResponse(error)
-        ? {
-            status: error.status,
-            statusText: error.statusText,
-            data: error.data
-          }
-        : {})
-    });
+    setSentryReference(
+      captureBoundaryError(error, 'route', {
+        location: locationKey,
+        ...(isRouteErrorResponse(error)
+          ? {
+              status: error.status,
+              statusText: error.statusText,
+              data: error.data
+            }
+          : {})
+      })
+    );
   }, [error, locationKey]);
 
   if (isRouteErrorResponse(error)) {
     return <NotFoundPage>that page does not exist</NotFoundPage>;
   }
 
-  return <CriticalErrorBoundary error={error as Error} resetErrorBoundary={() => validator.revalidate()} />;
+  return (
+    <CriticalErrorBoundary
+      error={error as Error}
+      resetErrorBoundary={() => validator.revalidate()}
+      sentry={sentryReference}
+    />
+  );
 };
 
 export const ComponentErrorBoundary: FC<PropsWithChildren> = ({ children }) => {
+  const [sentryReference, setSentryReference] = useState<SentryReference>();
+
   return (
-    <CoreErrorBoundary FallbackComponent={CriticalErrorBoundary} onError={handleComponentBoundaryError}>
+    <CoreErrorBoundary
+      fallbackRender={props => <CriticalErrorBoundary {...props} sentry={sentryReference} />}
+      onError={(error, errorInfo) => setSentryReference(captureComponentBoundaryError(error, errorInfo))}
+      onReset={() => setSentryReference(undefined)}
+    >
       {children}
     </CoreErrorBoundary>
   );
