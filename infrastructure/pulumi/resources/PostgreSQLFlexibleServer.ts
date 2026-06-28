@@ -47,8 +47,8 @@ export class PostgreSQLFlexibleServer extends ComponentResource {
           tier: 'P15'
         },
         sku: {
-          tier: 'Burstable',
-          name: 'Standard_B2s'
+          tier: 'GeneralPurpose',
+          name: 'Standard_D2ds_v5'
         }
       },
       { parent: this }
