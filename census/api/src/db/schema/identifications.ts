@@ -18,6 +18,10 @@ export interface ConfirmationAnnotation {
     x: number;
     y: number;
   };
+  canvas?: {
+    height: number;
+    width: number;
+  };
   comment?: string;
   imageId: string;
   imageIndex: number;

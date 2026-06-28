@@ -22,26 +22,10 @@ export interface ConfirmIdentificationModalProps {
 }
 
 const ConfirmIdentificationFields = z.object({
-  comment: z.string()
+  comment: z.string().optional()
 });
 
 type ConfirmIdentificationFields = z.infer<typeof ConfirmIdentificationFields>;
-
-const formatComment = (
-  comment: string,
-  annotations: ConfirmationAnnotation[],
-  annotationTextByKey: Record<string, string>
-) => {
-  const trimmedComment = comment.trim();
-  const annotationLines = annotations.map(
-    (annotation, index) =>
-      `${index + 1}. Image ${annotation.imageIndex + 1} ${annotation.type}: ${annotationTextByKey[annotation.key].trim()}`
-  );
-
-  if (annotationLines.length === 0) return trimmedComment;
-  if (!trimmedComment) return `Image annotations:\n${annotationLines.join('\n')}`;
-  return `${trimmedComment}\n\nImage annotations:\n${annotationLines.join('\n')}`;
-};
 
 const ConfirmIdentificationForm: FC<ModalProps<ConfirmIdentificationModalProps>> = props => {
   const identification = props.props?.identification;
@@ -49,12 +33,13 @@ const ConfirmIdentificationForm: FC<ModalProps<ConfirmIdentificationModalProps>>
 
   const observationImages = props.props?.observationImages ?? [];
   const [annotations, setAnnotations] = useState<ConfirmationAnnotation[]>([]);
-  const [annotationError, setAnnotationError] = useState<string>();
+  const [confirmationError, setConfirmationError] = useState<string>();
   const [annotationTextByKey, setAnnotationTextByKey] = useState<Record<string, string>>({});
 
   const methods = useForm<ConfirmIdentificationFields>({
     resolver: zodResolver(ConfirmIdentificationFields)
   });
+  const comment = methods.watch('comment');
 
   const confirmIdentification = useConfirmIdentification();
 
@@ -66,21 +51,33 @@ const ConfirmIdentificationForm: FC<ModalProps<ConfirmIdentificationModalProps>>
     });
   }, [annotations]);
 
+  useEffect(() => {
+    if (!comment?.trim()) return;
+    setConfirmationError(undefined);
+  }, [comment]);
+
   const handleAnnotationTextChange = useCallback((key: string, value: string) => {
-    setAnnotationError(undefined);
+    setConfirmationError(undefined);
     setAnnotationTextByKey(current => ({ ...current, [key]: value }));
   }, []);
 
   const submitFeedback = async (data: ConfirmIdentificationFields) => {
-    const missingAnnotationText = annotations.some(annotation => !annotationTextByKey[annotation.key]?.trim());
-    if (missingAnnotationText) {
-      setAnnotationError('Add a note for each annotation before confirming.');
+    const comment = data.comment?.trim() ?? '';
+    const hasConfirmationDetails = annotations.length > 0 || comment.length > 0;
+    if (!hasConfirmationDetails) {
+      setConfirmationError('Add at least one annotation or an additional comment before confirming.');
       return;
     }
 
-    const comment = formatComment(data.comment, annotations, annotationTextByKey);
+    const missingAnnotationText = annotations.some(annotation => !annotationTextByKey[annotation.key]?.trim());
+    if (missingAnnotationText) {
+      setConfirmationError('Add a note for each annotation before confirming.');
+      return;
+    }
+
     const confirmationAnnotations = annotations.map(annotation => ({
       box: annotation.box,
+      canvas: annotation.canvas,
       comment: annotationTextByKey[annotation.key]?.trim() || undefined,
       imageId: annotation.imageId,
       imageIndex: annotation.imageIndex,
@@ -119,14 +116,17 @@ const ConfirmIdentificationForm: FC<ModalProps<ConfirmIdentificationModalProps>>
       {observationImages.length > 0 ? (
         <ConfirmationAnnotationEditor
           images={observationImages}
-          annotationError={annotationError}
+          annotationError={confirmationError}
           annotationTextByKey={annotationTextByKey}
           globalCommentsField={globalCommentsField}
           onAnnotationTextChange={handleAnnotationTextChange}
           onAnnotationsChange={setAnnotations}
         />
       ) : (
-        globalCommentsField
+        <>
+          {globalCommentsField}
+          {confirmationError && <p className="text-sm font-bold text-red-700">{confirmationError}</p>}
+        </>
       )}
       <Button loading={confirmIdentification.isPending} type="submit" className="self-end">
         Confirm

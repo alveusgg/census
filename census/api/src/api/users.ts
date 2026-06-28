@@ -1,6 +1,11 @@
+import { levels } from '@alveusgg/census-levels';
+import { and, eq, gte, lte, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { defineListener } from '../db/defineListener.js';
+import { achievements, users as usersTable } from '../db/schema/index.js';
+import { useDB } from '../db/transaction.js';
 import { getRecentRedeemedAchievements } from '../services/points/achievement.js';
+import { getLevelForPoints, type Level } from '../services/points/level.js';
 import { getLeaderboard, getLeaderboardPage } from '../services/points/points.js';
 import { getCurrentSeason } from '../services/seasons/season.js';
 import {
@@ -13,10 +18,81 @@ import { cache, procedure, procedureWithPermissions, publicProcedure, router } f
 import { useUser } from '../utils/env/env.js';
 import { Pagination } from './observation.js';
 
+interface UserLevelSnapshot {
+  userId: number;
+  username: string;
+  points: number;
+  level: Level;
+}
+
+interface LevelUpEvent {
+  userId: number;
+  username: string;
+  points: number;
+  level: Level;
+}
+
+const getUserLevelSnapshots = async (): Promise<UserLevelSnapshot[]> => {
+  const db = useDB();
+  const season = await getCurrentSeason();
+  const rows = await db
+    .select({
+      userId: usersTable.id,
+      username: usersTable.username,
+      points: sql<number>`COALESCE(SUM(${achievements.points}), 0)`.mapWith(Number)
+    })
+    .from(usersTable)
+    .leftJoin(
+      achievements,
+      and(
+        eq(usersTable.id, achievements.userId),
+        gte(achievements.createdAt, season.startDate),
+        lte(achievements.createdAt, new Date()),
+        eq(achievements.redeemed, true),
+        eq(achievements.revoked, false)
+      )
+    )
+    .where(eq(usersTable.status, 'active'))
+    .groupBy(usersTable.id);
+
+  return rows.map(row => ({
+    ...row,
+    level: getLevelForPoints(row.points)
+  }));
+};
+
 export const createUsersRouter = () => {
   const recentAchievements = defineListener({
     changes: { table: 'achievements', events: ['insert', 'update'] },
     handler: () => getRecentRedeemedAchievements(7)
+  });
+
+  let knownLevels: Map<number, UserLevelSnapshot> | undefined;
+  const levelUps = defineListener({
+    changes: { table: 'achievements', events: ['insert', 'update'] },
+    handler: async () => {
+      const snapshots = await getUserLevelSnapshots();
+      const previous = knownLevels;
+      knownLevels = new Map(snapshots.map(snapshot => [snapshot.userId, snapshot]));
+
+      if (!previous) return [];
+
+      return snapshots
+        .filter(snapshot => {
+          const previousSnapshot = previous.get(snapshot.userId);
+          const previousLevelNumber = previousSnapshot ? previousSnapshot.level : 'initial';
+          return levels[snapshot.level].number > levels[previousLevelNumber].number;
+        })
+        .map<LevelUpEvent>(snapshot => ({
+          userId: snapshot.userId,
+          username: snapshot.username,
+          points: snapshot.points,
+          level: snapshot.level
+        }));
+    }
+  });
+  void levelUps.get().catch(error => {
+    console.error('Failed to initialize level up listener', error);
   });
 
   return router({
@@ -101,6 +177,10 @@ export const createUsersRouter = () => {
       // Public because EventSource reconnects can reuse stale auth; see docs/dev/api/sse-subscriptions.md.
       recentAchievements: publicProcedure.subscription(async function* ({ signal }) {
         yield* recentAchievements.subscribe({ signal });
+      }),
+      // Public because this powers the unauthenticated overlay route.
+      levelUps: publicProcedure.subscription(async function* ({ signal }) {
+        yield* levelUps.subscribe({ signal });
       })
     }
   });

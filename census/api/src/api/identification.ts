@@ -21,6 +21,12 @@ const confirmationAnnotationSchema = z.object({
     x: z.number(),
     y: z.number()
   }),
+  canvas: z
+    .object({
+      height: z.number(),
+      width: z.number()
+    })
+    .optional(),
   comment: z.string().optional(),
   imageId: z.string(),
   imageIndex: z.number().int().nonnegative(),

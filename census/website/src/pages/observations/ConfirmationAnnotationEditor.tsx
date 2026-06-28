@@ -13,8 +13,14 @@ export type ConfirmationAnnotationBox = {
   y: number;
 };
 
+export type ConfirmationAnnotationCanvas = {
+  height: number;
+  width: number;
+};
+
 export interface ConfirmationAnnotation {
   box: ConfirmationAnnotationBox;
+  canvas?: ConfirmationAnnotationCanvas;
   key: string;
   imageId: string;
   imageIndex: number;
@@ -32,6 +38,7 @@ type AnnotationPoint = {
 
 type AnnotationCanvasShape = {
   box: ConfirmationAnnotationBox;
+  canvas: ConfirmationAnnotationCanvas;
   path: string;
   points: AnnotationPoint[];
   shapeId: string;
@@ -43,6 +50,7 @@ type AnnotationCanvasSnapshot = {
 
 type AnnotationShape = {
   box: ConfirmationAnnotationBox;
+  canvas: ConfirmationAnnotationCanvas;
   key: string;
   imageId: string;
   shape: string;
@@ -93,6 +101,15 @@ const getAnnotationPoint = (event: React.PointerEvent<SVGSVGElement>, element: S
   return {
     x: roundCoordinate(Math.min(Math.max(event.clientX - rect.left, 0), rect.width)),
     y: roundCoordinate(Math.min(Math.max(event.clientY - rect.top, 0), rect.height))
+  };
+};
+
+const getAnnotationCanvas = (element: SVGSVGElement): ConfirmationAnnotationCanvas => {
+  const rect = element.getBoundingClientRect();
+
+  return {
+    height: roundCoordinate(rect.height),
+    width: roundCoordinate(rect.width)
   };
 };
 
@@ -191,7 +208,7 @@ const AnnotationCanvas: FC<AnnotationCanvasProps> = ({
   }, [imageId, onPendingDeleteHandled, pendingDelete, replaceShapes]);
 
   const finishDrawing = useCallback(
-    (points: AnnotationPoint[]) => {
+    (points: AnnotationPoint[], canvas: ConfirmationAnnotationCanvas) => {
       activePointerIdRef.current = null;
 
       const box = getAnnotationBox(points);
@@ -199,6 +216,7 @@ const AnnotationCanvas: FC<AnnotationCanvasProps> = ({
 
       const nextShape: AnnotationCanvasShape = {
         box,
+        canvas,
         path: pointsToPath(points),
         points,
         shapeId: `shape:${nextShapeIdRef.current++}`
@@ -248,9 +266,10 @@ const AnnotationCanvas: FC<AnnotationCanvasProps> = ({
       if (event.currentTarget.hasPointerCapture(event.pointerId))
         event.currentTarget.releasePointerCapture(event.pointerId);
 
+      const canvas = getAnnotationCanvas(event.currentTarget);
       const currentPoints = draftPointsRef.current;
       setDraftPoints(null);
-      if (currentPoints) finishDrawing([...currentPoints, point]);
+      if (currentPoints) finishDrawing([...currentPoints, point], canvas);
     },
     [finishDrawing, setDraftPoints]
   );
@@ -262,9 +281,10 @@ const AnnotationCanvas: FC<AnnotationCanvasProps> = ({
       if (event.currentTarget.hasPointerCapture(event.pointerId))
         event.currentTarget.releasePointerCapture(event.pointerId);
 
+      const canvas = getAnnotationCanvas(event.currentTarget);
       const currentPoints = draftPointsRef.current;
       setDraftPoints(null);
-      if (currentPoints) finishDrawing(currentPoints);
+      if (currentPoints) finishDrawing(currentPoints, canvas);
     },
     [finishDrawing, setDraftPoints]
   );
