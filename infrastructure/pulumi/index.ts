@@ -84,8 +84,8 @@ export = async () => {
     image: config.require('image'),
     sessionAffinity: true,
     scale: {
-      min: 1,
-      max: 1,
+      min: 5,
+      max: 5,
       noOfRequestsPerInstance: 100
     }
   });
