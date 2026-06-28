@@ -134,6 +134,13 @@
       "when": 1782567300012,
       "tag": "0018_eminent_raza",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1782666502192,
+      "tag": "0019_tranquil_franklin_richards",
+      "breakpoints": true
     }
   ]
 }

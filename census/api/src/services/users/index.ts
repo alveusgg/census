@@ -3,12 +3,12 @@ import { and, count, desc, eq, isNotNull, isNull, or } from 'drizzle-orm';
 import { OnboardingFormSchema } from '@alveusgg/census-forms';
 import { NotAuthenticatedError, NotFoundError } from '@alveusgg/error';
 import { identifications, users } from '../../db/schema/index.js';
-import { responses } from '../../db/schema/responses.js';
+import { anonymousResponses, responses } from '../../db/schema/responses.js';
 import { useDB, withTransaction } from '../../db/transaction.js';
 import { withCoalescing } from '../../utils/cache.js';
 import { recordAchievement } from '../points/achievement.js';
-import { getPointsForUser } from '../points/points.js';
 import { getAllReachedLevelsForPoints } from '../points/level.js';
+import { getPointsForUser } from '../points/points.js';
 
 export const getUsers = async () => {
   const db = useDB();
@@ -114,7 +114,7 @@ export const getUserIdentifications = async (id: number, page: number, size: num
   };
 };
 
-export const onboardUser = async (id: number, data: OnboardingFormSchema) => {
+export const onboardUser = async (id: number, data: OnboardingFormSchema, age: number) => {
   const db = useDB();
   return await db.transaction(async tx => {
     return await withTransaction(tx, async () => {
@@ -137,6 +137,7 @@ export const onboardUser = async (id: number, data: OnboardingFormSchema) => {
         }
       });
       await tx.insert(responses).values({ userId: id, type: 'onboarding', payload: data });
+      await tx.insert(anonymousResponses).values({ type: 'onboarding', payload: { age } });
     });
   });
 };
