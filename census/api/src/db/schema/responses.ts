@@ -20,6 +20,13 @@ export const responses = pgTable(
   }
 );
 
+export const anonymousResponses = pgTable('anonymous_responses', {
+  id: serial('id').primaryKey(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  type: text('type').notNull(),
+  payload: json('payload').notNull()
+});
+
 export const responsesRelations = relations(responses, ({ one }) => ({
   user: one(users, {
     fields: [responses.userId],

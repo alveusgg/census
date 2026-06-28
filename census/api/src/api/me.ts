@@ -21,7 +21,12 @@ export const createMeRouter = () =>
       return user;
     }),
     onboard: procedure
-      .input(OnboardingFormSchema)
+      .input(
+        z.object({
+          onboarding: OnboardingFormSchema,
+          age: z.number()
+        })
+      )
       .use(
         cache.mutation({
           keys: [['users'], ['users', 'leaderboard'], ['users', 'leaderboardPage'], ['achievements']]
@@ -31,7 +36,7 @@ export const createMeRouter = () =>
         const { id } = useUser();
         const user = await getUser(id);
         if (user.status !== 'pending') throw new BadRequestError(`You have already been onboarded.`);
-        await onboardUser(id, input);
+        await onboardUser(id, input.onboarding, input.age);
         ctx.points();
         ctx.achievements();
       }),
