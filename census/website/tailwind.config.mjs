@@ -1,5 +1,6 @@
 import theme from 'tailwindcss/defaultTheme';
 import { cursors } from './tailwind.cursors.mjs';
+import textStroke from './tailwind.text-stroke.mjs';
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -132,6 +133,7 @@ export default {
     }
   },
   plugins: [
+    textStroke,
     require('tailwind-scrollbar'),
     require('@tailwindcss/typography'),
     require('tailwindcss-animate'),
