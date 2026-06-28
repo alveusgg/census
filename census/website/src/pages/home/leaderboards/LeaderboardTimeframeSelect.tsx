@@ -11,7 +11,7 @@ export const LeaderboardTimeframeSelect = ({ value, onValueChange }: Leaderboard
     <SelectTrigger className="h-9 w-fit min-w-0 gap-2 border-white/15 bg-white/10 px-3 text-base text-white hover:bg-white/15 focus:ring-white/20 data-[placeholder]:text-white/80 [&>span]:pr-1">
       <SelectValue>{leaderboardTimeframeLabels[value]}</SelectValue>
     </SelectTrigger>
-    <SelectContent className="border-leaderboard-300/40 bg-leaderboard-600 text-white">
+    <SelectContent className="z-[2003] border-leaderboard-300/40 bg-leaderboard-600 text-white">
       {leaderboardTimeframes.map(timeframe => (
         <SelectItem
           key={timeframe}
