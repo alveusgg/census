@@ -23,7 +23,8 @@ export const initialise = async (
     password,
     database,
     port,
-    ssl
+    ssl,
+    max: 3
   });
 
   // Also do migrations in here
