@@ -17,3 +17,10 @@ export const OnboardingFormSchema = z.object({
 });
 
 export type OnboardingFormSchema = z.infer<typeof OnboardingFormSchema>;
+
+export const OnboardingSubmissionSchema = z.object({
+  onboarding: OnboardingFormSchema,
+  age: z.number()
+});
+
+export type OnboardingSubmissionSchema = z.infer<typeof OnboardingSubmissionSchema>;

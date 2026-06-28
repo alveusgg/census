@@ -1,23 +1,20 @@
 import { useCurrentSeason, useShiniesForSeason } from "@/services/api/seasons";
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { FC } from "react";
 
 import allison from "@/assets/allison.png";
 
 export const SeasonProgressTile: FC = () => {
-  const seasonQuery = useQuery(useCurrentSeason());
-  const shiniesQuery = useQuery(useShiniesForSeason());
+  const season = useSuspenseQuery(useCurrentSeason());
+  const shinies = useSuspenseQuery(useShiniesForSeason());
 
-  const season = seasonQuery.data;
-  const shinies = shiniesQuery.data;
-
-  const totalShinies = shinies?.length ?? 0;
+  const totalShinies = shinies.data.length;
 
   const shiniesLeft =
     totalShinies -
-    (shinies?.filter((s) => "identificationId" in s && s.identificationId)
-      .length ?? 0);
+    shinies.data.filter((s) => "identificationId" in s && s.identificationId)
+      .length;
 
   return (
     <div className="flex items-center gap-4 py-4 md:pr-6 md:py-2 @container">
@@ -36,8 +33,8 @@ export const SeasonProgressTile: FC = () => {
           generation one
         </h3>
         <p className="text-sm font-semibold text-accent-800">
-          {format(new Date(season?.startDate ?? ""), "MMM yyyy")} -{" "}
-          {format(new Date(season?.endDate ?? ""), "MMM yyyy")}
+          {format(new Date(season.data.startDate), "MMM yyyy")} -{" "}
+          {format(new Date(season.data.endDate), "MMM yyyy")}
         </p>
         <div className="h-2.5 w-full rounded-full bg-accent-200 overflow-hidden">
           <div

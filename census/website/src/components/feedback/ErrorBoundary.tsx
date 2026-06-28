@@ -1,8 +1,9 @@
 import { cn } from '@/utils/cn';
 import { CustomError } from '@alveusgg/error';
+import * as Sentry from '@sentry/react';
 import { TRPCClientError } from '@trpc/client';
 import ErrorStackParser from 'error-stack-parser';
-import { ComponentProps, FC, PropsWithChildren, useState } from 'react';
+import { ComponentProps, ErrorInfo, FC, PropsWithChildren, useEffect, useState } from 'react';
 import { ErrorBoundary as CoreErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { isRouteErrorResponse } from 'react-router';
 import { Link, useLocation, useRevalidator, useRouteError } from 'react-router-dom';
@@ -19,6 +20,22 @@ const Explanation: FC<PropsWithChildren> = ({ children }) => (
     {children}
   </div>
 );
+
+const captureBoundaryError = (
+  error: unknown,
+  boundary: 'component' | 'route',
+  context: Record<string, unknown> = {}
+) => {
+  Sentry.withScope(scope => {
+    scope.setTag('error_boundary', boundary);
+    scope.setContext('error_boundary', { boundary, ...context });
+    Sentry.captureException(error);
+  });
+};
+
+const handleComponentBoundaryError = (error: Error, { componentStack }: ErrorInfo) => {
+  captureBoundaryError(error, 'component', { componentStack });
+};
 
 export const ErrorExplanation: FC<ErrorProps> = ({ error }) => {
   const [currentDate] = useState(new Date());
@@ -159,6 +176,23 @@ export const CriticalErrorBoundary: FC<FallbackProps> = ({ error, resetErrorBoun
 export const RouteErrorBoundary: FC<PropsWithChildren> = () => {
   const error = useRouteError();
   const validator = useRevalidator();
+  const location = useLocation();
+  const locationKey = `${location.pathname}${location.search}${location.hash}`;
+
+  useEffect(() => {
+    if (isRouteErrorResponse(error) && error.status < 500) return;
+
+    captureBoundaryError(error, 'route', {
+      location: locationKey,
+      ...(isRouteErrorResponse(error)
+        ? {
+            status: error.status,
+            statusText: error.statusText,
+            data: error.data
+          }
+        : {})
+    });
+  }, [error, locationKey]);
 
   if (isRouteErrorResponse(error)) {
     return <NotFoundPage>that page does not exist</NotFoundPage>;
@@ -168,7 +202,11 @@ export const RouteErrorBoundary: FC<PropsWithChildren> = () => {
 };
 
 export const ComponentErrorBoundary: FC<PropsWithChildren> = ({ children }) => {
-  return <CoreErrorBoundary FallbackComponent={CriticalErrorBoundary}>{children}</CoreErrorBoundary>;
+  return (
+    <CoreErrorBoundary FallbackComponent={CriticalErrorBoundary} onError={handleComponentBoundaryError}>
+      {children}
+    </CoreErrorBoundary>
+  );
 };
 
 export const ErrorBoundary: FC<PropsWithChildren<ComponentProps<'div'> & { for: number }>> = ({
