@@ -2,6 +2,7 @@ import { Img } from '@/components/assets/images/Img';
 import { Button } from '@/components/controls/button/juicy';
 import SiClose from '@/components/icons/SiClose';
 import SiUploadCloud from '@/components/icons/SiUploadCloud';
+import { Confirm, useConfirm } from '@/components/modal/Confirm';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useMarkCaptureDead, useUnconvertedCaptures } from '@/services/api/capture';
 import { cn } from '@/utils/cn';
@@ -40,10 +41,12 @@ const statusClasses = {
 export const CaptureUpgradesPopover = () => {
   const query = useUnconvertedCaptures();
   const markCaptureDead = useMarkCaptureDead();
+  const confirmClear = useConfirm();
   const captures = query.data ?? [];
 
   return (
     <Popover>
+      <Confirm {...confirmClear} />
       <PopoverTrigger asChild>
         <Button variant="alveus" className="overflow-visible text-xl" aria-label="View clip upgrades">
           <SiUploadCloud />
@@ -116,7 +119,20 @@ export const CaptureUpgradesPopover = () => {
                   aria-label={`Clear clip ${capture.id}`}
                   title="Clear this upgrade"
                   disabled={markCaptureDead.isPending}
-                  onClick={() => markCaptureDead.mutate(capture.id)}
+                  onClick={() => {
+                    if (capture.status === 'failed') {
+                      markCaptureDead.mutate(capture.id);
+                      return;
+                    }
+
+                    confirmClear.open({
+                      title: 'Clear this clip?',
+                      description: "This means you won't be able to make observations with this clip.",
+                      onConfirm: async () => {
+                        await markCaptureDead.mutateAsync(capture.id);
+                      }
+                    });
+                  }}
                 >
                   <SiClose className="size-3" />
                 </button>
