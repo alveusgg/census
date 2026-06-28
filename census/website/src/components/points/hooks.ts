@@ -15,12 +15,13 @@ export const usePointAction = () => {
   const add = useCallback(
     async (value: number) => {
       setIsPending(true);
-      if (!bubbleRef.current) throw new Error('bubble ref is not set');
+      const bubble = bubbleRef.current;
+      if (!bubble) throw new Error('bubble ref is not set');
       if (exhaustedRef.current) return;
       exhaustedRef.current = true;
 
-      await animate(bubbleRef.current, { opacity: 0, top: -15, scale: 0.5 });
-      await animate(bubbleRef.current, { opacity: 1, top: -30, scale: 1 });
+      await animate(bubble, { opacity: 0, top: -15, scale: 0.5 });
+      await animate(bubble, { opacity: 1, top: -30, scale: 1 });
       await Promise.all([
         animate(0, value, {
           duration: 1,
@@ -29,16 +30,16 @@ export const usePointAction = () => {
             textRef.current.textContent = Math.round(value).toString();
           }
         }),
-        animate(bubbleRef.current, { scale: 1.3 }, { duration: 1 })
+        animate(bubble, { scale: 1.3 }, { duration: 1 })
       ]);
 
-      await animate(bubbleRef.current, { scale: 0.9 }, { duration: 0.1 });
-      await animate(bubbleRef.current, { scale: 1 }, { duration: 0.1 });
+      await animate(bubble, { scale: 0.9 }, { duration: 0.1 });
+      await animate(bubble, { scale: 1 }, { duration: 0.1 });
 
       await sleep(200);
       bankPoints(id, value);
       await sleep(100);
-      bubbleRef.current?.remove();
+      bubble.remove();
       setIsPending(false);
     },
     [id, animate, bubbleRef, textRef, bankPoints]
