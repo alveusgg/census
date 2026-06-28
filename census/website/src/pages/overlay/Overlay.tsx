@@ -2,7 +2,7 @@ import { motion, useAnimate } from 'framer-motion';
 import { useCallback, useEffect, useRef } from 'react';
 
 import butterfly from '@/assets/adult_butterfly.outlined.png';
-import { getLevelArtworkAssetPath } from '@/lib/levels';
+import { loadLevelArtwork } from '@/lib/levels';
 import { useAPI } from '@/services/query/hooks';
 import { levels } from '@alveusgg/census-levels';
 
@@ -25,7 +25,7 @@ export const Overlay = () => {
   const run = useCallback(
     async (alert: Alert) => {
       const level = levels[alert.level as keyof typeof levels];
-      const image = getLevelArtworkAssetPath(level);
+      const image = await loadLevelArtwork(level);
       if (!image) {
         console.error('No image found for level', alert.level);
         return;
