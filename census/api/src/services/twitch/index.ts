@@ -11,7 +11,12 @@ import {
 } from 'date-fns';
 import sharp from 'sharp';
 import { useEnvironment } from '../../utils/env/env.js';
-import { ClipNotFoundResult, ClipNotProcessedResult, VODNotFoundResult } from '../capture/index.js';
+import type {
+  ClipNotFoundResult,
+  ClipNotProcessedResult,
+  TimestampNotFoundResult,
+  VODNotFoundResult
+} from '../capture/index.js';
 import { getVodInfoFromClip } from './clips.js';
 
 type ClipSuccessResult = {
@@ -27,7 +32,17 @@ type ClipSuccessResult = {
   };
 };
 
-type ClipResult = ClipNotFoundResult | ClipNotProcessedResult | VODNotFoundResult | ClipSuccessResult;
+type ClipResult =
+  | ClipNotFoundResult
+  | ClipNotProcessedResult
+  | VODNotFoundResult
+  | TimestampNotFoundResult
+  | ClipSuccessResult;
+type EncodedTimestamp = {
+  minutes: number;
+  seconds: number;
+};
+type EncodedTimestampResult = EncodedTimestamp | TimestampNotFoundResult;
 
 export const getClip = async (id: string, latencyFromCamToRecorderInSeconds: number): Promise<ClipResult> => {
   const { twitch } = useEnvironment();
@@ -48,6 +63,9 @@ export const getClip = async (id: string, latencyFromCamToRecorderInSeconds: num
 
   const highResThumbnailUrl = getThumbnailUrl(clip.thumbnailUrl);
   const encodedTimestamp = await getEncodedTimestamp(highResThumbnailUrl);
+  console.log('encodedTimestamp', encodedTimestamp);
+  if ('result' in encodedTimestamp) return encodedTimestamp;
+
   const startDate = estimateStartDateFromTwitchTimestampAndEncodedTimestamp(estimatedStartDate, encodedTimestamp);
   const startDateWithLatency = subSeconds(startDate, latencyFromCamToRecorderInSeconds);
   const endDate = addSeconds(startDateWithLatency, clip.duration);
@@ -89,22 +107,21 @@ const Colors: Color[] = [
   { r: 126, g: 126, b: 126 },
   { r: 78, g: 48, b: 41 }
 ];
+const MAX_AVERAGE_TIMESTAMP_COLOR_DISTANCE = 70;
 
 interface ClosestColor {
   index: number;
   distance: number;
 }
 
-export const getClosestColor = (color: Color) => {
-  const closestColor = Colors.reduce<ClosestColor>(
+export const getClosestColor = (color: Color): ClosestColor => {
+  return Colors.reduce<ClosestColor>(
     (closest, value, index) => {
       const distance = Math.sqrt((color.r - value.r) ** 2 + (color.g - value.g) ** 2 + (color.b - value.b) ** 2);
       return distance < closest.distance ? { index, distance } : closest;
     },
     { index: 0, distance: Infinity } as ClosestColor
   );
-
-  return closestColor.index;
 };
 
 const thumbnailSizeRegex = /-\d+x\d+(?=\.\w+$)/;
@@ -116,7 +133,7 @@ export const getThumbnailUrl = (url: string) => {
   return url.replace(/(\.\w+)$/, '-1920x1080$1');
 };
 
-export const getEncodedTimestamp = async (url: string) => {
+export const getEncodedTimestamp = async (url: string): Promise<EncodedTimestampResult> => {
   const thumbnail = await fetch(url);
   const buffer = await thumbnail.arrayBuffer();
   const image = sharp(buffer);
@@ -143,6 +160,7 @@ export const getEncodedTimestamp = async (url: string) => {
   };
 
   let binary = '';
+  let totalColorDistance = 0;
 
   const startX = width - 2;
   const startY = height - 2;
@@ -153,16 +171,29 @@ export const getEncodedTimestamp = async (url: string) => {
 
     if (currentX < 0) {
       console.warn(`Pixel position (${currentX}, ${currentY}) is outside image boundaries.`);
-      break;
+      return { result: 'error', type: 'timestamp_not_found' };
     }
 
     const color = getPixelColor(currentX, currentY);
-    binary += getClosestColor(color);
+    const closestColor = getClosestColor(color);
+    binary += closestColor.index;
+    totalColorDistance += closestColor.distance;
+  }
+
+  if (binary.length !== 12) return { result: 'error', type: 'timestamp_not_found' };
+  const averageColorDistance = totalColorDistance / binary.length;
+  console.log('averageColorDistance', averageColorDistance);
+  if (averageColorDistance > MAX_AVERAGE_TIMESTAMP_COLOR_DISTANCE) {
+    return { result: 'error', type: 'timestamp_not_found' };
   }
 
   const result = parseInt(binary, 2);
   const minutes = Math.floor(result / 60);
   const seconds = result % 60;
+  if (minutes >= 60 || seconds >= 60) {
+    return { result: 'error', type: 'timestamp_not_found' };
+  }
+
   return { minutes, seconds };
 };
 

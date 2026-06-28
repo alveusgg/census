@@ -50,6 +50,11 @@ export interface VODNotFoundResult {
   type: 'vod_not_found';
 }
 
+export interface TimestampNotFoundResult {
+  result: 'error';
+  type: 'timestamp_not_found';
+}
+
 interface ClipRequestSuccessResult {
   result: 'success';
   type: 'retry_clip_capture';
@@ -70,6 +75,7 @@ type CreateFromClipResult =
   | ClipNotFoundResult
   | ClipNotProcessedResult
   | VODNotFoundResult
+  | TimestampNotFoundResult
   | ClipRequestSuccessResult
   | NewClipCaptureResult;
 
@@ -103,7 +109,7 @@ export const createFromClip = async (
   // This can fail if the clip is deleted from twitch or the vod isn't available
   const result = await getClip(id, feed.latencyFromCamToRecorderInSeconds ?? 0);
   if (result.result === 'error') {
-    // error could be clip_not_found, clip_not_processed, or vod_not_found
+    // error could be clip_not_found, clip_not_processed, vod_not_found, or timestamp_not_found
     return result;
   }
   const clip = result.clip;

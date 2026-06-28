@@ -141,7 +141,8 @@ const messages: Record<
   | 'clip_contains_other_capture'
   | 'clip_not_found'
   | 'clip_not_processed'
-  | 'vod_not_found',
+  | 'vod_not_found'
+  | 'timestamp_not_found',
   string
 > = {
   clip_already_used: 'This clip has already been used to create a capture.',
@@ -150,7 +151,8 @@ const messages: Record<
   clip_contains_other_capture: 'This clip contains another capture. Are you sure you want to continue?',
   clip_not_found: 'This clip was not found. Are you sure you pasted the correct link?',
   clip_not_processed: 'Sorry, Twitch is still processing this clip. Give it a minute and try again.',
-  vod_not_found: 'This VOD was not found or is no longer available.'
+  vod_not_found: 'This VOD was not found or is no longer available.',
+  timestamp_not_found: 'Could not find the timestamp in this clip thumbnail.'
 };
 
 interface ClipCreationProgressProps {
