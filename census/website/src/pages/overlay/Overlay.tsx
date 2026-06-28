@@ -120,7 +120,7 @@ export const Overlay = () => {
   }, [onEvent, api]);
 
   return (
-    <div ref={scope} className="absolute inset-0 text-white text-stroke-2 text-stroke-black">
+    <div ref={scope} className="absolute inset-0 overflow-hidden text-white text-stroke-2 text-stroke-black">
       <div className="absolute bottom-0 right-0 p-20">
         <motion.div id="level-up" className="flex flex-col gap-2 items-center justify-center">
           <div className="relative h-10 w-full">
