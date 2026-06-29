@@ -6,6 +6,7 @@ import { useModal } from '@/components/modal/useModal';
 import { usePointAction } from '@/components/points/hooks';
 import { PointDestination } from '@/components/points/PointDestination';
 import { PointOrigin } from '@/components/points/PointOrigin';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
   usePatchAchievement,
@@ -108,78 +109,80 @@ export const Achievements = () => {
               </Counter>
             </div>
           </div>
-          <div className="flex flex-col gap-2.5 font-sans text-left overflow-y-scroll p-4 flex-1">
-            {pending.data.length > 0 && (
-              <div className="flex justify-between items-center text-white">
-                <p className="font-semibold text-sm">achievements</p>
+          <ScrollArea className="font-sans text-left flex-1">
+            <div className="flex flex-col gap-2.5 p-4">
+              {pending.data.length > 0 && (
+                <div className="flex justify-between items-center text-white">
+                  <p className="font-semibold text-sm">achievements</p>
 
-                <button
-                  className="font-semibold opacity-80 text-xs py-1 px-2 hover:bg-leaderboard-600 rounded-md"
-                  onClick={() => redeemAll.mutate()}
-                >
-                  redeem all
-                </button>
-              </div>
-            )}
-            <AnimatePresence mode="popLayout">
-              {pending.data.length > 0 ? (
-                pending.data.map(achievement => (
-                  <Achievement
-                    type={achievement.payload.type}
-                    className="bg-leaderboard-600 hover:bg-leaderboard-700 border border-leaderboard-700 rounded-md flex font-medium px-3 py-2.5 text-white"
-                    key={achievement.id}
-                    id={achievement.id}
-                    points={achievement.points}
+                  <button
+                    className="font-semibold opacity-80 text-xs py-1 px-2 hover:bg-leaderboard-600 rounded-md"
+                    onClick={() => redeemAll.mutate()}
                   >
-                    {achievement.payload.type === 'onboard' && (
-                      <>
-                        <div className="flex justify-between">
-                          <p className="font-semibold text-left">🎉 Congrats!</p>
-                          <span className="font-bold text-sm">{achievement.points} pts</span>
-                        </div>
-                        <p className="mt-1 text-left text-sm leading-tight">{achievement.payload.payload.message}</p>
-                      </>
-                    )}
-
-                    {achievement.payload.type === 'shiny' && achievement.identification && (
-                      <>
-                        <div className="flex justify-between">
-                          <p className="font-semibold text-left">🌟 Congrats!</p>
-                          <span className="font-bold text-sm">{achievement.points} pts</span>
-                        </div>
-                        <p className="mt-1 text-left text-sm leading-tight">
-                          You identified a shiny! Well done!{' '}
-                          <span className="font-bold">{achievement.identification.nickname}</span>
-                        </p>
-                      </>
-                    )}
-
-                    {achievement.payload.type === 'identify' && achievement.identification && (
-                      <>
-                        <div className="flex justify-between">
-                          <p className="font-semibold text-left">🔬 Congrats!</p>
-                          <span className="font-bold text-sm">{achievement.points} pts</span>
-                        </div>
-                        <p className="mt-1 text-left text-sm leading-tight">
-                          You successfully identified a{' '}
-                          <span className="font-bold">{achievement.identification.nickname}!</span> Well done!
-                        </p>
-                      </>
-                    )}
-                  </Achievement>
-                ))
-              ) : (
-                <motion.p
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 0.9, y: 0 }}
-                  transition={{ delay: 1 }}
-                  className="text-white text-balance font-semibold w-36 text-center mx-auto leading-4"
-                >
-                  no achievements to redeem
-                </motion.p>
+                    redeem all
+                  </button>
+                </div>
               )}
-            </AnimatePresence>
-          </div>
+              <AnimatePresence mode="popLayout">
+                {pending.data.length > 0 ? (
+                  pending.data.map(achievement => (
+                    <Achievement
+                      type={achievement.payload.type}
+                      className="bg-leaderboard-600 hover:bg-leaderboard-700 border border-leaderboard-700 rounded-md flex font-medium px-3 py-2.5 text-white"
+                      key={achievement.id}
+                      id={achievement.id}
+                      points={achievement.points}
+                    >
+                      {achievement.payload.type === 'onboard' && (
+                        <>
+                          <div className="flex justify-between">
+                            <p className="font-semibold text-left">🎉 Congrats!</p>
+                            <span className="font-bold text-sm">{achievement.points} pts</span>
+                          </div>
+                          <p className="mt-1 text-left text-sm leading-tight">{achievement.payload.payload.message}</p>
+                        </>
+                      )}
+
+                      {achievement.payload.type === 'shiny' && achievement.identification && (
+                        <>
+                          <div className="flex justify-between">
+                            <p className="font-semibold text-left">🌟 Congrats!</p>
+                            <span className="font-bold text-sm">{achievement.points} pts</span>
+                          </div>
+                          <p className="mt-1 text-left text-sm leading-tight">
+                            You identified a shiny! Well done!{' '}
+                            <span className="font-bold">{achievement.identification.nickname}</span>
+                          </p>
+                        </>
+                      )}
+
+                      {achievement.payload.type === 'identify' && achievement.identification && (
+                        <>
+                          <div className="flex justify-between">
+                            <p className="font-semibold text-left">🔬 Congrats!</p>
+                            <span className="font-bold text-sm">{achievement.points} pts</span>
+                          </div>
+                          <p className="mt-1 text-left text-sm leading-tight">
+                            You successfully identified a{' '}
+                            <span className="font-bold">{achievement.identification.nickname}!</span> Well done!
+                          </p>
+                        </>
+                      )}
+                    </Achievement>
+                  ))
+                ) : (
+                  <motion.p
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 0.9, y: 0 }}
+                    transition={{ delay: 1 }}
+                    className="text-white text-balance font-semibold w-36 text-center mx-auto leading-4"
+                  >
+                    no achievements to redeem
+                  </motion.p>
+                )}
+              </AnimatePresence>
+            </div>
+          </ScrollArea>
         </div>
       </motion.div>
     </>

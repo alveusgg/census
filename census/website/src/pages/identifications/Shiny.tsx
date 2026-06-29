@@ -1,5 +1,7 @@
 import SiChevronDown from '@/components/icons/SiChevronDown';
 import { useModal } from '@/components/modal/useModal';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { loadSilhouette } from '@/lib/levels';
 import { Shiny, useCurrentSeason, useShiniesForSeason } from '@/services/api/seasons';
 import { cn } from '@/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -8,7 +10,6 @@ import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { ComponentProps, FC, useMemo, useState } from 'react';
 import { IdentificationModal, IdentificationProps } from './Identification';
-import { loadSilhouette } from '@/lib/levels';
 
 export const ShiniesForSeason = () => {
   const seasonQuery = useCurrentSeason();
@@ -57,7 +58,7 @@ export const ShiniesForSeason = () => {
           {!expanded && (
             <div className="w-8 absolute right-0 top-0 bottom-0 h-full bg-gradient-to-r from-transparent to-accent-100 z-10"></div>
           )}
-          <div className="overflow-x-scroll relative" style={{ height: height ?? 0 }}>
+          <ScrollArea className="relative overflow-y-hidden" style={{ height: height ?? 0 }}>
             <div
               ref={ref}
               className={cn(
@@ -84,7 +85,8 @@ export const ShiniesForSeason = () => {
                 </motion.button>
               ))}
             </div>
-          </div>
+            {!expanded && <ScrollBar orientation="horizontal" />}
+          </ScrollArea>
         </div>
         <button onClick={() => setExpanded(!expanded)} className="text-accent-900 flex text-sm mx-auto items-center">
           <SiChevronDown className={cn('transition-transform duration-300 text-xl', expanded && 'rotate-180')} />
