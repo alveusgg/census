@@ -1,0 +1,1 @@
+ALTER TYPE "user_status" ADD VALUE 'banned';

@@ -141,6 +141,13 @@
       "when": 1782666502192,
       "tag": "0019_tranquil_franklin_richards",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1782735276745,
+      "tag": "0020_exotic_princess_powerful",
+      "breakpoints": true
     }
   ]
 }
