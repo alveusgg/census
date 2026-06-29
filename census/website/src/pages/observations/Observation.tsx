@@ -26,6 +26,7 @@ import { cn } from '@/utils/cn';
 import { formatInTimeZone } from 'date-fns-tz';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FC, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { Slide } from './gallery/GalleryProvider';
 import { Polaroid } from './gallery/Polaroid';
 import { IdentificationSuggestion } from './IdentificationSuggestion';
@@ -154,6 +155,10 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
     identification => !identification.isAccessory
   );
   const observationImages = observation.sightings.flatMap(sighting => sighting.images);
+  const submittedTaxonIds = useMemo(
+    () => new Set(observation.identifications.map(identification => identification.sourceId)),
+    [observation.identifications]
+  );
 
   const accessoryTree = useMemo(() => {
     return buildIdentificationTree(accessoryIdentifications);
@@ -317,6 +322,11 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
                 placeholder="suggest plant"
                 taxonId={PLANT_TAXON_ID}
                 onSelect={async taxon => {
+                  if (submittedTaxonIds.has(taxon.id.toString())) {
+                    toast.error('This taxon has already been suggested for this observation.');
+                    return;
+                  }
+
                   await suggestAccessoryIdentification.mutateAsync({
                     observationId: observation.id,
                     iNatId: taxon.id
@@ -346,6 +356,11 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
               <INatTaxaInput
                 placeholder="suggest identification"
                 onSelect={async taxon => {
+                  if (submittedTaxonIds.has(taxon.id.toString())) {
+                    toast.error('This taxon has already been suggested for this observation.');
+                    return;
+                  }
+
                   await suggestIdentification.mutateAsync({
                     observationId: observation.id,
                     iNatId: taxon.id

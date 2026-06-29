@@ -113,6 +113,16 @@ export const createIdentification = async (
 ) => {
   const db = useDB();
   const user = useUser();
+  const existingIdentification = await db.query.identifications.findFirst({
+    where: and(eq(identifications.observationId, observationId), eq(identifications.sourceId, iNatId.toString())),
+    columns: {
+      id: true
+    }
+  });
+
+  if (existingIdentification) {
+    throw new BadRequestError('This taxon has already been suggested for this observation');
+  }
 
   const [identification] = await db
     .insert(identifications)
