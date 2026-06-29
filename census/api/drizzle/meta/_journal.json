@@ -148,6 +148,13 @@
       "when": 1782735276745,
       "tag": "0020_exotic_princess_powerful",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1782736327212,
+      "tag": "0021_last_speed_demon",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,2 @@
+ALTER TABLE "seasons" ADD COLUMN "submission_window_start" timestamp DEFAULT now() NOT NULL;--> statement-breakpoint
+ALTER TABLE "seasons" ADD COLUMN "submission_allowed" boolean DEFAULT false NOT NULL;
