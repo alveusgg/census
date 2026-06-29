@@ -143,7 +143,9 @@ const messages: Record<
   | 'clip_not_right_channel'
   | 'clip_not_processed'
   | 'vod_not_found'
-  | 'timestamp_not_found',
+  | 'timestamp_not_found'
+  | 'clip_before_submission_window'
+  | 'submission_not_open',
   string
 > = {
   clip_already_used: 'This clip has already been used to create a capture.',
@@ -154,7 +156,9 @@ const messages: Record<
   clip_not_right_channel: 'This clip is not from the AlveusSanctuary Twitch channel.',
   clip_not_processed: 'Sorry, Twitch is still processing this clip. Give it a minute and try again.',
   vod_not_found: 'This VOD was not found or is no longer available.',
-  timestamp_not_found: 'Could not find the timestamp in this clip thumbnail.'
+  timestamp_not_found: 'Could not find the timestamp in this clip thumbnail.',
+  clip_before_submission_window: 'This clip is before the start of the season. Please try with a newer clip.',
+  submission_not_open: 'The submission window is not open. Please try again later.'
 };
 
 interface ClipCreationProgressProps {

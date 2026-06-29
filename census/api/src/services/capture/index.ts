@@ -1,5 +1,6 @@
 import { DownstreamError, NotFoundError } from '@alveusgg/error';
 import { Mux } from '@mux/mux-node';
+import { isBefore } from 'date-fns';
 import { and, asc, count, desc, eq, gte, inArray, isNull, lte, ne, or, sql } from 'drizzle-orm';
 import { Pagination } from '../../api/observation.js';
 import { Capture, captures, sightings } from '../../db/schema/index.js';
@@ -7,6 +8,7 @@ import { useDB } from '../../db/transaction.js';
 import { assert } from '../../utils/assert.js';
 import { useEnvironment, useUser } from '../../utils/env/env.js';
 import { getFeed } from '../feed/index.js';
+import { getCurrentSeason } from '../seasons/season.js';
 import { getClip } from '../twitch/index.js';
 
 const MAX_UPGRADE_ATTEMPTS = 15;
@@ -50,6 +52,16 @@ export interface ClipNotRightChannelResult {
   type: 'clip_not_right_channel';
 }
 
+export interface SubmissionNotOpenResult {
+  result: 'error';
+  type: 'submission_not_open';
+}
+
+export interface ClipBeforeSubmissionWindowResult {
+  result: 'error';
+  type: 'clip_before_submission_window';
+}
+
 export interface VODNotFoundResult {
   result: 'error';
   type: 'vod_not_found';
@@ -78,6 +90,8 @@ type CreateFromClipResult =
   | ClipIncludedInOtherCaptureResult
   | ClipContainsOtherCaptureResult
   | ClipNotFoundResult
+  | ClipBeforeSubmissionWindowResult
+  | SubmissionNotOpenResult
   | ClipNotProcessedResult
   | ClipNotRightChannelResult
   | VODNotFoundResult
@@ -90,6 +104,11 @@ export const createFromClip = async (
   userIsVerySureItIsNeeded: boolean = false
 ): Promise<CreateFromClipResult> => {
   const db = useDB();
+
+  const season = await getCurrentSeason();
+  if (!season.submissionAllowed) {
+    return { result: 'error', type: 'submission_not_open' };
+  }
 
   const existing = await getCaptureByClipId(id);
   const feed = await getFeed('pollinator');
@@ -118,7 +137,16 @@ export const createFromClip = async (
     // error could be clip_not_found, clip_not_right_channel, clip_not_processed, vod_not_found, or timestamp_not_found
     return result;
   }
+
   const clip = result.clip;
+
+  if (isBefore(clip.startDate, season.submissionWindowStart)) {
+    return {
+      result: 'error',
+      type: 'clip_before_submission_window'
+    };
+  }
+
   // If the clip is fully encompassed by another capture (e.g. it's a shorter clip of a longer clip) we can't use it
   // The website redirects to the capture included in the error
   const encompassing = await getEncompassingCaptures(clip.startDate, clip.endDate);

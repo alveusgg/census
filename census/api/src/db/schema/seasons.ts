@@ -1,12 +1,14 @@
 import { relations } from 'drizzle-orm';
-import { integer, json, pgTable, serial, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
-import { identifications } from './identifications.js';
+import { boolean, integer, json, pgTable, serial, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 import { ImageLocation } from '../../services/points/achievement.js';
+import { identifications } from './identifications.js';
 
 export const seasons = pgTable('seasons', {
   id: serial('id').primaryKey(),
   startDate: timestamp('start_date').notNull(),
-  endDate: timestamp('end_date').notNull()
+  endDate: timestamp('end_date').notNull(),
+  submissionWindowStart: timestamp('submission_window_start').notNull().defaultNow(),
+  submissionAllowed: boolean('submission_allowed').notNull().default(false)
 });
 
 export const shinies = pgTable(
