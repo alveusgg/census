@@ -18,12 +18,7 @@ const AlveusClientTokenResponse = z.object({
 
 const AlveusUserInformationResponse = z.object({
   sub: z.string(),
-  name: z.string(),
-  email: z.string().optional(),
-  email_verified: z.boolean().optional(),
-  picture: z.string().optional(),
-  roles: z.array(z.string()),
-  twitch_user_id: z.string()
+  name: z.string()
 });
 
 const AlveusAuthenticationRequest = z.object({
