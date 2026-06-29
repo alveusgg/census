@@ -207,6 +207,7 @@ export const levels = {
   }
 };
 
+const observe = achievement('observe', 150, z.object({ captureId: z.number() }));
 const vote = achievement('vote', 20, z.object({ identificationId: z.number() }));
 const comment = achievement('comment', 20, z.object({ identificationId: z.number() }));
 const onboard = achievement('onboard', 200, z.object({ message: z.string(), publicMessage: z.string().optional() }));
@@ -218,7 +219,8 @@ export const registry = {
   onboard,
   comment,
   identify,
-  shiny
+  shiny,
+  observe
 };
 
 export type Actions = keyof typeof registry;

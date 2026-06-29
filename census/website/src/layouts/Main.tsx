@@ -41,8 +41,8 @@ export const Scrollable = () => {
           </div>
         }
       >
-        <ScrollArea className="flex-1 @container">
-          <div className="flex flex-col px-4 py-4 sm:px-8 sm:py-6">
+        <ScrollArea className="min-h-0 flex-1 @container [&>[data-radix-scroll-area-viewport]>div]:h-full">
+          <div className="relative flex min-h-full flex-col px-4 py-4 sm:px-8 sm:py-6">
             <Outlet />
           </div>
         </ScrollArea>

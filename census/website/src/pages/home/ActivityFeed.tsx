@@ -62,6 +62,11 @@ const describe = (achievement: RecentAchievement): { emoji: string; message: Rea
           <>{username} commented on an identification</>
         )
       };
+    case 'observe':
+      return {
+        emoji: '👀',
+        message: <>{username} submitted a clip!</>
+      };
     default:
       return { emoji: '✨', message: <>{username} earned an achievement</> };
   }

@@ -16,6 +16,7 @@ import { runLongOperation } from '../../utils/teardown.js';
 import { TemporaryFile } from '../../utils/tmp.js';
 import { getPermissions } from '../auth/role.js';
 import { getCapture } from '../capture/index.js';
+import { recordAchievement } from '../points/achievement.js';
 
 const frameUploadLimiter = createConcurrencyLimiter(3);
 const frameUploadRetrier = createRetrier(3);
@@ -70,6 +71,9 @@ export const getObservation = async (id: number) => {
 
 export const createObservationsFromCapture = async (captureId: number, observations: ObservationPayload[]) => {
   const db = useDB();
+  const user = useUser();
+
+  await recordAchievement('observe', user.id, { payload: { captureId } }, true);
 
   return await db.transaction(async tx =>
     withTransaction(tx, async () => {

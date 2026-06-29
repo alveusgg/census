@@ -46,7 +46,11 @@ export const createObservationRouter = () =>
           keys: [['observations'], ['captures'], ['users', 'identifications']]
         })
       )
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
+        // This marks the response as something that has changed points or achievements
+        // The client will then invalidate the points and achievements cache
+        ctx.points();
+        ctx.achievements();
         return await createObservationsFromCapture(input.captureId, input.observations);
       }),
 
