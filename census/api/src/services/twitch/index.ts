@@ -14,10 +14,13 @@ import { useEnvironment } from '../../utils/env/env.js';
 import type {
   ClipNotFoundResult,
   ClipNotProcessedResult,
+  ClipNotRightChannelResult,
   TimestampNotFoundResult,
   VODNotFoundResult
 } from '../capture/index.js';
 import { getVodInfoFromClip } from './clips.js';
+
+const REQUIRED_CLIP_BROADCASTER = 'AlveusSanctuary';
 
 type ClipSuccessResult = {
   result: 'success';
@@ -35,6 +38,7 @@ type ClipSuccessResult = {
 type ClipResult =
   | ClipNotFoundResult
   | ClipNotProcessedResult
+  | ClipNotRightChannelResult
   | VODNotFoundResult
   | TimestampNotFoundResult
   | ClipSuccessResult;
@@ -49,6 +53,10 @@ export const getClip = async (id: string, latencyFromCamToRecorderInSeconds: num
   const clip = await twitch.clips.getClipById(id);
 
   if (!clip || !clip.id || !clip.creationDate) return { result: 'error', type: 'clip_not_found' };
+  if (clip.broadcasterDisplayName.toLowerCase() !== REQUIRED_CLIP_BROADCASTER.toLowerCase()) {
+    return { result: 'error', type: 'clip_not_right_channel' };
+  }
+
   const vodInfo = await getVodInfoFromClip(clip.id);
   if ((!vodInfo.videoId || vodInfo.vodOffset === null) && isBefore(clip.creationDate, subMinutes(new Date(), 10))) {
     return { result: 'error', type: 'vod_not_found' };
