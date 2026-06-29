@@ -1,6 +1,6 @@
 import { BadRequestError, ForbiddenError, NotFoundError } from '@alveusgg/error';
-import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm';
-import { feedback, identifications, observations, type ConfirmationAnnotation } from '../../db/schema/index.js';
+import { and, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
+import { achievements, feedback, identifications, observations, type ConfirmationAnnotation } from '../../db/schema/index.js';
 import { useDB, withTransaction } from '../../db/transaction.js';
 import { useUser } from '../../utils/env/env.js';
 import { getPermissions } from '../auth/role.js';
@@ -161,6 +161,49 @@ export const addFeedbackToIdentification = async (
     type,
     comment
   });
+};
+
+export const removeFeedbackComment = async (feedbackId: number) => {
+  const db = useDB();
+  const permissions = getPermissions();
+
+  if (!permissions.moderate) {
+    throw new ForbiddenError('You are not authorized to remove feedback comments.');
+  }
+
+  return await db.transaction(async tx =>
+    withTransaction(tx, async () => {
+      const existingFeedback = await tx.query.feedback.findFirst({
+        where: eq(feedback.id, feedbackId)
+      });
+
+      if (!existingFeedback) throw new NotFoundError('Feedback not found');
+      if (existingFeedback.type === 'confirm') {
+        throw new BadRequestError('Confirmation feedback comments cannot be removed with this action');
+      }
+      if (!existingFeedback.comment) throw new BadRequestError('Feedback does not have a comment to remove');
+
+      await tx.update(feedback).set({ comment: null }).where(eq(feedback.id, feedbackId));
+
+      const [commentAchievement] = await tx
+        .select({ id: achievements.id })
+        .from(achievements)
+        .where(
+          and(
+            eq(achievements.type, 'comment'),
+            eq(achievements.userId, existingFeedback.userId),
+            eq(achievements.identificationId, existingFeedback.identificationId),
+            eq(achievements.revoked, false)
+          )
+        )
+        .orderBy(desc(achievements.createdAt))
+        .limit(1);
+
+      if (commentAchievement) {
+        await tx.update(achievements).set({ revoked: true }).where(eq(achievements.id, commentAchievement.id));
+      }
+    })
+  );
 };
 
 export const removeIdentification = async (identificationId: number) => {

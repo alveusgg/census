@@ -4,6 +4,7 @@ import {
   confirmIdentification,
   getIdentification,
   getIdentificationsGroupedBySource,
+  removeFeedbackComment,
   removeIdentification,
   suggestAccessoryIdentification,
   suggestIdentification
@@ -63,6 +64,25 @@ export const createIdentificationRouter = () =>
           await recordAchievement('comment', user.id, { payload: { identificationId: input.id } }, true);
         }
         ctx.points();
+      }),
+    removeFeedbackComment: procedureWithPermissions('moderate')
+      .input(z.object({ id: z.number() }))
+      .use(
+        cache.mutation({
+          keys: [
+            ['observations'],
+            ['identifications'],
+            ['users', 'identifications'],
+            ['users', 'profile'],
+            ['users', 'leaderboard'],
+            ['users', 'leaderboardPage']
+          ]
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        await removeFeedbackComment(input.id);
+        ctx.points();
+        ctx.achievements();
       }),
     searchForTaxa: procedure
       .input(z.object({ query: z.string(), taxonId: z.number().optional() }))

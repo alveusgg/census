@@ -1,8 +1,12 @@
 import { DownThumb, UpThumb } from '@/components/controls/ObservationEntry';
+import SiClose from '@/components/icons/SiClose';
+import { Confirm, useConfirm } from '@/components/modal/Confirm';
 import { Modal } from '@/components/modal/Modal';
 import { ModalProps } from '@/components/modal/useModal';
 import { UserLink } from '@/components/users/UserLink';
+import { useRemoveFeedbackComment } from '@/services/api/identifications';
 import { Feedback } from '@/services/api/observations';
+import { useHasPermission } from '@/services/permissions/hooks';
 import { cn } from '@/utils/cn';
 import { FC } from 'react';
 
@@ -33,11 +37,36 @@ const FeedbackVoteChip: FC<{ feedback: Feedback; tone: 'agree' | 'disagree' }> =
   );
 };
 
-const FeedbackCommentCard: FC<{ feedback: Feedback; tone: 'agree' | 'disagree' }> = ({ feedback, tone }) => {
+const FeedbackCommentCard: FC<{
+  feedback: Feedback;
+  tone: 'agree' | 'disagree';
+  isRemoving?: boolean;
+  onRemove?: (feedback: Feedback) => void;
+}> = ({ feedback, tone, isRemoving = false, onRemove }) => {
   const Icon = tone === 'agree' ? UpThumb : DownThumb;
 
   return (
-    <article className="min-w-0 rounded-lg border border-accent-200 bg-accent-50 px-3 py-2.5 text-accent-900">
+    <article
+      className={cn(
+        'relative min-w-0 rounded-lg border border-accent-200 bg-accent-50 px-3 py-2.5 text-accent-900',
+        onRemove && 'pr-10'
+      )}
+    >
+      {onRemove && (
+        <button
+          type="button"
+          aria-label={`delete comment from ${feedback.submitter.username}`}
+          disabled={isRemoving}
+          onClick={() => onRemove(feedback)}
+          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-red-100 text-red-800 hover:bg-red-200 disabled:pointer-events-none disabled:opacity-50"
+        >
+          <span
+            aria-hidden="true"
+            className="absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2 sm:hidden"
+          />
+          <SiClose className="text-lg" />
+        </button>
+      )}
       <p className="break-words leading-snug">{feedback.comment}</p>
       <p
         className={cn(
@@ -56,7 +85,9 @@ const FeedbackSection: FC<{
   title: string;
   tone: 'agree' | 'disagree';
   group: FeedbackGroup;
-}> = ({ title, tone, group }) => {
+  isRemovingComment?: boolean;
+  onRemoveComment?: (feedback: Feedback) => void;
+}> = ({ title, tone, group, isRemovingComment = false, onRemoveComment }) => {
   const Icon = tone === 'agree' ? UpThumb : DownThumb;
   const total = group.votes.length + group.comments.length;
 
@@ -97,7 +128,13 @@ const FeedbackSection: FC<{
           <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-accent-700">Comments</h3>
           <div className="flex min-w-0 flex-col gap-2">
             {group.comments.map(comment => (
-              <FeedbackCommentCard key={comment.id} feedback={comment} tone={tone} />
+              <FeedbackCommentCard
+                key={comment.id}
+                feedback={comment}
+                tone={tone}
+                isRemoving={isRemovingComment}
+                onRemove={onRemoveComment}
+              />
             ))}
           </div>
         </div>
@@ -106,7 +143,10 @@ const FeedbackSection: FC<{
   );
 };
 
-const FeedbackList: FC<FeedbackModalProps> = props => {
+const FeedbackList: FC<FeedbackModalProps & Pick<ModalProps<FeedbackModalProps>, 'open'>> = props => {
+  const canModerate = useHasPermission('moderate');
+  const confirmRemoveComment = useConfirm();
+  const removeFeedbackComment = useRemoveFeedbackComment();
   const agree: FeedbackGroup = { comments: [], votes: [] };
   const disagree: FeedbackGroup = { comments: [], votes: [] };
 
@@ -127,34 +167,64 @@ const FeedbackList: FC<FeedbackModalProps> = props => {
   });
 
   const hasFeedback = agree.comments.length + agree.votes.length + disagree.comments.length + disagree.votes.length > 0;
+  const removeComment = (comment: Feedback) => {
+    confirmRemoveComment.open({
+      title: 'Delete comment?',
+      description:
+        'This will remove the comment and revoke the comment achievement awarded for it. The vote will remain.',
+      onConfirm: async () => {
+        await removeFeedbackComment.mutateAsync(comment.id);
+        props.open({
+          feedback: props.feedback.map(feedback =>
+            feedback.id === comment.id ? { ...feedback, comment: null } : feedback
+          )
+        });
+      }
+    });
+  };
 
   return (
-    <div className="flex max-h-[min(80vh,42rem)] w-full min-w-0 flex-col gap-5 overflow-y-auto">
-      <div>
-        <h1 className="text-2xl font-bold text-accent-900">Feedback</h1>
-        <p className="mt-1 max-w-prose break-words text-sm leading-snug text-accent-800">
-          Here you can see what the rest of the community thinks about this identification.
-        </p>
-      </div>
+    <>
+      <Confirm {...confirmRemoveComment} />
+      <div className="flex max-h-[min(80vh,42rem)] w-full min-w-0 flex-col gap-5 overflow-y-auto">
+        <div>
+          <h1 className="text-2xl font-bold text-accent-900">Feedback</h1>
+          <p className="mt-1 max-w-prose break-words text-sm leading-snug text-accent-800">
+            Here you can see what the rest of the community thinks about this identification.
+          </p>
+        </div>
 
-      {hasFeedback ? (
-        <div className="grid min-w-0 gap-3">
-          <FeedbackSection title="Agree" tone="agree" group={agree} />
-          <FeedbackSection title="Disagree" tone="disagree" group={disagree} />
-        </div>
-      ) : (
-        <div className="rounded-xl border border-dashed border-accent-300 bg-accent-50 px-4 py-8 text-center text-sm font-medium text-accent-800">
-          No feedback has been submitted yet.
-        </div>
-      )}
-    </div>
+        {hasFeedback ? (
+          <div className="grid min-w-0 gap-3">
+            <FeedbackSection
+              title="Agree"
+              tone="agree"
+              group={agree}
+              isRemovingComment={removeFeedbackComment.isPending}
+              onRemoveComment={canModerate ? removeComment : undefined}
+            />
+            <FeedbackSection
+              title="Disagree"
+              tone="disagree"
+              group={disagree}
+              isRemovingComment={removeFeedbackComment.isPending}
+              onRemoveComment={canModerate ? removeComment : undefined}
+            />
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-accent-300 bg-accent-50 px-4 py-8 text-center text-sm font-medium text-accent-800">
+            No feedback has been submitted yet.
+          </div>
+        )}
+      </div>
+    </>
   );
 };
 
 export const FeedbackModal: FC<ModalProps<FeedbackModalProps>> = props => {
   return (
     <Modal className="w-[calc(100vw-2rem)] max-w-2xl bg-accent-100 p-4 sm:p-5" {...props}>
-      {props.props?.feedback && <FeedbackList feedback={props.props.feedback} />}
+      {props.props?.feedback && <FeedbackList feedback={props.props.feedback} open={props.open} />}
     </Modal>
   );
 };

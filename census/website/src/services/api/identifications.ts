@@ -65,6 +65,24 @@ export const useAddFeedbackToIdentification = () => {
   });
 };
 
+export const useRemoveFeedbackComment = () => {
+  const trpc = useAPI();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const results = await trpc.identification.removeFeedbackComment.mutate({ id });
+      await queryClient.invalidateQueries({ queryKey: key('observations') });
+      await queryClient.invalidateQueries({ queryKey: key('identifications') });
+      await queryClient.invalidateQueries({ queryKey: key('identification') });
+      await queryClient.invalidateQueries({ queryKey: key('users') });
+      await queryClient.invalidateQueries({ queryKey: key('points') });
+      await queryClient.invalidateQueries({ queryKey: key('achievements') });
+      return results;
+    }
+  });
+};
+
 export const useRemoveIdentification = () => {
   const trpc = useAPI();
   const queryClient = useQueryClient();
