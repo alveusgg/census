@@ -1,7 +1,6 @@
 import { router } from '../trpc/trpc.js';
 import { createCaptureRouter } from './capture.js';
 import { createFeedRouter } from './feed.js';
-import { createGuidesRouter } from './guides.js';
 import { createIdentificationRouter } from './identification.js';
 import { createMeRouter } from './me.js';
 import { createObservationRouter } from './observation.js';
@@ -18,6 +17,5 @@ export const createRouter = () =>
     identification: createIdentificationRouter(),
     twitch: createTwitchRouter(),
     users: createUsersRouter(),
-    seasons: createSeasonsRouter(),
-    guides: createGuidesRouter()
+    seasons: createSeasonsRouter()
   });
