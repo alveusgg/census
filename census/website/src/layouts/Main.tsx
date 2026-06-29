@@ -1,6 +1,7 @@
 import { ConfettiProvider } from '@/components/layout/ConfettiProvider';
 import { LayoutProvider } from '@/components/layout/LayoutProvider';
 import { Loader } from '@/components/loaders/Loader';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { PointsProvider } from '@/services/points/PointsProvider';
 import { AnimatePresence } from 'framer-motion';
 import { Suspense } from 'react';
@@ -40,9 +41,11 @@ export const Scrollable = () => {
           </div>
         }
       >
-        <div className="relative flex flex-1 flex-col overflow-y-auto px-4 py-4 @container sm:px-8 sm:py-6">
-          <Outlet />
-        </div>
+        <ScrollArea className="flex-1 @container">
+          <div className="flex flex-col px-4 py-4 sm:px-8 sm:py-6">
+            <Outlet />
+          </div>
+        </ScrollArea>
       </Suspense>
     </>
   );

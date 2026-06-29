@@ -1,6 +1,7 @@
 import { InfiniteFeedSentinel } from "@/components/feed/InfiniteFeedSentinel";
 import { Modal } from "@/components/modal/Modal";
 import { ModalProps } from "@/components/modal/useModal";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useInfiniteLeaderboard } from "@/services/api/me";
 import { cn } from "@/utils/cn";
 import { DialogTitle } from "@radix-ui/react-dialog";
@@ -86,50 +87,52 @@ export const LeaderboardModal: FC<LeaderboardModalProps> = ({
           </div>
         )}
 
-        <div className={cn("flex-1 overflow-y-auto px-5 py-5 sm:px-6", !hasLeaderboardEntries && "flex items-center justify-center")}>
-          {hasLeaderboardEntries ? (
-            <div className="space-y-4">
-              {rows.map((entry) => (
-                <LeaderboardRow
-                  key={entry.id}
-                  place={entry.place}
-                  points={entry.points}
-                  userId={entry.id}
-                  username={entry.username}
-                />
-              ))}
+        <ScrollArea className="flex-1">
+          <div className={cn("px-5 py-5 sm:px-6", !hasLeaderboardEntries && "flex min-h-full items-center justify-center")}>
+            {hasLeaderboardEntries ? (
+              <div className="space-y-4">
+                {rows.map((entry) => (
+                  <LeaderboardRow
+                    key={entry.id}
+                    place={entry.place}
+                    points={entry.points}
+                    userId={entry.id}
+                    username={entry.username}
+                  />
+                ))}
 
-              {!rows.length && !query.isLoading && !query.isFetchingNextPage && (
-                <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-center text-sm text-white/80">
-                  {totalRanks <= PODIUM_COUNT
-                    ? "No leaderboard rows below the podium yet."
-                    : "No additional leaderboard rows to show."}
-                </div>
-              )}
-
-              <InfiniteFeedSentinel
-                className={cn(
-                  "flex min-h-10 items-center justify-center text-sm text-white/80",
-                  {
-                    hidden: !query.hasNextPage && !query.isFetchingNextPage,
-                  },
+                {!rows.length && !query.isLoading && !query.isFetchingNextPage && (
+                  <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-center text-sm text-white/80">
+                    {totalRanks <= PODIUM_COUNT
+                      ? "No leaderboard rows below the podium yet."
+                      : "No additional leaderboard rows to show."}
+                  </div>
                 )}
-                fetchNextPage={() => query.fetchNextPage()}
-                hasNextPage={query.hasNextPage}
-                isFetchingNextPage={query.isFetchingNextPage}
-                threshold={0.8}
-              >
-                Loading more...
-              </InfiniteFeedSentinel>
-            </div>
-          ) : (
-            <LeaderboardEmptyState
-              className="w-full max-w-md"
-              title="No one is on this leaderboard yet"
-              description="When this timeframe has verified identifications, the rankings will show up here."
-            />
-          )}
-        </div>
+
+                <InfiniteFeedSentinel
+                  className={cn(
+                    "flex min-h-10 items-center justify-center text-sm text-white/80",
+                    {
+                      hidden: !query.hasNextPage && !query.isFetchingNextPage,
+                    },
+                  )}
+                  fetchNextPage={() => query.fetchNextPage()}
+                  hasNextPage={query.hasNextPage}
+                  isFetchingNextPage={query.isFetchingNextPage}
+                  threshold={0.8}
+                >
+                  Loading more...
+                </InfiniteFeedSentinel>
+              </div>
+            ) : (
+              <LeaderboardEmptyState
+                className="w-full max-w-md"
+                title="No one is on this leaderboard yet"
+                description="When this timeframe has verified identifications, the rankings will show up here."
+              />
+            )}
+          </div>
+        </ScrollArea>
 
         {place.me && hasLeaderboardEntries && (
           <div className="border-t border-white/10 bg-leaderboard-500/95 px-5 py-4 backdrop-blur sm:px-6">
