@@ -1,5 +1,5 @@
 import { cn } from '@/utils/cn';
-import { CustomError } from '@alveusgg/error';
+import { CustomError, UserBannedError } from '@alveusgg/error';
 import * as Sentry from '@sentry/react';
 import { TRPCClientError } from '@trpc/client';
 import ErrorStackParser from 'error-stack-parser';
@@ -126,6 +126,17 @@ export const CustomErrorExplanation: FC<CustomErrorProps> = ({ error }) => {
   );
 };
 
+export const UserBannedErrorExplanation: FC = () => {
+  return (
+    <Explanation>
+      <h2 className="font-medium">Account access unavailable</h2>
+      <p className="text-sm">
+        This account cannot access the Census right now. If you think this is a mistake, please contact support.
+      </p>
+    </Explanation>
+  );
+};
+
 const ServerErrorExplanation: FC = () => {
   return (
     <Explanation>
@@ -182,10 +193,18 @@ export const ValidationErrorExplanation: FC<ValidationErrorProps> = ({ error }) 
   );
 };
 
+const getCustomError = (error: unknown) => {
+  if (error instanceof CustomError) return error;
+  if (error instanceof TRPCClientError) return CustomError.from(error.message);
+};
+
 const getExplanationForError = (error: unknown) => {
+  const customError = getCustomError(error);
+  if (customError) {
+    if (customError instanceof UserBannedError) return <UserBannedErrorExplanation />;
+    return <CustomErrorExplanation error={customError} />;
+  }
   if (error instanceof TRPCClientError) {
-    const custom = CustomError.from(error.message);
-    if (custom) return <CustomErrorExplanation error={custom} />;
     return <ServerErrorExplanation />;
   }
   if (error instanceof ZodError) {
@@ -203,6 +222,8 @@ interface CriticalErrorBoundaryProps extends FallbackProps {
 
 export const CriticalErrorBoundary: FC<CriticalErrorBoundaryProps> = ({ error, resetErrorBoundary, sentry }) => {
   const location = useLocation();
+  const customError = getCustomError(error);
+  const banned = customError instanceof UserBannedError;
 
   return (
     <div
@@ -211,19 +232,25 @@ export const CriticalErrorBoundary: FC<CriticalErrorBoundaryProps> = ({ error, r
     >
       <div className="flex bg-accent-100 border border-accent-300 py-20 px-12 rounded-3xl w-full max-w-lg flex-col items-center gap-8 text-center md:justify-center">
         <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold leading-6 text-balance">A problem has occurred</h1>
+          <h1 className="text-3xl font-bold leading-6 text-balance">
+            {banned ? 'Account access unavailable' : 'A problem has occurred'}
+          </h1>
           <p className="leading-5 text-balance">
-            {`We're sorry, we've encountered a problem that has stopped the application working as expected.`}
+            {banned
+              ? `This sign-in is valid, but this account does not have access to the Census.`
+              : `We're sorry, we've encountered a problem that has stopped the application working as expected.`}
           </p>
         </div>
         {getExplanationForError(error)}
-        <SupportReference sentry={sentry} />
+        {!banned && <SupportReference sentry={sentry} />}
         <div className="flex flex-col gap-3">
           <p className="leading-5 text-balance">
-            If this is your first time having problems please try again to see if the problem is resolved.
+            {banned
+              ? `Sign out to clear this browser's local tokens.`
+              : 'If this is your first time having problems please try again to see if the problem is resolved.'}
           </p>
           <Link onClick={() => resetErrorBoundary()} to="/auth/signout">
-            <Button className="mx-auto">Sign out & try again</Button>
+            <Button className="mx-auto">{banned ? 'Sign out' : 'Sign out & try again'}</Button>
           </Link>
         </div>
       </div>

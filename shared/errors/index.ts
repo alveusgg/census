@@ -31,6 +31,8 @@ export class CustomError extends Error {
         return new NotFoundError(error.message);
       case 'NotAuthenticatedError':
         return new NotAuthenticatedError(error.message);
+      case 'UserBannedError':
+        return new UserBannedError(error.message);
       case 'ForbiddenError':
         return new ForbiddenError(error.message);
       case 'DownstreamError':
@@ -86,6 +88,12 @@ export class AuthenticationTimeoutError extends CustomError {
 
 export class ForbiddenError extends CustomError {
   public name: string = 'ForbiddenError';
+  public code: number = 403;
+  public category: TRPC_ERROR_CODE_KEY = 'FORBIDDEN';
+}
+
+export class UserBannedError extends CustomError {
+  public name: string = 'UserBannedError';
   public code: number = 403;
   public category: TRPC_ERROR_CODE_KEY = 'FORBIDDEN';
 }

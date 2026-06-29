@@ -1,4 +1,4 @@
-import { AuthenticationTimeoutError, BadRequestError, CustomError } from '@alveusgg/error';
+import { AuthenticationTimeoutError, BadRequestError, CustomError, UserBannedError } from '@alveusgg/error';
 import { addMinutes, isAfter } from 'date-fns';
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -104,6 +104,9 @@ export default async function register(router: FastifyInstance) {
     try {
       const identity = await AlveusAuthenticationMethodsProvider.getUserInformation(token.accessToken);
       const user = await getOrCreateUserFromAuthProviderIdentity(identity.id, identity.username);
+      if (user.status === 'banned') {
+        throw new UserBannedError('Your account has been banned.');
+      }
       if (user.username !== identity.username) {
         await updateUsername(user.id, identity.username);
       }

@@ -1,4 +1,10 @@
-import { CustomError, ForbiddenError, InternalServerError, NotAuthenticatedError } from '@alveusgg/error';
+import {
+  CustomError,
+  ForbiddenError,
+  InternalServerError,
+  NotAuthenticatedError,
+  UserBannedError
+} from '@alveusgg/error';
 import { context } from '@opentelemetry/api';
 import { TTLCache } from '@isaacs/ttlcache';
 import {
@@ -328,12 +334,16 @@ export const procedure = loggedProcedure.use(async ({ ctx, next }) => {
     const user = await Sentry.startSpan({ name: 'getUserByProviderId', op: 'auth.user' }, () =>
       getUserByProviderId(payload.data.sub)
     );
+    if (user.status === 'banned') {
+      throw new UserBannedError('Your account has been banned.');
+    }
     context.active().setValue(Symbol.for('ai.user.authUserId'), user.id);
     return withUser({ ...payload.data, ...user, points: ctx.points, achievements: ctx.achievements }, next);
   } catch (error) {
     // Preserve the specific auth failure reason; only wrap unexpected errors
     // (e.g. downstream user lookup failures) as a generic auth error.
     if (error instanceof NotAuthenticatedError) throw error;
+    if (error instanceof UserBannedError) throw error;
     console.error('error', error);
     throw new NotAuthenticatedError('Your token could not be authenticated.');
   }

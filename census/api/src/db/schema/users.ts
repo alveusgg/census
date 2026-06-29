@@ -1,6 +1,6 @@
 import { index, json, pgEnum, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
 
-export const userStatusEnum = pgEnum('user_status', ['active', 'pending']);
+export const userStatusEnum = pgEnum('user_status', ['active', 'pending', 'banned']);
 
 export type Status = (typeof userStatusEnum.enumValues)[number];
 export type Role = 'census_admin' | 'census_moderator' | 'ptzControl';

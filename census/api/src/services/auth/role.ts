@@ -23,7 +23,7 @@ export const getPermissions = () => {
     moderate: false
   };
 
-  if (status === 'pending') {
+  if (status === 'pending' || status === 'banned') {
     return permissions;
   }
 
