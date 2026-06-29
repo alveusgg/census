@@ -4,10 +4,29 @@ import postgres from 'postgres';
 
 import { context, SpanKind, trace } from '@opentelemetry/api';
 import { SEMATTRS_DB_STATEMENT, SEMATTRS_DB_SYSTEM } from '@opentelemetry/semantic-conventions';
+import * as Sentry from '@sentry/node';
 import SuperJSON from 'superjson';
 import { useEnvironment } from '../utils/env/env.js';
 import { listen } from './listen.js';
 import * as schema from './schema/index.js';
+
+let shuttingDownAfterPostgresError = false;
+
+process.on('unhandledRejection', reason => {
+  if (!(reason instanceof postgres.PostgresError)) throw reason;
+  if (shuttingDownAfterPostgresError) return;
+
+  shuttingDownAfterPostgresError = true;
+  console.error('Unhandled Postgres error, shutting down process', reason);
+  Sentry.captureException(reason, {
+    tags: {
+      component: 'postgres',
+      fatal: 'true'
+    }
+  });
+
+  void Sentry.flush(2000).finally(() => process.exit(1));
+});
 
 export const initialise = async (
   host: string,
@@ -24,7 +43,8 @@ export const initialise = async (
     database,
     port,
     ssl,
-    max: 3
+    max: 3,
+    prepare: false
   });
 
   // Also do migrations in here
