@@ -206,12 +206,13 @@ export const AlveusAuthenticationMethodsProvider: AuthenticationMethodsProvider 
     if (!response.ok) throw new DownstreamError('alveus', 'Failed to fetch user data');
 
     const data = await response.json();
-    assert.shape(AlveusUserInformationResponse, data, 'Invalid Alveus user info response');
+    const parsed = AlveusUserInformationResponse.parse(data);
+    if (!parsed) throw new DownstreamError('alveus', 'Failed to parse user data');
 
     return {
-      id: data.sub,
-      name: data.name,
-      username: data.name
+      id: parsed.sub,
+      name: parsed.name,
+      username: parsed.name
     };
   }
 };
