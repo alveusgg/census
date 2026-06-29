@@ -34,9 +34,9 @@ import { useModal } from '@/components/modal/useModal';
 import type { PanoLocationModalProps } from '@/components/pano/PanoLocationModal';
 import { PanoLocationModal } from '@/components/pano/PanoLocationModal';
 
+import SiCheckmark from '@/components/icons/SiCheckmark';
 import SiChevronDown from '@/components/icons/SiChevronDown';
 import SiChevronUp from '@/components/icons/SiChevronUp';
-import SiCheckmark from '@/components/icons/SiCheckmark';
 import SiLeaf from '@/components/icons/SiLeaf';
 import SiPin from '@/components/icons/SiPin';
 import SiTrash from '@/components/icons/SiTrash';
@@ -82,16 +82,27 @@ const buildIdentificationTree = (identifications: IdentificationType[]) => {
 };
 
 const PLANT_TAXON_ID = 47126;
+const USER_LINK_LIST_LIMIT = 3;
 
 const UserLinkList: FC<{ users: { id: number; username: string }[] }> = ({ users }) => {
+  const uniqueUsers = Array.from(new Map(users.map(user => [user.username, user])).values());
+  const visibleUsers = uniqueUsers.slice(0, USER_LINK_LIST_LIMIT);
+  const remainingCount = uniqueUsers.length - visibleUsers.length;
+
   return (
     <>
-      {users.map((user, index) => (
-        <span key={`${user.id}-${index}`}>
+      {visibleUsers.map((user, index) => (
+        <span key={user.username}>
           {index > 0 && ', '}
           <UserLink user={user} />
         </span>
       ))}
+      {remainingCount > 0 && (
+        <>
+          {visibleUsers.length > 0 && ' and '}
+          <span>{remainingCount} more</span>
+        </>
+      )}
     </>
   );
 };
@@ -187,10 +198,6 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
               <p className="text-sm">observed by</p>
               <p className="text-lg font-semibold">
                 <UserLinkList users={observation.sightings.flatMap(sighting => sighting.observer)} />
-              </p>
-              <p className="text-sm">
-                captured by{' '}
-                <UserLinkList users={observation.sightings.flatMap(sighting => sighting.capture.capturer)} />
               </p>
             </div>
             <div className="flex gap-2">
