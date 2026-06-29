@@ -16,8 +16,9 @@ import { useOnboardUser } from '@/services/api/me';
 import { OnboardingSubmissionSchema } from '@alveusgg/census-forms';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FC } from 'react';
-import { useForm } from 'react-hook-form';
+import { type SubmitErrorHandler, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router';
+import { toast } from 'sonner';
 
 export const Onboarding: FC = () => {
   const navigate = useNavigate();
@@ -29,6 +30,12 @@ export const Onboarding: FC = () => {
   const onboard = useOnboardUser();
   const [, setOpen] = useAchievements();
 
+  const onError: SubmitErrorHandler<OnboardingSubmissionSchema> = errors => {
+    if (errors.onboarding?.agreeToTerms) {
+      toast.error('Please agree to the terms before continuing.');
+    }
+  };
+
   const onSubmit = async (data: OnboardingSubmissionSchema) => {
     setOpen(true);
     await action.add(200);
@@ -38,7 +45,7 @@ export const Onboarding: FC = () => {
   };
   return (
     <Clipboard container={{ className: 'max-w-3xl' }} className="text-accent-900 min-h-screen md:px-12 md:py-20">
-      <Form className="flex flex-col gap-4" methods={methods} onSubmit={onSubmit}>
+      <Form className="flex flex-col gap-4" methods={methods} onSubmit={onSubmit} onError={onError}>
         <h1 className="text-3xl font-semibold leading-8 text-center text-balance sm:text-left">
           welcome to the <span className="font-extrabold">alveus pollinator census!</span>
         </h1>
