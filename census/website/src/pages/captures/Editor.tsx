@@ -76,9 +76,6 @@ export const Editor: FC<CaptureProps> = ({ id }) => {
           <div className="w-full">
             <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <SubjectToggle />
-              <p className="rounded-lg border border-accent-300 bg-accent-100 px-3 py-2 text-center text-sm font-bold text-accent-800 lg:ml-auto">
-                this might look a little blurry but the final pictures won&rsquo;t be!
-              </p>
               <PointOrigin {...action}>
                 <Button loading={createObservationsFromCapture.isPending} onClick={onSubmit} shortcut="S">
                   <Save />
