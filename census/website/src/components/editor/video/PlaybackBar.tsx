@@ -11,12 +11,12 @@ export const PlaybackBar = () => {
   const state = Media.useMediaReadyState();
 
   return (
-    <div className="bg-accent-300 px-4 pt-2 pb-4 rounded-lg select-none">
-      <div className="flex gap-4 items-end">
-        <Controls.PlayPause className="text-accent-950" />
+    <div className="rounded-lg bg-accent-300 px-4 pb-4 pt-2 select-none">
+      <div className="flex min-w-0 items-end gap-4">
+        <Controls.PlayPause className="shrink-0 text-accent-950" />
 
         {state !== Media.MediaReadyState.HAVE_NOTHING && (
-          <div className="flex-1 grid grid-flow-col items-center relative">
+          <div className="relative grid min-w-0 flex-1 grid-flow-col items-center [grid-auto-columns:minmax(0,1fr)]">
             <FramePreviews />
             <ProgressBarRoot className="absolute inset-0 z-10">
               <Slider.Track className="absolute inset-0"></Slider.Track>

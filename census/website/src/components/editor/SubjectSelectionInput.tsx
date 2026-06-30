@@ -9,7 +9,7 @@ export const SubjectSelectionInput = () => {
 
   if (playing) return null;
   return (
-    <div className="absolute left-0 top-0 w-full max-h-full aspect-video">
+    <div className="absolute inset-0">
       <SelectionInput
         value={selections[time] ?? []}
         currentSubjectId={selectedSubjectId}
