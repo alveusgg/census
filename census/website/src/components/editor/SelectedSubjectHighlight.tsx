@@ -10,7 +10,7 @@ export const SelectedSubjectHighlight = () => {
         initial={{ borderWidth: 0 }}
         animate={{ borderWidth: 4 }}
         exit={{ borderWidth: 0 }}
-        className="pointer-events-none absolute inset-0 rounded-md border-white outline outline-[6px] outline-custom"
+        className="absolute left-0 top-0 w-full aspect-video outline-[6px] border-white outline outline-custom rounded-md"
       ></motion.div>
     </AnimatePresence>
   );
