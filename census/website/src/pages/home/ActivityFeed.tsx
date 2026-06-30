@@ -29,6 +29,17 @@ const describe = (achievement: RecentAchievement): { emoji: string; message: Rea
           <>{username} made an identification</>
         )
       };
+    case 'assist':
+      return {
+        emoji: '🤝',
+        message: target ? (
+          <>
+            {username} assisted on <span className="font-bold">{target}</span>
+          </>
+        ) : (
+          <>{username} assisted an identification</>
+        )
+      };
     case 'shiny':
       return {
         emoji: '🌟',

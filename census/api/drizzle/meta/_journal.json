@@ -155,6 +155,13 @@
       "when": 1782736327212,
       "tag": "0021_last_speed_demon",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1782852439805,
+      "tag": "0022_gray_sentinels",
+      "breakpoints": true
     }
   ]
 }

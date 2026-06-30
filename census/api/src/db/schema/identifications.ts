@@ -45,7 +45,8 @@ export const identifications = pgTable(
     confirmedBy: integer('confirmed_by').references(() => users.id),
     alternateForId: integer('alternate_for'),
     shinyId: integer('shiny_id').references(() => shinies.id),
-    isAccessory: boolean('is_accessory').default(false)
+    isAccessory: boolean('is_accessory').default(false),
+    deletedAt: timestamp('deleted_at')
   },
   table => {
     return {
@@ -77,7 +78,9 @@ export const feedback = pgTable(
       .notNull(),
     comment: text('comment'),
     annotations: json('annotations').$type<ConfirmationAnnotation[]>().default([]).notNull(),
-    createdAt: timestamp('created_at').defaultNow().notNull()
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    deletedAt: timestamp('deleted_at'),
+    commentDeletedAt: timestamp('comment_deleted_at')
   },
   table => {
     return {

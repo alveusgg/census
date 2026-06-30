@@ -1,12 +1,151 @@
 import { BadRequestError, ForbiddenError, NotFoundError } from '@alveusgg/error';
-import { and, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
-import { achievements, feedback, identifications, observations, type ConfirmationAnnotation } from '../../db/schema/index.js';
+import { and, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
+import {
+  achievements,
+  feedback,
+  identifications,
+  observations,
+  shinies,
+  type ConfirmationAnnotation
+} from '../../db/schema/index.js';
 import { useDB, withTransaction } from '../../db/transaction.js';
 import { useUser } from '../../utils/env/env.js';
 import { getPermissions } from '../auth/role.js';
 import { getTaxaInfo } from '../inat/index.js';
 import { getObservation } from '../observations/observations.js';
 import { recordAchievement } from '../points/achievement.js';
+
+type FeedbackType = 'agree' | 'disagree';
+type FeedbackRecord = typeof feedback.$inferSelect;
+type Identification = typeof identifications.$inferSelect;
+type IdentificationAchievementType = 'vote' | 'comment' | 'assist' | 'identify' | 'shiny';
+
+const activeIdentification = () => isNull(identifications.deletedAt);
+const activeFeedback = () => isNull(feedback.deletedAt);
+
+const revokeAchievementsForIdentifications = async (
+  identificationIds: number[],
+  types: IdentificationAchievementType[] = ['vote', 'comment', 'assist', 'identify', 'shiny']
+) => {
+  if (identificationIds.length === 0) return;
+
+  const db = useDB();
+  await db
+    .update(achievements)
+    .set({ revoked: true })
+    .where(
+      and(
+        inArray(achievements.identificationId, identificationIds),
+        inArray(achievements.type, types),
+        eq(achievements.revoked, false)
+      )
+    );
+};
+
+const revokeFeedbackAchievements = async (entries: FeedbackRecord[]) => {
+  const db = useDB();
+
+  for (const entry of entries) {
+    const achievementTypes: ('vote' | 'comment')[] = [];
+    const activeVoteFeedback = await db.query.feedback.findFirst({
+      where: and(
+        eq(feedback.userId, entry.userId),
+        eq(feedback.identificationId, entry.identificationId),
+        eq(feedback.type, entry.type),
+        activeFeedback()
+      ),
+      columns: { id: true }
+    });
+    if (!activeVoteFeedback) achievementTypes.push('vote');
+
+    if (entry.comment) {
+      const activeCommentFeedback = await db.query.feedback.findFirst({
+        where: and(
+          eq(feedback.userId, entry.userId),
+          eq(feedback.identificationId, entry.identificationId),
+          eq(feedback.type, entry.type),
+          activeFeedback(),
+          isNotNull(feedback.comment)
+        ),
+        columns: { id: true }
+      });
+      if (!activeCommentFeedback) achievementTypes.push('comment');
+    }
+
+    if (achievementTypes.length === 0) continue;
+
+    await db
+      .update(achievements)
+      .set({ revoked: true })
+      .where(
+        and(
+          eq(achievements.userId, entry.userId),
+          eq(achievements.identificationId, entry.identificationId),
+          inArray(achievements.type, achievementTypes),
+          eq(achievements.revoked, false)
+        )
+      );
+  }
+};
+
+const softDeleteFeedbackRows = async (entries: FeedbackRecord[], options: { revokeAchievements?: boolean } = {}) => {
+  if (entries.length === 0) return;
+
+  const db = useDB();
+  await db
+    .update(feedback)
+    .set({ deletedAt: new Date() })
+    .where(
+      inArray(
+        feedback.id,
+        entries.map(entry => entry.id)
+      )
+    );
+
+  if (options.revokeAchievements ?? true) {
+    await revokeFeedbackAchievements(entries);
+  }
+};
+
+const moveFeedbackAchievements = async (
+  entry: FeedbackRecord,
+  identificationId: number,
+  options: { includeComment: boolean }
+) => {
+  if (entry.identificationId === identificationId) return;
+
+  const db = useDB();
+  const achievementTypes: ('vote' | 'comment')[] = ['vote'];
+  if (options.includeComment) achievementTypes.push('comment');
+
+  await db
+    .update(achievements)
+    .set({ identificationId })
+    .where(
+      and(
+        eq(achievements.userId, entry.userId),
+        eq(achievements.identificationId, entry.identificationId),
+        inArray(achievements.type, achievementTypes),
+        eq(achievements.revoked, false)
+      )
+    );
+};
+
+const revokeCommentAchievements = async (entry: FeedbackRecord) => {
+  const db = useDB();
+
+  await db
+    .update(achievements)
+    .set({ revoked: true })
+    .where(
+      and(
+        eq(achievements.type, 'comment'),
+        eq(achievements.userId, entry.userId),
+        eq(achievements.identificationId, entry.identificationId),
+        eq(achievements.revoked, false)
+      )
+    );
+};
 
 export const suggestIdentification = async (observationId: number, iNatId: number) => {
   const source = await getTaxaInfo(iNatId);
@@ -35,7 +174,7 @@ export const confirmIdentification = async (
   return db.transaction(async tx => {
     return withTransaction(tx, async () => {
       const identification = await tx.query.identifications.findFirst({
-        where: eq(identifications.id, identificationId)
+        where: and(eq(identifications.id, identificationId), activeIdentification())
       });
       if (!identification) throw new NotFoundError('Identification not found');
       if (identification.confirmedBy) throw new BadRequestError('Identification already confirmed');
@@ -56,9 +195,44 @@ export const confirmIdentification = async (
       }
 
       await recordAchievement('identify', identification.suggestedBy, { payload: { identificationId } });
+      const parentIdentifications = await getParentIdentificationChain(identification);
+      for (const parentIdentification of parentIdentifications) {
+        await recordAchievement('assist', parentIdentification.suggestedBy, {
+          payload: { identificationId: parentIdentification.id }
+        });
+      }
       user.achievements();
     });
   });
+};
+
+const getParentIdentificationChain = async (identification: Identification) => {
+  const db = useDB();
+  const parentIdentifications: Identification[] = [];
+  const visitedIdentificationIds = new Set([identification.id]);
+  let parentIdentificationId = identification.alternateForId;
+
+  while (parentIdentificationId) {
+    if (visitedIdentificationIds.has(parentIdentificationId)) break;
+    visitedIdentificationIds.add(parentIdentificationId);
+
+    const parentIdentification = await db.query.identifications.findFirst({
+      where: and(
+        eq(identifications.id, parentIdentificationId),
+        eq(identifications.observationId, identification.observationId),
+        identification.isAccessory
+          ? eq(identifications.isAccessory, true)
+          : sql`${identifications.isAccessory} is not true`,
+        activeIdentification()
+      )
+    });
+    if (!parentIdentification) break;
+
+    parentIdentifications.push(parentIdentification);
+    parentIdentificationId = parentIdentification.alternateForId;
+  }
+
+  return parentIdentifications;
 };
 
 export const getPossibleParentIdentifications = async (
@@ -74,6 +248,7 @@ export const getPossibleParentIdentifications = async (
     .where(
       and(
         eq(identifications.observationId, observationId),
+        activeIdentification(),
         isAccessory ? eq(identifications.isAccessory, true) : sql`${identifications.isAccessory} is not true`,
         inArray(identifications.sourceId, ids)
       )
@@ -114,7 +289,11 @@ export const createIdentification = async (
   const db = useDB();
   const user = useUser();
   const existingIdentification = await db.query.identifications.findFirst({
-    where: and(eq(identifications.observationId, observationId), eq(identifications.sourceId, iNatId.toString())),
+    where: and(
+      eq(identifications.observationId, observationId),
+      eq(identifications.sourceId, iNatId.toString()),
+      activeIdentification()
+    ),
     columns: {
       id: true
     }
@@ -144,23 +323,138 @@ export const createIdentification = async (
 export const addFeedbackToIdentification = async (
   identificationId: number,
   userId: number,
-  type: 'agree' | 'disagree',
+  type: FeedbackType,
   comment?: string
 ) => {
   const db = useDB();
-  const identification = await db.query.identifications.findFirst({
-    where: eq(identifications.id, identificationId)
-  });
-  if (!identification) throw new NotFoundError('Identification not found');
-  if (identification.suggestedBy === userId)
-    throw new BadRequestError('You cannot give feedback on your own suggestion');
 
-  return await db.insert(feedback).values({
-    identificationId,
-    userId,
-    type,
-    comment
-  });
+  return await db.transaction(async tx =>
+    withTransaction(tx, async () => {
+      const identification = await tx.query.identifications.findFirst({
+        where: and(eq(identifications.id, identificationId), activeIdentification())
+      });
+      if (!identification) throw new NotFoundError('Identification not found');
+      if (identification.suggestedBy === userId)
+        throw new BadRequestError('You cannot give feedback on your own suggestion');
+
+      await tx
+        .select({ id: observations.id })
+        .from(observations)
+        .where(eq(observations.id, identification.observationId))
+        .for('update');
+
+      const relatedIdentifications = await tx.query.identifications.findMany({
+        where: and(
+          eq(identifications.observationId, identification.observationId),
+          activeIdentification(),
+          identification.isAccessory
+            ? eq(identifications.isAccessory, true)
+            : sql`${identifications.isAccessory} is not true`
+        ),
+        columns: {
+          id: true
+        }
+      });
+      const relatedIdentificationIds = relatedIdentifications.map(({ id }) => id);
+      const existingFeedbackInCategory = await tx.query.feedback.findMany({
+        where: and(
+          eq(feedback.userId, userId),
+          eq(feedback.type, type),
+          activeFeedback(),
+          inArray(feedback.identificationId, relatedIdentificationIds)
+        )
+      });
+      const existingFeedbackForTarget = existingFeedbackInCategory.filter(
+        feedback => feedback.identificationId === identificationId
+      );
+
+      const pointsAwarded = existingFeedbackInCategory.length === 0 ? 20 + (comment ? 20 : 0) : 0;
+
+      if (type === 'agree') {
+        const feedbackToKeep = existingFeedbackForTarget[0] ?? existingFeedbackInCategory[0];
+        if (feedbackToKeep) {
+          const commentDeletedAt = comment
+            ? null
+            : feedbackToKeep.comment
+              ? new Date()
+              : feedbackToKeep.commentDeletedAt;
+          await tx
+            .update(feedback)
+            .set({ identificationId, comment: comment ?? null, commentDeletedAt })
+            .where(eq(feedback.id, feedbackToKeep.id));
+          await moveFeedbackAchievements(feedbackToKeep, identificationId, { includeComment: !!comment });
+          if (feedbackToKeep.comment && !comment) {
+            await revokeCommentAchievements(feedbackToKeep);
+          }
+
+          await softDeleteFeedbackRows(
+            existingFeedbackInCategory.filter(feedback => feedback.id !== feedbackToKeep.id)
+          );
+        } else {
+          await tx.insert(feedback).values({
+            identificationId,
+            userId,
+            type,
+            comment
+          });
+        }
+
+        const replacedDisagreement = await tx.query.feedback.findMany({
+          where: and(
+            eq(feedback.identificationId, identificationId),
+            eq(feedback.userId, userId),
+            eq(feedback.type, 'disagree'),
+            activeFeedback()
+          )
+        });
+        await softDeleteFeedbackRows(replacedDisagreement);
+      } else {
+        const feedbackToKeep = existingFeedbackForTarget[0];
+        if (feedbackToKeep) {
+          const commentDeletedAt = comment
+            ? null
+            : feedbackToKeep.comment
+              ? new Date()
+              : feedbackToKeep.commentDeletedAt;
+          await tx
+            .update(feedback)
+            .set({ comment: comment ?? null, commentDeletedAt })
+            .where(eq(feedback.id, feedbackToKeep.id));
+          if (feedbackToKeep.comment && !comment) {
+            await revokeCommentAchievements(feedbackToKeep);
+          }
+
+          await softDeleteFeedbackRows(existingFeedbackForTarget.slice(1));
+        } else {
+          await tx.insert(feedback).values({
+            identificationId,
+            userId,
+            type,
+            comment
+          });
+        }
+
+        const replacedAgreement = await tx.query.feedback.findMany({
+          where: and(
+            eq(feedback.identificationId, identificationId),
+            eq(feedback.userId, userId),
+            eq(feedback.type, 'agree'),
+            activeFeedback()
+          )
+        });
+        await softDeleteFeedbackRows(replacedAgreement);
+      }
+
+      if (pointsAwarded > 0) {
+        await recordAchievement('vote', userId, { payload: { identificationId } }, true);
+        if (comment) {
+          await recordAchievement('comment', userId, { payload: { identificationId } }, true);
+        }
+      }
+
+      return { pointsAwarded };
+    })
+  );
 };
 
 export const removeFeedbackComment = async (feedbackId: number) => {
@@ -174,7 +468,7 @@ export const removeFeedbackComment = async (feedbackId: number) => {
   return await db.transaction(async tx =>
     withTransaction(tx, async () => {
       const existingFeedback = await tx.query.feedback.findFirst({
-        where: eq(feedback.id, feedbackId)
+        where: and(eq(feedback.id, feedbackId), activeFeedback())
       });
 
       if (!existingFeedback) throw new NotFoundError('Feedback not found');
@@ -183,25 +477,8 @@ export const removeFeedbackComment = async (feedbackId: number) => {
       }
       if (!existingFeedback.comment) throw new BadRequestError('Feedback does not have a comment to remove');
 
-      await tx.update(feedback).set({ comment: null }).where(eq(feedback.id, feedbackId));
-
-      const [commentAchievement] = await tx
-        .select({ id: achievements.id })
-        .from(achievements)
-        .where(
-          and(
-            eq(achievements.type, 'comment'),
-            eq(achievements.userId, existingFeedback.userId),
-            eq(achievements.identificationId, existingFeedback.identificationId),
-            eq(achievements.revoked, false)
-          )
-        )
-        .orderBy(desc(achievements.createdAt))
-        .limit(1);
-
-      if (commentAchievement) {
-        await tx.update(achievements).set({ revoked: true }).where(eq(achievements.id, commentAchievement.id));
-      }
+      await revokeCommentAchievements(existingFeedback);
+      await tx.update(feedback).set({ comment: null, commentDeletedAt: new Date() }).where(eq(feedback.id, feedbackId));
     })
   );
 };
@@ -214,7 +491,7 @@ export const removeIdentification = async (identificationId: number) => {
   return await db.transaction(async tx =>
     withTransaction(tx, async () => {
       const identification = await tx.query.identifications.findFirst({
-        where: eq(identifications.id, identificationId)
+        where: and(eq(identifications.id, identificationId), activeIdentification())
       });
 
       if (!identification) throw new NotFoundError('Identification not found');
@@ -227,8 +504,17 @@ export const removeIdentification = async (identificationId: number) => {
         .set({ alternateForId: identification.alternateForId })
         .where(eq(identifications.alternateForId, identification.id));
 
+      await revokeAchievementsForIdentifications([identification.id]);
+      await tx.update(shinies).set({ identificationId: null }).where(eq(shinies.identificationId, identification.id));
       await tx.update(observations).set({ confirmedAs: null }).where(eq(observations.confirmedAs, identification.id));
-      await tx.delete(identifications).where(eq(identifications.id, identification.id));
+      const associatedFeedback = await tx.query.feedback.findMany({
+        where: and(eq(feedback.identificationId, identification.id), activeFeedback())
+      });
+      await softDeleteFeedbackRows(associatedFeedback, { revokeAchievements: false });
+      await tx
+        .update(identifications)
+        .set({ confirmedBy: null, shinyId: null, deletedAt: new Date() })
+        .where(eq(identifications.id, identification.id));
     })
   );
 };
@@ -236,7 +522,7 @@ export const removeIdentification = async (identificationId: number) => {
 export const getIdentification = async (identificationId: number) => {
   const db = useDB();
   const identification = await db.query.identifications.findFirst({
-    where: eq(identifications.id, identificationId),
+    where: and(eq(identifications.id, identificationId), activeIdentification()),
     with: {
       shiny: true,
       confirmer: true,
@@ -262,7 +548,7 @@ export const getIdentificationsGroupedBySource = async () => {
       observationIds: sql<number[]>`array_agg(${identifications.observationId})`.as('observationIds')
     })
     .from(identifications)
-    .where(and(isNotNull(identifications.confirmedBy), isNotNull(identifications.sourceId)))
+    .where(and(isNotNull(identifications.confirmedBy), isNotNull(identifications.sourceId), activeIdentification()))
     .groupBy(identifications.sourceId, identifications.name);
 
   return uniqueIdentificationsBySource;

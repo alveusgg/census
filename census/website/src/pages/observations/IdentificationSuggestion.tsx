@@ -25,9 +25,14 @@ import { IdentificationFeedbackModal, IdentificationFeedbackModalProps } from '.
 interface IdentificationSuggestionProps {
   observationImages: ConfirmationImage[];
   tree: Node<IdentificationType>;
+  currentAgreementId?: number;
 }
 
-export const IdentificationSuggestion: FC<IdentificationSuggestionProps> = ({ observationImages, tree }) => {
+export const IdentificationSuggestion: FC<IdentificationSuggestionProps> = ({
+  observationImages,
+  tree,
+  currentAgreementId
+}) => {
   const { data: me } = useSuspenseQuery(useMe());
   const identificationFeedbackModalProps = useModal<IdentificationFeedbackModalProps>();
   const confirmIdentificationModalProps = useModal<ConfirmIdentificationModalProps>();
@@ -44,8 +49,12 @@ export const IdentificationSuggestion: FC<IdentificationSuggestionProps> = ({ ob
   const positiveFeedback = identification.feedback.filter(feedback => feedback.type === 'agree');
   const negativeFeedback = identification.feedback.filter(feedback => feedback.type === 'disagree');
   const feedbackWithComments = identification.feedback.filter(feedback => feedback.comment);
-  const myFeedback = identification.feedback.find(feedback => feedback.userId === me.id);
+  const myDisagreement = identification.feedback.find(
+    feedback => feedback.userId === me.id && feedback.type === 'disagree'
+  );
   const isOwnSuggestion = identification.suggester?.id === me.id;
+  const canAgree = canVote && !isOwnSuggestion && currentAgreementId !== identification.id;
+  const canDisagree = canVote && !isOwnSuggestion && currentAgreementId !== identification.id && !myDisagreement;
   const canRemove = isOwnSuggestion || canModerate;
   const hasFeedback = identification.feedback.length > 0;
   const TaxonIcon = identification.isAccessory ? SiLeaf : SiBug2;
@@ -134,23 +143,27 @@ export const IdentificationSuggestion: FC<IdentificationSuggestionProps> = ({ ob
             </div>
           </div>
           <div className="flex gap-2 items-center">
-            {canVote && !myFeedback && !isOwnSuggestion && (
-              <>
-                <Button
-                  onClick={() => identificationFeedbackModalProps.open({ feedback: 'agree', identification })}
-                  className="text-sm font-semibold px-2.5 py-1"
-                  variant="primary"
-                >
-                  agree
-                </Button>
-                <Button
-                  onClick={() => identificationFeedbackModalProps.open({ feedback: 'disagree', identification })}
-                  className="text-sm font-semibold px-2.5 py-1"
-                  variant="primary"
-                >
-                  disagree
-                </Button>
-              </>
+            {(canAgree || canDisagree) && (
+              <div className="flex gap-2 items-center">
+                {canAgree && (
+                  <Button
+                    onClick={() => identificationFeedbackModalProps.open({ feedback: 'agree', identification })}
+                    className="text-sm font-semibold px-2.5 py-1"
+                    variant="primary"
+                  >
+                    agree
+                  </Button>
+                )}
+                {canDisagree && (
+                  <Button
+                    onClick={() => identificationFeedbackModalProps.open({ feedback: 'disagree', identification })}
+                    className="text-sm font-semibold px-2.5 py-1"
+                    variant="primary"
+                  >
+                    disagree
+                  </Button>
+                )}
+              </div>
             )}
             {canConfirm && (
               <Button
@@ -168,7 +181,12 @@ export const IdentificationSuggestion: FC<IdentificationSuggestionProps> = ({ ob
       {tree.children && tree.children.size > 0 && (
         <div className={cn(tree.parent ? 'ml-8' : 'ml-2')}>
           {Array.from(tree.children).map(child => (
-            <IdentificationSuggestion key={child.id} observationImages={observationImages} tree={child} />
+            <IdentificationSuggestion
+              key={child.id}
+              observationImages={observationImages}
+              tree={child}
+              currentAgreementId={currentAgreementId}
+            />
           ))}
         </div>
       )}

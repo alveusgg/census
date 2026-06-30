@@ -11,7 +11,6 @@ import {
 } from '../services/identifications/identifications.js';
 import { getTaxaFromPartialSearch } from '../services/inat/index.js';
 import { getImagesForObservationId } from '../services/observations/observations.js';
-import { recordAchievement } from '../services/points/achievement.js';
 import { cache, procedure, procedureWithPermissions, router } from '../trpc/trpc.js';
 import { useUser } from '../utils/env/env.js';
 
@@ -58,12 +57,11 @@ export const createIdentificationRouter = () =>
       )
       .mutation(async ({ ctx, input }) => {
         const user = useUser();
-        await addFeedbackToIdentification(input.id, user.id, input.type, input.comment);
-        await recordAchievement('vote', user.id, { payload: { identificationId: input.id } }, true);
-        if (input.comment) {
-          await recordAchievement('comment', user.id, { payload: { identificationId: input.id } }, true);
+        const result = await addFeedbackToIdentification(input.id, user.id, input.type, input.comment);
+        if (result.pointsAwarded > 0) {
+          ctx.points();
         }
-        ctx.points();
+        return result;
       }),
     removeFeedbackComment: procedureWithPermissions('moderate')
       .input(z.object({ id: z.number() }))
@@ -156,8 +154,11 @@ export const createIdentificationRouter = () =>
           ]
         })
       )
-      .mutation(async ({ input }) => {
-        return await removeIdentification(input.id);
+      .mutation(async ({ ctx, input }) => {
+        const result = await removeIdentification(input.id);
+        ctx.points();
+        ctx.achievements();
+        return result;
       }),
 
     confirm: procedureWithPermissions('confirm')

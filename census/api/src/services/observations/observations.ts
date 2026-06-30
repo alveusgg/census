@@ -1,12 +1,21 @@
 import { BadRequestError, DownstreamError, ForbiddenError, NotFoundError } from '@alveusgg/error';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
-import { and, count, desc, eq, gte, inArray, lte, or, SQL, sql } from 'drizzle-orm';
+import { and, count, desc, eq, gte, inArray, isNull, lte, ne, or, SQL, sql } from 'drizzle-orm';
 import ffmpeg from 'fluent-ffmpeg';
 import { createReadStream } from 'fs';
 import { z } from 'zod';
 import { Pagination, Query } from '../../api/observation.js';
-import { BoundingBox, identifications, images, observations, sightings } from '../../db/schema/index.js';
+import {
+  achievements,
+  BoundingBox,
+  feedback,
+  identifications,
+  images,
+  observations,
+  shinies,
+  sightings
+} from '../../db/schema/index.js';
 import { useDB, withTransaction } from '../../db/transaction.js';
 import { assert } from '../../utils/assert.js';
 import { createConcurrencyLimiter, createRetrier } from '../../utils/concurrency.js';
@@ -20,6 +29,16 @@ import { recordAchievement } from '../points/achievement.js';
 
 const frameUploadLimiter = createConcurrencyLimiter(3);
 const frameUploadRetrier = createRetrier(3);
+
+export const observationDeletionReasons = ['no_valid_subject', 'too_poor_quality'] as const;
+export type ObservationDeletionReason = (typeof observationDeletionReasons)[number];
+
+const deletionReasonsThatRevokeSubmissionPoints = new Set<ObservationDeletionReason>(['no_valid_subject']);
+
+const observationDeletionReasonLabels: Record<ObservationDeletionReason, string> = {
+  no_valid_subject: 'No valid subject',
+  too_poor_quality: 'Too poor quality'
+};
 
 const Selection = z.object({
   timestamp: z.number(),
@@ -35,7 +54,7 @@ export type ObservationPayload = z.infer<typeof ObservationPayload>;
 const getObservationRecord = async (id: number) => {
   const db = useDB();
   return await db.query.observations.findFirst({
-    where: eq(observations.id, id),
+    where: and(eq(observations.id, id), eq(observations.removed, false)),
     with: {
       sightings: {
         with: {
@@ -49,9 +68,11 @@ const getObservationRecord = async (id: number) => {
         }
       },
       identifications: {
+        where: isNull(identifications.deletedAt),
         with: {
           suggester: true,
           feedback: {
+            where: isNull(feedback.deletedAt),
             with: {
               submitter: true
             }
@@ -86,9 +107,113 @@ export const createObservationsFromCapture = async (captureId: number, observati
   );
 };
 
-export const deleteObservation = async (observationId: number) => {
+export const deleteObservation = async (observationId: number, reason: ObservationDeletionReason) => {
   const db = useDB();
-  return await db.delete(observations).where(eq(observations.id, observationId));
+  const user = useUser();
+
+  return await db.transaction(async tx =>
+    withTransaction(tx, async () => {
+      const observation = await tx.query.observations.findFirst({
+        where: eq(observations.id, observationId)
+      });
+      if (!observation) throw new NotFoundError('Observation not found');
+      if (observation.removed) throw new BadRequestError('Observation has already been removed');
+
+      const observationIdentifications = await tx.query.identifications.findMany({
+        where: eq(identifications.observationId, observationId),
+        columns: {
+          id: true
+        }
+      });
+      const identificationIds = observationIdentifications.map(identification => identification.id);
+
+      const observationSightings = await tx.query.sightings.findMany({
+        where: eq(sightings.observationId, observationId),
+        columns: {
+          captureId: true,
+          observedBy: true
+        }
+      });
+      const revokeSubmissionPoints = deletionReasonsThatRevokeSubmissionPoints.has(reason);
+
+      if (identificationIds.length > 0) {
+        await tx
+          .update(achievements)
+          .set({ revoked: true })
+          .where(
+            and(
+              inArray(achievements.identificationId, identificationIds),
+              inArray(achievements.type, ['vote', 'comment', 'assist', 'identify', 'shiny']),
+              eq(achievements.revoked, false)
+            )
+          );
+
+        await tx
+          .update(shinies)
+          .set({ identificationId: null })
+          .where(inArray(shinies.identificationId, identificationIds));
+
+        await tx
+          .update(feedback)
+          .set({ deletedAt: new Date() })
+          .where(and(inArray(feedback.identificationId, identificationIds), isNull(feedback.deletedAt)));
+
+        await tx
+          .update(identifications)
+          .set({ confirmedBy: null, shinyId: null, deletedAt: new Date() })
+          .where(inArray(identifications.id, identificationIds));
+      }
+
+      if (revokeSubmissionPoints) {
+        for (const sighting of observationSightings) {
+          const [activeSighting] = await tx
+            .select({ id: sightings.id })
+            .from(sightings)
+            .innerJoin(observations, eq(sightings.observationId, observations.id))
+            .where(
+              and(
+                eq(sightings.captureId, sighting.captureId),
+                eq(sightings.observedBy, sighting.observedBy),
+                ne(sightings.observationId, observationId),
+                eq(observations.removed, false)
+              )
+            )
+            .limit(1);
+
+          if (!activeSighting) {
+            await tx
+              .update(achievements)
+              .set({ revoked: true })
+              .where(
+                and(
+                  eq(achievements.userId, sighting.observedBy),
+                  eq(achievements.type, 'observe'),
+                  eq(achievements.revoked, false),
+                  sql`${achievements.payload}->'payload'->>'captureId' = ${sighting.captureId.toString()}`
+                )
+              );
+          }
+        }
+      }
+
+      const moderationEntry = {
+        userId: user.id.toString(),
+        type: 'delete',
+        message: observationDeletionReasonLabels[reason]
+      };
+
+      await tx
+        .update(observations)
+        .set({
+          removed: true,
+          confirmedAs: null,
+          moderated: [...observation.moderated, moderationEntry]
+        })
+        .where(eq(observations.id, observationId));
+
+      return { removed: true, pointsChanged: revokeSubmissionPoints || identificationIds.length > 0 };
+    })
+  );
 };
 
 export const locateObservation = async (observationId: number, location: { x: number; y: number }) => {
@@ -173,33 +298,8 @@ export const getImagesForObservationId = async (observationId: number) => {
   return observation.sightings.flatMap(sighting => sighting.images);
 };
 
-export const getObservationCount = async () => {
-  const db = useDB();
-  const [result] = await db.select({ count: count() }).from(observations);
-  return result.count;
-};
-
-const hasConfirmedPrimaryIdentification = sql`
-  exists (
-    select 1
-    from identifications
-    where identifications.id = observations.confirmed_as
-      and identifications.is_accessory is not true
-  )
-`;
-
-export const getUnconfirmedObservationCount = async () => {
-  const db = useDB();
-  const [result] = await db
-    .select({ count: count() })
-    .from(observations)
-    .where(sql`not ${hasConfirmedPrimaryIdentification}`);
-  return result.count;
-};
-
-export const getObservations = async (pagination: Pagination, query?: Query) => {
-  const db = useDB();
-  const conditions: SQL<unknown>[] = [];
+const getObservationConditions = (query?: Query) => {
+  const conditions: SQL<unknown>[] = [eq(observations.removed, false)];
 
   if (query?.confirmed) {
     conditions.push(hasConfirmedPrimaryIdentification);
@@ -221,6 +321,41 @@ export const getObservations = async (pagination: Pagination, query?: Query) => 
   if (query?.start) conditions.push(gte(observations.observedAt, query.start));
   if (query?.end) conditions.push(lte(observations.observedAt, query.end));
 
+  return conditions;
+};
+
+export const getObservationCount = async (query?: Query) => {
+  const db = useDB();
+  const [result] = await db
+    .select({ count: count() })
+    .from(observations)
+    .where(and(...getObservationConditions(query)));
+  return result.count;
+};
+
+const hasConfirmedPrimaryIdentification = sql`
+  exists (
+    select 1
+    from identifications
+    where identifications.id = observations.confirmed_as
+      and identifications.is_accessory is not true
+      and identifications.deleted_at is null
+  )
+`;
+
+export const getUnconfirmedObservationCount = async () => {
+  const db = useDB();
+  const [result] = await db
+    .select({ count: count() })
+    .from(observations)
+    .where(and(eq(observations.removed, false), sql`not ${hasConfirmedPrimaryIdentification}`));
+  return result.count;
+};
+
+export const getObservations = async (pagination: Pagination, query?: Query) => {
+  const db = useDB();
+  const conditions = getObservationConditions(query);
+
   const rows = await db.query.observations.findMany({
     with: {
       sightings: {
@@ -235,9 +370,11 @@ export const getObservations = async (pagination: Pagination, query?: Query) => 
         }
       },
       identifications: {
+        where: isNull(identifications.deletedAt),
         with: {
           suggester: true,
           feedback: {
+            where: isNull(feedback.deletedAt),
             with: {
               submitter: true
             }

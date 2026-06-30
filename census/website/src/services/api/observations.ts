@@ -16,6 +16,7 @@ export type ConfirmedObservation = Observation & {
   confirmedIdentification: Identification;
 };
 type LocationBox = { x1: number; y1: number; x2: number; y2: number };
+export type ObservationDeletionReason = 'no_valid_subject' | 'too_poor_quality';
 
 export const useUnconfirmedObservations = () => {
   const trpc = useAPI();
@@ -100,8 +101,8 @@ export const useDeleteObservation = () => {
   const trpc = useAPI();
   const client = useQueryClient();
   return useMutation({
-    mutationFn: async (observationId: number) => {
-      return await trpc.observation.delete.mutate({ observationId });
+    mutationFn: async ({ observationId, reason }: { observationId: number; reason: ObservationDeletionReason }) => {
+      return await trpc.observation.delete.mutate({ observationId, reason });
     },
     onSuccess: () => {
       client.invalidateQueries({ queryKey: key('observations') });
@@ -109,6 +110,8 @@ export const useDeleteObservation = () => {
       client.invalidateQueries({ queryKey: key('identification') });
       client.invalidateQueries({ queryKey: key('captures') });
       client.invalidateQueries({ queryKey: key('users') });
+      client.invalidateQueries({ queryKey: key('points') });
+      client.invalidateQueries({ queryKey: key('achievements') });
     }
   });
 };

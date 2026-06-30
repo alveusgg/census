@@ -11,18 +11,15 @@ import {
 import { INatTaxaInput } from '@/components/forms/inputs/INatTaxaInput';
 import { Loader } from '@/components/loaders/Loader';
 import { Spinner } from '@/components/loaders/Spinner';
-import { Confirm, useConfirm } from '@/components/modal/Confirm';
 import { Timestamp } from '@/components/text/Timestamp';
 import { UserLink } from '@/components/users/UserLink';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSuggestAccessoryIdentification, useSuggestIdentification } from '@/services/api/identifications';
-import {
-  Identification as IdentificationType,
-  Observation as ObservationType,
-  useDeleteObservation
-} from '@/services/api/observations';
+import { useMe } from '@/services/api/me';
+import { Identification as IdentificationType, Observation as ObservationType } from '@/services/api/observations';
 import { useHasPermission } from '@/services/permissions/hooks';
 import { cn } from '@/utils/cn';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { formatInTimeZone } from 'date-fns-tz';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FC, useMemo, useState } from 'react';
@@ -42,6 +39,7 @@ import SiLeaf from '@/components/icons/SiLeaf';
 import SiPin from '@/components/icons/SiPin';
 import SiTrash from '@/components/icons/SiTrash';
 import SiTwitch from '@/components/icons/SiTwitch';
+import { DeleteObservationModal, DeleteObservationModalProps } from './DeleteObservationModal';
 import { Controls, SlidePips } from './gallery/Controls';
 import { getMinimizedTree, Node } from './helpers';
 
@@ -80,6 +78,12 @@ const buildIdentificationTree = (identifications: IdentificationType[]) => {
   });
 
   return nodes.filter(node => node.isRoot());
+};
+
+const getUserAgreementId = (identifications: IdentificationType[], userId: number) => {
+  return identifications.find(identification =>
+    identification.feedback.some(feedback => feedback.userId === userId && feedback.type === 'agree')
+  )?.id;
 };
 
 const PLANT_TAXON_ID = 47126;
@@ -140,13 +144,13 @@ const ObservationImage: FC<ObservationImageProps> = ({ image }) => {
 };
 
 export const Observation: FC<ObservationProps> = ({ observation }) => {
+  const { data: me } = useSuspenseQuery(useMe());
   const suggestIdentification = useSuggestIdentification();
   const suggestAccessoryIdentification = useSuggestAccessoryIdentification();
-  const deleteObservation = useDeleteObservation();
   const canSuggest = useHasPermission('suggest');
   const canModerate = useHasPermission('moderate');
   const isMobile = useIsMobile();
-  const confirmDelete = useConfirm();
+  const deleteObservationModal = useModal<DeleteObservationModalProps>();
   const locationModal = useModal<PanoLocationModalProps>();
 
   const accessoryIdentifications = observation.identifications.filter(identification => identification.isAccessory);
@@ -163,14 +167,20 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
   const accessoryTree = useMemo(() => {
     return buildIdentificationTree(accessoryIdentifications);
   }, [accessoryIdentifications]);
+  const currentAccessoryAgreementId = useMemo(() => {
+    return getUserAgreementId(accessoryIdentifications, me.id);
+  }, [accessoryIdentifications, me.id]);
 
   const tree = useMemo(() => {
     return buildIdentificationTree(identificationIdentifications);
   }, [identificationIdentifications]);
+  const currentIdentificationAgreementId = useMemo(() => {
+    return getUserAgreementId(identificationIdentifications, me.id);
+  }, [identificationIdentifications, me.id]);
 
   return (
     <div className="@container">
-      <Confirm {...confirmDelete} />
+      <DeleteObservationModal {...deleteObservationModal} />
       {!isMobile && <PanoLocationModal {...locationModal} />}
       <div className="flex gap-4 flex-col @lg:flex-row" key={observation.id}>
         <Polaroid>
@@ -253,15 +263,10 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
                   variant={false}
                   aria-label="delete observation"
                   onClick={() =>
-                    confirmDelete.open({
-                      title: 'Delete observation?',
-                      description: 'This will permanently delete this observation. This action cannot be undone.',
-                      onConfirm: async () => {
-                        await deleteObservation.mutateAsync(observation.id);
-                      }
+                    deleteObservationModal.open({
+                      observationId: observation.id
                     })
                   }
-                  loading={deleteObservation.isPending}
                   className={cn(
                     'rounded-full w-10 h-10 p-1 flex items-center justify-center text-red-800 bg-red-100 hover:bg-red-200'
                   )}
@@ -308,6 +313,7 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
                         key={identification.id}
                         observationImages={observationImages}
                         tree={identification}
+                        currentAgreementId={currentAccessoryAgreementId}
                       />
                     ))
                   )}
@@ -346,6 +352,7 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
                     key={identification.id}
                     observationImages={observationImages}
                     tree={identification}
+                    currentAgreementId={currentIdentificationAgreementId}
                   />
                 ))}
               </AnimatePresence>
@@ -379,6 +386,7 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
 interface TopLevelIdentificationTreeProps {
   observationImages: ObservationType['sightings'][number]['images'];
   tree: Node<IdentificationType>;
+  currentAgreementId?: number;
 }
 
 const ConfirmedAccessoryIdentification: FC<{
@@ -409,7 +417,11 @@ const ConfirmedAccessoryIdentification: FC<{
   );
 };
 
-const TopLevelIdentificationTree: FC<TopLevelIdentificationTreeProps> = ({ observationImages, tree }) => {
+const TopLevelIdentificationTree: FC<TopLevelIdentificationTreeProps> = ({
+  observationImages,
+  tree,
+  currentAgreementId
+}) => {
   const minimizedTree = getMinimizedTree(tree);
 
   const [expanded, setExpanded] = useState(false);
@@ -433,7 +445,11 @@ const TopLevelIdentificationTree: FC<TopLevelIdentificationTreeProps> = ({ obser
         </button>
       )}
       <div className="mx-3">
-        <IdentificationSuggestion observationImages={observationImages} tree={treeToRender} />
+        <IdentificationSuggestion
+          observationImages={observationImages}
+          tree={treeToRender}
+          currentAgreementId={currentAgreementId}
+        />
       </div>
     </div>
   );

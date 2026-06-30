@@ -8,8 +8,10 @@ import {
   getUnconfirmedObservationCount,
   locateObservation,
   mergeObservations,
+  observationDeletionReasons,
   ObservationPayload
 } from '../services/observations/observations.js';
+import { getPermissions } from '../services/auth/role.js';
 import { cache, procedure, procedureWithPermissions, router } from '../trpc/trpc.js';
 import { useUser } from '../utils/env/env.js';
 
@@ -61,14 +63,28 @@ export const createObservationRouter = () =>
       }),
 
     delete: procedureWithPermissions('moderate')
-      .input(z.object({ observationId: z.number() }))
+      .input(z.object({ observationId: z.number(), reason: z.enum(observationDeletionReasons) }))
       .use(
         cache.mutation({
-          keys: [['observations'], ['identifications'], ['users', 'identifications'], ['captures']]
+          keys: [
+            ['observations'],
+            ['observations', 'unconfirmedCount'],
+            ['identifications'],
+            ['users', 'identifications'],
+            ['users', 'profile'],
+            ['users', 'leaderboard'],
+            ['users', 'leaderboardPage'],
+            ['captures']
+          ]
         })
       )
-      .mutation(async ({ input }) => {
-        return await deleteObservation(input.observationId);
+      .mutation(async ({ ctx, input }) => {
+        const result = await deleteObservation(input.observationId, input.reason);
+        if (result.pointsChanged) {
+          ctx.points();
+          ctx.achievements();
+        }
+        return result;
       }),
 
     locate: procedureWithPermissions('capture')
@@ -95,16 +111,19 @@ export const createObservationRouter = () =>
 
     list: procedure.input(z.object({ meta: Pagination, query: Query.optional() })).query(async ({ input }) => {
       const user = useUser();
-      const count = await getObservationCount();
+      const permissions = getPermissions();
+      const count = await getObservationCount(input.query);
       let data = await getObservations(input.meta, input.query);
 
       // Fog of war: hide feedback from users who haven't given feedback yet
       // in order to avoid existing votes influencing new votes
-      const hasGivenFeedback = data.some(observation =>
-        observation.identifications.some(identification =>
-          identification.feedback.some(feedback => feedback.userId === user.id)
-        )
-      );
+      const hasGivenFeedback =
+        permissions.moderate ||
+        data.some(observation =>
+          observation.identifications.some(identification =>
+            identification.feedback.some(feedback => feedback.userId === user.id)
+          )
+        );
 
       if (!hasGivenFeedback) {
         data = data.map(observation => ({

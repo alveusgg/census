@@ -98,6 +98,7 @@ export const useRemoveIdentification = () => {
       queryClient.invalidateQueries({ queryKey: key('identification', id.toString()) });
       queryClient.invalidateQueries({ queryKey: key('users') });
       queryClient.invalidateQueries({ queryKey: key('points') });
+      queryClient.invalidateQueries({ queryKey: key('achievements') });
     }
   });
 };

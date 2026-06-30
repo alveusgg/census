@@ -19,11 +19,13 @@ import { IdentificationPage } from './pages/identifications/Identification';
 import { Identifications } from './pages/identifications/Identifications';
 import { Observations } from './pages/observations/Observations';
 import { Overlay } from './pages/overlay/Overlay';
+import { LaunchDay } from './pages/posts/LaunchDay';
 import { MyProfile } from './pages/profile/MyProfile';
 import { UserProfile } from './pages/profile/UserProfile';
 import { useLeaderboard, usePendingAchievements, usePermissions, usePoints } from './services/api/me';
 import { useUnconfirmedObservationCount } from './services/api/observations';
 import { useCurrentSeason, useShiniesForSeason } from './services/api/seasons';
+
 const auth: RouteObject = {
   path: 'auth',
   children: [
@@ -131,6 +133,15 @@ export const useRouter = () => {
                     {
                       path: 'onboarding',
                       element: <Onboarding />
+                    }
+                  ]
+                },
+                {
+                  path: 'posts',
+                  children: [
+                    {
+                      path: 'launch-day',
+                      element: <LaunchDay />
                     }
                   ]
                 },

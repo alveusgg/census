@@ -2,7 +2,7 @@ import { and, count, desc, eq, isNotNull, isNull, or } from 'drizzle-orm';
 
 import { OnboardingFormSchema } from '@alveusgg/census-forms';
 import { NotAuthenticatedError, NotFoundError } from '@alveusgg/error';
-import { identifications, users } from '../../db/schema/index.js';
+import { feedback, identifications, users } from '../../db/schema/index.js';
 import { anonymousResponses, responses } from '../../db/schema/responses.js';
 import { useDB, withTransaction } from '../../db/transaction.js';
 import { withCoalescing } from '../../utils/cache.js';
@@ -73,6 +73,7 @@ export const getUserIdentifications = async (id: number, page: number, size: num
   const confirmedUserIdentification = and(
     eq(identifications.suggestedBy, id),
     isNotNull(identifications.confirmedBy),
+    isNull(identifications.deletedAt),
     or(eq(identifications.isAccessory, false), isNull(identifications.isAccessory))
   );
   const [{ total }] = await db.select({ total: count() }).from(identifications).where(confirmedUserIdentification);
@@ -82,6 +83,7 @@ export const getUserIdentifications = async (id: number, page: number, size: num
     with: {
       suggester: true,
       feedback: {
+        where: isNull(feedback.deletedAt),
         with: {
           submitter: true
         }

@@ -45,8 +45,10 @@ const IdentificationFeedbackForm: FC<ModalProps<IdentificationFeedbackModalProps
   const comment = methods.watch('comment');
 
   const submitFeedback = async (data: IdentificationFeedbackFields) => {
-    await addFeedback.mutateAsync({ id: identification.id, type: feedback, comment: data.comment });
-    await action.add(data.comment ? 40 : 20);
+    const result = await addFeedback.mutateAsync({ id: identification.id, type: feedback, comment: data.comment });
+    if (result.pointsAwarded > 0) {
+      await action.add(result.pointsAwarded);
+    }
     props.close();
   };
   return (

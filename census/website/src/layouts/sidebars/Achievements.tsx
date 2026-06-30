@@ -168,6 +168,19 @@ export const Achievements = () => {
                           </p>
                         </>
                       )}
+
+                      {achievement.payload.type === 'assist' && achievement.identification && (
+                        <>
+                          <div className="flex justify-between">
+                            <p className="font-semibold text-left">🤝 Nice assist!</p>
+                            <span className="font-bold text-sm">{achievement.points} pts</span>
+                          </div>
+                          <p className="mt-1 text-left text-sm leading-tight">
+                            Your suggestion helped identify{' '}
+                            <span className="font-bold">{achievement.identification.nickname}!</span>
+                          </p>
+                        </>
+                      )}
                     </Achievement>
                   ))
                 ) : (
@@ -212,7 +225,7 @@ const Achievement: FC<PropsWithChildren<AchievementProps & Omit<HTMLMotionProps<
   const confetti = useConfetti();
 
   const handleRedeem = async () => {
-    if (type === 'shiny' || type === 'identify') confetti();
+    if (type === 'shiny' || type === 'identify' || type === 'assist') confetti();
     if (!containerRef.current) throw new Error('No container ref');
     await animate(containerRef.current, { opacity: 0.5 }, { duration: 0.2 });
     await Promise.all([redeem.mutateAsync(id), action.add(points)]);
