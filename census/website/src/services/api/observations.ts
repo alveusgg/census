@@ -131,6 +131,12 @@ export const useMergeObservations = () => {
     },
     onSuccess: () => {
       client.invalidateQueries({ queryKey: key('observations') });
+      client.invalidateQueries({ queryKey: key('identifications') });
+      client.invalidateQueries({ queryKey: key('identification') });
+      client.invalidateQueries({ queryKey: key('captures') });
+      client.invalidateQueries({ queryKey: key('users') });
+      client.invalidateQueries({ queryKey: key('points') });
+      client.invalidateQueries({ queryKey: key('achievements') });
     }
   });
 };

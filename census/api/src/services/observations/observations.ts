@@ -397,6 +397,37 @@ export const getObservations = async (pagination: Pagination, query?: Query) => 
   return rows;
 };
 
+type IdentificationRecord = typeof identifications.$inferSelect;
+
+const getIdentificationMergeKey = (identification: Pick<IdentificationRecord, 'sourceId' | 'isAccessory'>) => {
+  const suggestionType = identification.isAccessory === true ? 'accessory' : 'primary';
+  return `${suggestionType}:${identification.sourceId}`;
+};
+
+const getDuplicateIdentificationReplacements = (mergedIdentifications: IdentificationRecord[]) => {
+  const retainedIdentificationByKey = new Map<string, IdentificationRecord>();
+  const replacements = new Map<number, number>();
+
+  for (const identification of [...mergedIdentifications].sort((a, b) => a.id - b.id)) {
+    const key = getIdentificationMergeKey(identification);
+    const retainedIdentification = retainedIdentificationByKey.get(key);
+
+    if (!retainedIdentification) {
+      retainedIdentificationByKey.set(key, identification);
+      continue;
+    }
+
+    replacements.set(identification.id, retainedIdentification.id);
+  }
+
+  return replacements;
+};
+
+const resolveMergedIdentificationId = (id: number | null, replacements: Map<number, number>) => {
+  if (id === null) return null;
+  return replacements.get(id) ?? id;
+};
+
 export const mergeObservations = async (targetObservationId: number, sourceObservationIds: number[]) => {
   const ids = [...new Set(sourceObservationIds)].filter(id => id !== targetObservationId);
   if (ids.length === 0) throw new BadRequestError('No source observations selected');
@@ -426,8 +457,65 @@ export const mergeObservations = async (targetObservationId: number, sourceObser
         .set({ observationId: targetObservationId })
         .where(inArray(identifications.observationId, ids));
 
+      const activeMergedIdentifications = await tx.query.identifications.findMany({
+        where: and(eq(identifications.observationId, targetObservationId), isNull(identifications.deletedAt))
+      });
+      const activeMergedIdentificationIds = new Set(
+        activeMergedIdentifications.map(identification => identification.id)
+      );
+      const duplicateIdentificationReplacements = getDuplicateIdentificationReplacements(activeMergedIdentifications);
+      const duplicateIdentificationIds = [...duplicateIdentificationReplacements.keys()];
+
+      if (duplicateIdentificationIds.length > 0) {
+        for (const [duplicateIdentificationId, retainedIdentificationId] of duplicateIdentificationReplacements) {
+          await tx
+            .update(identifications)
+            .set({ alternateForId: retainedIdentificationId })
+            .where(
+              and(
+                eq(identifications.observationId, targetObservationId),
+                eq(identifications.alternateForId, duplicateIdentificationId)
+              )
+            );
+        }
+
+        const deletedAt = new Date();
+
+        await tx
+          .update(achievements)
+          .set({ revoked: true })
+          .where(
+            and(
+              inArray(achievements.identificationId, duplicateIdentificationIds),
+              inArray(achievements.type, ['vote', 'comment', 'assist', 'identify', 'shiny']),
+              eq(achievements.revoked, false)
+            )
+          );
+
+        await tx
+          .update(shinies)
+          .set({ identificationId: null })
+          .where(inArray(shinies.identificationId, duplicateIdentificationIds));
+
+        await tx
+          .update(feedback)
+          .set({ deletedAt })
+          .where(and(inArray(feedback.identificationId, duplicateIdentificationIds), isNull(feedback.deletedAt)));
+
+        await tx
+          .update(identifications)
+          .set({ confirmedBy: null, shinyId: null, deletedAt })
+          .where(inArray(identifications.id, duplicateIdentificationIds));
+      }
+
       const earliestObservedAt = [target.observedAt, ...sources.map(source => source.observedAt)].reduce(
         (earliest, current) => (current.getTime() < earliest.getTime() ? current : earliest)
+      );
+      const selectedConfirmedAs =
+        target.confirmedAs ?? sources.map(source => source.confirmedAs).find(value => value != null) ?? null;
+      const resolvedConfirmedAs = resolveMergedIdentificationId(
+        selectedConfirmedAs,
+        duplicateIdentificationReplacements
       );
 
       await tx
@@ -436,7 +524,9 @@ export const mergeObservations = async (targetObservationId: number, sourceObser
           observedAt: earliestObservedAt,
           removed: target.removed && sources.every(source => source.removed),
           confirmedAs:
-            target.confirmedAs ?? sources.map(source => source.confirmedAs).find(value => value != null) ?? null,
+            resolvedConfirmedAs !== null && activeMergedIdentificationIds.has(resolvedConfirmedAs)
+              ? resolvedConfirmedAs
+              : null,
           moderated: [...target.moderated, ...sources.flatMap(source => source.moderated)],
           discordThreadId:
             target.discordThreadId ?? sources.map(source => source.discordThreadId).find(value => value != null) ?? null

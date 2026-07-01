@@ -102,10 +102,21 @@ export const createObservationRouter = () =>
       .input(z.object({ targetObservationId: z.number(), sourceObservationIds: z.array(z.number()).min(1) }))
       .use(
         cache.mutation({
-          keys: [['observations'], ['identifications'], ['users', 'identifications'], ['captures']]
+          keys: [
+            ['observations'],
+            ['observations', 'unconfirmedCount'],
+            ['identifications'],
+            ['users', 'identifications'],
+            ['users', 'profile'],
+            ['users', 'leaderboard'],
+            ['users', 'leaderboardPage'],
+            ['captures']
+          ]
         })
       )
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
+        ctx.points();
+        ctx.achievements();
         return await mergeObservations(input.targetObservationId, input.sourceObservationIds);
       }),
 
