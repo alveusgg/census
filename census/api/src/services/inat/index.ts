@@ -1,4 +1,9 @@
+import { DownstreamError, NotFoundError } from '@alveusgg/error';
 import { z } from 'zod';
+import { withCoalescing } from '../../utils/cache.js';
+import { useEnvironment } from '../../utils/env/env.js';
+
+const TAXA_INFO_TTL_SECONDS = 60 * 60 * 24 * 7;
 
 const TaxaSearchResult = z.object({
   id: z.number(),
@@ -32,6 +37,17 @@ const SearchResults = z.object({
 
 export type TaxaSearchResult = z.infer<typeof TaxaSearchResult>;
 
+const getTaxaInfoCacheKey = (iNatId: number) => `inat:taxa:${iNatId}`;
+
+const parseCachedTaxaInfo = (value: string) => {
+  try {
+    const parsed = TaxaSearchResult.safeParse(JSON.parse(value));
+    return parsed.success ? parsed.data : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
 export const getTaxaFromPartialSearch = async (search: string, taxonId?: number) => {
   const params = new URLSearchParams({ q: search });
   if (taxonId) params.set('taxon_id', taxonId.toString());
@@ -41,9 +57,30 @@ export const getTaxaFromPartialSearch = async (search: string, taxonId?: number)
   return SearchResults.parse(data);
 };
 
-export const getTaxaInfo = async (iNatId: number) => {
-  const response = await fetch(`https://api.inaturalist.org/v1/taxa/${iNatId}`);
-  const data = await response.json();
-  const { results } = SearchResults.parse(data);
-  return results[0];
-};
+export const getTaxaInfo = withCoalescing(
+  async (iNatId: number) => {
+    const { cache } = useEnvironment();
+    const cacheKey = getTaxaInfoCacheKey(iNatId);
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      const taxon = parseCachedTaxaInfo(cached);
+      if (taxon) return taxon;
+
+      await cache.delete(cacheKey);
+    }
+
+    const response = await fetch(`https://api.inaturalist.org/v1/taxa/${iNatId}`);
+    if (!response.ok) {
+      throw new DownstreamError('inat', `Failed to fetch taxon ${iNatId}: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const { results } = SearchResults.parse(data);
+    const taxon = results[0];
+    if (!taxon) throw new NotFoundError('Taxon not found');
+
+    await cache.set(cacheKey, JSON.stringify(taxon), TAXA_INFO_TTL_SECONDS);
+    return taxon;
+  },
+  { key: getTaxaInfoCacheKey }
+);
