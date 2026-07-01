@@ -1,7 +1,5 @@
 import { EventEmitterAsyncResource, on } from 'events';
 import { ReplicationEvent, Row } from 'postgres';
-import { z } from 'zod';
-import { assert } from '../utils/assert.js';
 
 export const ee = new EventEmitterAsyncResource({
   name: 'Database Changes'
@@ -46,13 +44,17 @@ interface Change {
 
 // postgres.js's type signature for `Row` is Record<string, any>
 export const listen = async (row: Row | null, info: ReplicationEvent) => {
-  assert.shape(z.object({ id: z.number().or(z.string()) }), row, 'Row must have an id');
+  if (!row) return;
+
+  const id = row.id;
+  if (typeof id !== 'number' && typeof id !== 'string') return;
+
   const change: Change = {
     table: info.relation.table,
-    id: row.id,
+    id,
     event: info.command
   };
 
-  const keys = getEmitKeys({ table: info.relation.table, id: row.id });
+  const keys = getEmitKeys({ table: info.relation.table, id });
   keys.forEach(key => ee.emit(key, change));
 };
