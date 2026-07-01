@@ -162,6 +162,13 @@
       "when": 1782852439805,
       "tag": "0022_gray_sentinels",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1782868638071,
+      "tag": "0023_legal_champions",
+      "breakpoints": true
     }
   ]
 }

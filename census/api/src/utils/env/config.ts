@@ -9,7 +9,7 @@ import z from 'zod';
 
 import { initialise } from '../../db/db.js';
 import { panic } from '../assert.js';
-import { CloudflareKVCache, KVCache, LocalKVCache } from '../cache.js';
+import { CloudflareKVCache, KVCache, PostgresKVCache } from '../cache.js';
 
 export const config = z.object({
   TWITCH_CLIENT_ID: z.string(),
@@ -121,14 +121,6 @@ export const services = async (variables: z.infer<typeof config>) => {
     });
   })();
 
-  const cache: KVCache = (() => {
-    if (!variables.CF_KV_NAMESPACE || !variables.CF_KV_TOKEN || !variables.CF_ACCOUNT_ID) {
-      return new LocalKVCache();
-    }
-
-    return new CloudflareKVCache(variables.CF_ACCOUNT_ID, variables.CF_KV_NAMESPACE, variables.CF_KV_TOKEN);
-  })();
-
   // Required clients
   const database = await initialise(
     variables.POSTGRES_HOST,
@@ -138,6 +130,14 @@ export const services = async (variables: z.infer<typeof config>) => {
     variables.POSTGRES_SSL,
     variables.POSTGRES_PORT
   );
+
+  const cache: KVCache = (() => {
+    if (!variables.CF_KV_NAMESPACE || !variables.CF_KV_TOKEN || !variables.CF_ACCOUNT_ID) {
+      return new PostgresKVCache(database.db);
+    }
+
+    return new CloudflareKVCache(variables.CF_ACCOUNT_ID, variables.CF_KV_NAMESPACE, variables.CF_KV_TOKEN);
+  })();
 
   const storage = new S3Client({
     region: variables.S3_REGION,

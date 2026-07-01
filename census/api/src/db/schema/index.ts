@@ -1,4 +1,5 @@
 export * from './achievements.js';
+export * from './cache.js';
 export * from './captures.js';
 export * from './feeds.js';
 export * from './guides.js';

@@ -1,4 +1,7 @@
 import { BadRequestError, DownstreamError } from '@alveusgg/error';
+import { and, eq, gt, isNull, or } from 'drizzle-orm';
+import { cache as cacheTable } from '../db/schema/cache.js';
+import type { initialise } from '../db/db.js';
 
 export interface KVCache {
   get(key: string): Promise<string | null>;
@@ -85,6 +88,38 @@ export class LocalKVCache implements KVCache {
 
   async set(key: string, value: string, ttl?: number) {
     this.cache.set(key, { value, ttl, setAt: Date.now() });
+  }
+}
+
+type Database = Awaited<ReturnType<typeof initialise>>['db'];
+
+export class PostgresKVCache implements KVCache {
+  constructor(private readonly db: Database) {}
+
+  async delete(key: string) {
+    await this.db.delete(cacheTable).where(eq(cacheTable.key, key));
+  }
+
+  async get(key: string) {
+    const [row] = await this.db
+      .select({ value: cacheTable.value })
+      .from(cacheTable)
+      .where(and(eq(cacheTable.key, key), or(isNull(cacheTable.expiredAt), gt(cacheTable.expiredAt, new Date()))))
+      .limit(1);
+
+    return row?.value ?? null;
+  }
+
+  async set(key: string, value: string, ttl?: number) {
+    const expiredAt = ttl ? new Date(Date.now() + ttl * 1000) : null;
+
+    await this.db
+      .insert(cacheTable)
+      .values({ key, value, expiredAt })
+      .onConflictDoUpdate({
+        target: cacheTable.key,
+        set: { value, expiredAt }
+      });
   }
 }
 
