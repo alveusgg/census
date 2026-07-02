@@ -12,6 +12,7 @@ import {
   useEffect,
   useRef
 } from 'react';
+import { toast } from 'sonner';
 import { Corner } from '../../assets/icons/Corner';
 
 export interface InputProps<T> {
@@ -37,7 +38,9 @@ interface PendingSelection extends Selection {
   mode: DragMode;
 }
 
-const MIN_BOX_SIZE = 0.05;
+const MIN_BOX_WIDTH = 0.05;
+const MIN_BOX_HEIGHT = 0.3;
+const BOX_TOO_SMALL_MESSAGE = 'That box was too small, please try again!';
 
 export const SelectionInput: FC<
   SelectionInputProps & InputProps<Selection[]> & Omit<ComponentProps<'div'>, 'onChange'>
@@ -110,7 +113,10 @@ export const SelectionInput: FC<
 
       if (!finished) return;
       const { boundingBox } = finished;
-      if (boundingBox.width < MIN_BOX_SIZE || boundingBox.height < MIN_BOX_SIZE) return;
+      if (boundingBox.width < MIN_BOX_WIDTH || boundingBox.height < MIN_BOX_HEIGHT) {
+        toast(BOX_TOO_SMALL_MESSAGE);
+        return;
+      }
 
       // Only one selection per subject per frame, so replace by subjectId.
       const existing = valueRef.current ?? [];
