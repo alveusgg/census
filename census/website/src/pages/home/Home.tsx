@@ -1,4 +1,4 @@
-import { Button } from '@/components/controls/button/juicy';
+import { Button, Link } from '@/components/controls/button/juicy';
 import SiChevronDown from '@/components/icons/SiChevronDown';
 import SiTwitch from '@/components/icons/SiTwitch';
 import { useModal } from '@/components/modal/useModal';
@@ -27,7 +27,7 @@ import { ExploreGardenTile, IdentifyCrittersTile, SeasonProgressTile } from './t
 
 import mural from '@/assets/anthill.outlined.png';
 import bg from '@/assets/bg.png';
-import { Link } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
 
 export const Home: FC = () => {
   const createFromClipModalProps = useModal();
@@ -43,7 +43,7 @@ export const Home: FC = () => {
       </Breadcrumbs>
 
       <div className="mx-auto grid w-full max-w-6xl grid-cols-8 gap-6">
-        <Link
+        <RouterLink
           to="/posts/launch-day"
           className="col-span-8 border border-accent border-opacity-50 bg-accent-100 hover:bg-accent-200 transition-colors w-full p-4 rounded-2xl text-lg font-semibold flex justify-between items-center"
         >
@@ -55,7 +55,7 @@ export const Home: FC = () => {
             <p className="text-base">Read the post</p>
             <ChevronRight className="size-6" />
           </div>
-        </Link>
+        </RouterLink>
         <div className="@container relative col-span-8 grid overflow-clip rounded-2xl border border-accent border-opacity-50 bg-accent-100 px-6 py-8 leading-snug text-accent-900 sm:px-10 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,28rem)] lg:items-center lg:gap-8">
           <img src={bg} alt="Background" className="absolute inset-y-0 right-0 h-full" />
           <div className="relative z-10 min-w-0">
@@ -78,7 +78,7 @@ export const Home: FC = () => {
                 <span>submit new clip</span>
               </Button>
             ) : (
-              <Link to="/forms/onboarding" className="mt-4 w-fit px-4 text-center">
+              <Link to="/forms/onboarding" variant="alveus" className="mt-4 w-fit px-4 text-center">
                 <span>Sign up to help out!</span>
                 <ChevronRight className="size-4" />
               </Link>
