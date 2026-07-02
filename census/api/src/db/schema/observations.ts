@@ -14,12 +14,10 @@ export const observations = pgTable(
     discordThreadId: text('discord_thread_id'),
     location: point('location', { mode: 'xy' })
   },
-  table => {
-    return {
-      locationGistIdx: index('location_gist_idx').using('gist', table.location),
-      observedAtDescIdx: index('observations_observed_at_desc_idx').on(table.observedAt.desc())
-    };
-  }
+  table => [
+    index('location_gist_idx').using('gist', table.location),
+    index('observations_observed_at_desc_idx').on(table.observedAt.desc())
+  ]
 );
 
 export const observationsRelations = relations(observations, ({ one, many }) => ({

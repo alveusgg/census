@@ -37,16 +37,16 @@ export const captures = pgTable(
     clipId: text('clip_id').unique().notNull(),
     clipMetadata: json('clip_metadata').$type<{ views: number; thumbnail: string }>().notNull()
   },
-  table => ({
-    clipIdIdx: index('clip_id_idx').on(table.clipId),
-    capturedAtDescIdx: index('captures_captured_at_desc_idx').on(table.capturedAt.desc()),
-    capturedByCapturedAtNotDeadIdx: index('captures_captured_by_captured_at_not_dead_idx')
+  table => [
+    index('clip_id_idx').on(table.clipId),
+    index('captures_captured_at_desc_idx').on(table.capturedAt.desc()),
+    index('captures_captured_by_captured_at_not_dead_idx')
       .on(table.capturedBy, table.capturedAt.desc())
       .where(sql`${table.status} != 'dead'`),
-    pendingFeedIdx: index('captures_pending_feed_idx')
+    index('captures_pending_feed_idx')
       .on(table.feedId)
       .where(sql`${table.status} = 'pending'`)
-  })
+  ]
 );
 
 export type Capture = typeof captures.$inferSelect;

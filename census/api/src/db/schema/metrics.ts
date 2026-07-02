@@ -12,11 +12,9 @@ export const metrics = pgTable(
     createdAt: timestamp('created_at').notNull(),
     value: json('value').notNull()
   },
-  table => {
-    return {
-      uniqueNameCreatedAtIdx: uniqueIndex('unique_name_created_at_idx').on(table.name, table.createdAt),
-      userIdIdx: index('user_id_metrics_idx').on(table.userId),
-      nameIdx: index('name_metrics_idx').on(table.name)
-    };
-  }
+  table => [
+    uniqueIndex('unique_name_created_at_idx').on(table.name, table.createdAt),
+    index('user_id_metrics_idx').on(table.userId),
+    index('name_metrics_idx').on(table.name)
+  ]
 );

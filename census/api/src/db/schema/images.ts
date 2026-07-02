@@ -28,10 +28,10 @@ export const images = pgTable(
     identificationId: integer('identification_id'),
     boundingBox: json('bounding_box').$type<BoundingBox>().notNull()
   },
-  table => ({
-    sightingIdIdx: index('images_sighting_id_idx').on(table.sightingId),
-    identificationIdIdx: index('images_identification_id_idx').on(table.identificationId)
-  })
+  table => [
+    index('images_sighting_id_idx').on(table.sightingId),
+    index('images_identification_id_idx').on(table.identificationId)
+  ]
 );
 
 export const imagesRelations = relations(images, ({ one }) => ({

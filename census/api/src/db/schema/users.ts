@@ -15,11 +15,9 @@ export const users = pgTable(
     stickers: json('stickers'),
     createdAt: timestamp('created_at').defaultNow().notNull()
   },
-  table => {
-    return {
-      providerIdIdx: index('provider_id_idx').on(table.providerId)
-    };
-  }
+  table => [
+    index('provider_id_idx').on(table.providerId)
+  ]
 );
 
 export type User = typeof users.$inferSelect;

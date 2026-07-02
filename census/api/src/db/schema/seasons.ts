@@ -21,10 +21,10 @@ export const shinies = pgTable(
     inatId: integer('inat_id').notNull(),
     identificationId: integer('identification_id')
   },
-  table => ({
-    identificationIdIdx: uniqueIndex('identification_id_idx').on(table.identificationId),
-    iNatIdIdx: uniqueIndex('i_nat_id_idx').on(table.inatId)
-  })
+  table => [
+    uniqueIndex('identification_id_idx').on(table.identificationId),
+    uniqueIndex('i_nat_id_idx').on(table.inatId)
+  ]
 );
 
 export const shiniesRelations = relations(shinies, ({ one }) => ({

@@ -13,11 +13,9 @@ export const responses = pgTable(
     type: text('type').notNull(),
     payload: json('payload').notNull()
   },
-  table => {
-    return {
-      userIdIdx: index('user_id_responses_idx').on(table.userId)
-    };
-  }
+  table => [
+    index('user_id_responses_idx').on(table.userId)
+  ]
 );
 
 export const anonymousResponses = pgTable('anonymous_responses', {

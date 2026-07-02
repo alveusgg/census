@@ -21,10 +21,10 @@ export const sightings = pgTable(
       .notNull()
       .references(() => users.id)
   },
-  table => ({
-    observationIdIdx: index('sightings_observation_id_idx').on(table.observationId),
-    captureIdObservedByIdx: index('sightings_capture_id_observed_by_idx').on(table.captureId, table.observedBy)
-  })
+  table => [
+    index('sightings_observation_id_idx').on(table.observationId),
+    index('sightings_capture_id_observed_by_idx').on(table.captureId, table.observedBy)
+  ]
 );
 
 export type Sighting = typeof sightings.$inferSelect;

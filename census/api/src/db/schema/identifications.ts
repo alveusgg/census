@@ -48,19 +48,17 @@ export const identifications = pgTable(
     isAccessory: boolean('is_accessory').default(false),
     deletedAt: timestamp('deleted_at')
   },
-  table => {
-    return {
-      sourceIdx: index('source_idx').on(table.sourceId),
-      observationSourceAccessoryIdx: index('identifications_observation_source_accessory_idx').on(
-        table.observationId,
-        table.sourceId,
-        table.isAccessory
-      ),
-      suggestedConfirmedPrimaryIdIdx: index('identifications_suggested_confirmed_primary_id_idx')
-        .on(table.suggestedBy, table.id.desc())
-        .where(sql`${table.confirmedBy} IS NOT NULL AND ${table.isAccessory} IS NOT TRUE`)
-    };
-  }
+  table => [
+    index('source_idx').on(table.sourceId),
+    index('identifications_observation_source_accessory_idx').on(
+      table.observationId,
+      table.sourceId,
+      table.isAccessory
+    ),
+    index('identifications_suggested_confirmed_primary_id_idx')
+      .on(table.suggestedBy, table.id.desc())
+      .where(sql`${table.confirmedBy} IS NOT NULL AND ${table.isAccessory} IS NOT TRUE`)
+  ]
 );
 
 export const feedbackTypes = pgEnum('feedback_type', ['agree', 'disagree', 'confirm']);
@@ -82,12 +80,10 @@ export const feedback = pgTable(
     deletedAt: timestamp('deleted_at'),
     commentDeletedAt: timestamp('comment_deleted_at')
   },
-  table => {
-    return {
-      identificationIdx: index('identification_idx').on(table.identificationId),
-      userIdIdx: index('user_idx').on(table.userId)
-    };
-  }
+  table => [
+    index('identification_idx').on(table.identificationId),
+    index('user_idx').on(table.userId)
+  ]
 );
 
 export const feedbackRelations = relations(feedback, ({ one }) => ({

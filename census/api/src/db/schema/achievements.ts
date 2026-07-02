@@ -23,22 +23,20 @@ export const achievements = pgTable(
     redeemed: boolean('redeemed').default(false).notNull(),
     revoked: boolean('revoked').default(false).notNull()
   },
-  table => {
-    return {
-      userIdIdx: index('user_id_achievements_idx').on(table.userId),
-      typeIdx: index('type_achievements_idx').on(table.type),
-      pointsIdx: index('points_achievements_idx').on(table.points),
-      validCreatedUserPointsIdx: index('achievements_valid_created_user_points_idx')
-        .on(table.createdAt, table.userId)
-        .where(sql`${table.redeemed} = true AND ${table.revoked} = false`),
-      validUserCreatedPointsIdx: index('achievements_valid_user_created_points_idx')
-        .on(table.userId, table.createdAt)
-        .where(sql`${table.redeemed} = true AND ${table.revoked} = false`),
-      pendingByUserIdx: index('achievements_pending_by_user_idx')
-        .on(table.userId)
-        .where(sql`${table.redeemed} = false AND ${table.revoked} = false`)
-    };
-  }
+  table => [
+    index('user_id_achievements_idx').on(table.userId),
+    index('type_achievements_idx').on(table.type),
+    index('points_achievements_idx').on(table.points),
+    index('achievements_valid_created_user_points_idx')
+      .on(table.createdAt, table.userId)
+      .where(sql`${table.redeemed} = true AND ${table.revoked} = false`),
+    index('achievements_valid_user_created_points_idx')
+      .on(table.userId, table.createdAt)
+      .where(sql`${table.redeemed} = true AND ${table.revoked} = false`),
+    index('achievements_pending_by_user_idx')
+      .on(table.userId)
+      .where(sql`${table.redeemed} = false AND ${table.revoked} = false`)
+  ]
 );
 
 export type Achievement = typeof achievements.$inferSelect;

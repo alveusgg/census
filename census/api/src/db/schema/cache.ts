@@ -7,9 +7,7 @@ export const cache = pgTable(
     value: text('value').notNull(),
     expiredAt: timestamp('expired_at')
   },
-  table => {
-    return {
-      expiredAtIdx: index('cache_expired_at_idx').on(table.expiredAt)
-    };
-  }
+  table => [
+    index('cache_expired_at_idx').on(table.expiredAt)
+  ]
 );

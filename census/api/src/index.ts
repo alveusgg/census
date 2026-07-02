@@ -290,37 +290,32 @@ await withEnvironment(environment, async () => {
     } satisfies FastifyTRPCPluginOptions<AppRouter>['trpcOptions']
   });
 
-  server.listen({ port: Number(process.env.PORT), host: process.env.HOST }, async (err, address) => {
-    if (err) {
-      console.error(err);
-      process.exit(1);
-    }
-    console.log(`Server listening on ${address}`);
+  const address = await server.listen({ port: Number(process.env.PORT), host: process.env.HOST });
+  console.log(`Server listening on ${address}`);
 
-    leader.acquire(async ({ signal }) => {
-      await runCaptureQueueWorker(signal);
-    });
-
-    const tearDownHandler = await tearDown([
-      {
-        name: 'leader',
-        fn: () => leader.stop()
-      },
-      {
-        name: 'fastify',
-        fn: () => server.close()
-      },
-      {
-        name: 'long operations',
-        fn: waitForLongOperations
-      },
-      {
-        name: 'database',
-        fn: tearDownDatabase
-      }
-    ]);
-
-    process.on('SIGTERM', () => withEnvironment(environment, tearDownHandler));
-    process.on('SIGINT', () => withEnvironment(environment, tearDownHandler));
+  leader.acquire(async ({ signal }) => {
+    await runCaptureQueueWorker(signal);
   });
+
+  const tearDownHandler = await tearDown([
+    {
+      name: 'leader',
+      fn: () => leader.stop()
+    },
+    {
+      name: 'fastify',
+      fn: () => server.close()
+    },
+    {
+      name: 'long operations',
+      fn: waitForLongOperations
+    },
+    {
+      name: 'database',
+      fn: tearDownDatabase
+    }
+  ]);
+
+  process.on('SIGTERM', () => withEnvironment(environment, tearDownHandler));
+  process.on('SIGINT', () => withEnvironment(environment, tearDownHandler));
 });

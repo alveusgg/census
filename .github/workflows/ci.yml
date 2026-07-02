@@ -33,7 +33,7 @@ jobs:
     environment: production
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
 
@@ -42,7 +42,7 @@ jobs:
           name: ui-build
           path: census/website/ui
 
-      - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
+      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
         name: Install pnpm
         with:
           run_install: false
@@ -56,7 +56,7 @@ jobs:
       - name: Install dependencies
         run: pnpm i
 
-      - uses: pulumi/auth-actions@1c89817aab0c66407723cdef72b05266e7376640 # v1.0.1
+      - uses: pulumi/auth-actions@141415910c3beb54e03b48e9057c204c97b956f2 # v2.1.0
         name: Login to Pulumi
         with:
           organization: alveusgg
@@ -64,7 +64,7 @@ jobs:
           scope: user:changesbyjames
 
       - name: Login to Azure
-        uses: azure/login@532459ea530d8321f2fb9bb10d1e0bcf23869a43 # v3.0.0
+        uses: azure/login@93381592711f247e165c389ebb30b596c84cdc48 # v3.0.0
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -91,7 +91,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
       - name: Build & upload worker
-        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3.15.0
+        uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4.0.0
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           packageManager: pnpm
@@ -104,7 +104,7 @@ jobs:
             deploy --config wrangler.generated.jsonc --env prod
 
       - name: Create Sentry release
-        uses: getsentry/action-release@5657c9e888b4e2cc85f4d29143ea4131fde4a73a # v3.6.0
+        uses: getsentry/action-release@ff07929a6537bac57790c3451cf4d364aca38528 # v3.7.0
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: alveus-sanctuary

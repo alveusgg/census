@@ -20,9 +20,9 @@ export const tagAssignments = pgTable(
       .references(() => identifications.id, { onDelete: 'cascade' })
       .notNull()
   },
-  table => ({
-    pk: primaryKey({ columns: [table.tagId, table.identificationId] })
-  })
+  table => [
+    primaryKey({ columns: [table.tagId, table.identificationId] })
+  ]
 );
 
 export const tagAssignmentsRelations = relations(tagAssignments, ({ one }) => ({

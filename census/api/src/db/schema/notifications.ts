@@ -13,9 +13,7 @@ export const notifications = pgTable(
     createdAt: timestamp('created_at').defaultNow().notNull(),
     payload: json('payload').notNull()
   },
-  table => {
-    return {
-      userIdIdx: index('user_id_notifications_idx').on(table.userId)
-    };
-  }
+  table => [
+    index('user_id_notifications_idx').on(table.userId)
+  ]
 );
