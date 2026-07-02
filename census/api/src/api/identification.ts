@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
   addFeedbackToIdentification,
+  addJustificationToIdentification,
   confirmIdentification,
   getIdentification,
   getIdentificationsGroupedBySource,
@@ -62,6 +63,22 @@ export const createIdentificationRouter = () =>
           ctx.points();
         }
         return result;
+      }),
+    justification: procedureWithPermissions('suggest')
+      .input(
+        z.object({
+          id: z.number(),
+          comment: z.string().trim().min(1)
+        })
+      )
+      .use(
+        cache.mutation({
+          keys: [['observations'], ['identifications']]
+        })
+      )
+      .mutation(async ({ input }) => {
+        const user = useUser();
+        return await addJustificationToIdentification(input.id, user.id, input.comment);
       }),
     removeFeedbackComment: procedureWithPermissions('moderate')
       .input(z.object({ id: z.number() }))

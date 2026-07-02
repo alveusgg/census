@@ -5,6 +5,7 @@ import SiClose from '@/components/icons/SiClose';
 import SiCommentCheck from '@/components/icons/SiCommentCheck';
 import SiLeaf from '@/components/icons/SiLeaf';
 import SiMessage from '@/components/icons/SiMessage';
+import SiSpeechBubblePlus from '@/components/icons/SiSpeechBubblePlus';
 import { Confirm, useConfirm } from '@/components/modal/Confirm';
 import { useModal } from '@/components/modal/useModal';
 import { UserLink } from '@/components/users/UserLink';
@@ -21,6 +22,7 @@ import { ConfirmationImage } from './ConfirmationAnnotationEditor';
 import { FeedbackModal, FeedbackModalProps } from './FeedbackModal';
 import { Node } from './helpers';
 import { IdentificationFeedbackModal, IdentificationFeedbackModalProps } from './ObservationFeedbackModal';
+import { SuggestionCommentModal, SuggestionCommentModalProps } from './SuggestionCommentModal';
 
 interface IdentificationSuggestionProps {
   observationImages: ConfirmationImage[];
@@ -35,12 +37,14 @@ export const IdentificationSuggestion: FC<IdentificationSuggestionProps> = ({
 }) => {
   const { data: me } = useSuspenseQuery(useMe());
   const identificationFeedbackModalProps = useModal<IdentificationFeedbackModalProps>();
+  const suggestionCommentModalProps = useModal<SuggestionCommentModalProps>();
   const confirmIdentificationModalProps = useModal<ConfirmIdentificationModalProps>();
   const feedbackModalProps = useModal<FeedbackModalProps>();
   const confirmRemove = useConfirm();
   const removeIdentification = useRemoveIdentification();
 
   const canVote = useHasPermission('vote');
+  const canSuggest = useHasPermission('suggest');
   const canConfirm = useHasPermission('confirm');
   const canModerate = useHasPermission('moderate');
 
@@ -48,20 +52,30 @@ export const IdentificationSuggestion: FC<IdentificationSuggestionProps> = ({
 
   const positiveFeedback = identification.feedback.filter(feedback => feedback.type === 'agree');
   const negativeFeedback = identification.feedback.filter(feedback => feedback.type === 'disagree');
-  const feedbackWithComments = identification.feedback.filter(feedback => feedback.comment);
+  const justificationFeedback = identification.feedback.filter(
+    feedback => feedback.type === 'justification' && feedback.comment
+  );
+  const feedbackWithComments = identification.feedback.filter(
+    feedback => feedback.comment && feedback.type !== 'confirm'
+  );
   const myDisagreement = identification.feedback.find(
     feedback => feedback.userId === me.id && feedback.type === 'disagree'
+  );
+  const myJustification = identification.feedback.find(
+    feedback => feedback.userId === me.id && feedback.type === 'justification'
   );
   const isOwnSuggestion = identification.suggester?.id === me.id;
   const canAgree = canVote && !isOwnSuggestion && currentAgreementId !== identification.id;
   const canDisagree = canVote && !isOwnSuggestion && currentAgreementId !== identification.id && !myDisagreement;
+  const canAddComment = canSuggest && isOwnSuggestion && !myJustification;
   const canRemove = isOwnSuggestion || canModerate;
-  const hasFeedback = identification.feedback.length > 0;
+  const hasFeedback = positiveFeedback.length + negativeFeedback.length + justificationFeedback.length > 0;
   const TaxonIcon = identification.isAccessory ? SiLeaf : SiBug2;
 
   return (
     <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="py-1 flex flex-col gap-1">
       <IdentificationFeedbackModal {...identificationFeedbackModalProps} />
+      <SuggestionCommentModal {...suggestionCommentModalProps} />
       <ConfirmIdentificationModal {...confirmIdentificationModalProps} />
       <FeedbackModal {...feedbackModalProps} />
       <Confirm {...confirmRemove} />
@@ -143,7 +157,7 @@ export const IdentificationSuggestion: FC<IdentificationSuggestionProps> = ({
             </div>
           </div>
           <div className="flex gap-2 items-center">
-            {(canAgree || canDisagree) && (
+            {(canAgree || canDisagree || canAddComment) && (
               <div className="flex gap-2 items-center">
                 {canAgree && (
                   <Button
@@ -161,6 +175,16 @@ export const IdentificationSuggestion: FC<IdentificationSuggestionProps> = ({
                     variant="primary"
                   >
                     disagree
+                  </Button>
+                )}
+                {canAddComment && (
+                  <Button
+                    onClick={() => suggestionCommentModalProps.open({ identification })}
+                    className="text-sm font-semibold px-2.5 py-1 gap-0.5"
+                    variant="primary"
+                  >
+                    <SiSpeechBubblePlus className="text-xl" />
+                    add comment
                   </Button>
                 )}
               </div>

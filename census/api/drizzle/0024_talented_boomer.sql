@@ -1,0 +1,1 @@
+ALTER TYPE "feedback_type" ADD VALUE 'justification';

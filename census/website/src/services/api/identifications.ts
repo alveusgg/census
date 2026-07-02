@@ -65,6 +65,21 @@ export const useAddFeedbackToIdentification = () => {
   });
 };
 
+export const useAddJustificationToIdentification = () => {
+  const trpc = useAPI();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, comment }: { id: number; comment: string }) => {
+      const results = await trpc.identification.justification.mutate({ id, comment });
+      await queryClient.invalidateQueries({ queryKey: key('observations') });
+      await queryClient.invalidateQueries({ queryKey: key('identifications') });
+      await queryClient.invalidateQueries({ queryKey: key('identification', id.toString()) });
+      return results;
+    }
+  });
+};
+
 export const useRemoveFeedbackComment = () => {
   const trpc = useAPI();
   const queryClient = useQueryClient();

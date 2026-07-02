@@ -19,16 +19,16 @@ interface FeedbackGroup {
   votes: Feedback[];
 }
 
-const FeedbackVoteChip: FC<{ feedback: Feedback; tone: 'agree' | 'disagree' }> = ({ feedback, tone }) => {
+type VoteTone = 'agree' | 'disagree';
+
+const FeedbackVoteChip: FC<{ feedback: Feedback; tone: VoteTone }> = ({ feedback, tone }) => {
   const Icon = tone === 'agree' ? UpThumb : DownThumb;
 
   return (
     <span
       className={cn(
         'inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-sm font-bold',
-        tone === 'agree'
-          ? 'border-purple-100 bg-purple-50 text-purple-600'
-          : 'border-red-100 bg-red-50 text-red-600'
+        tone === 'agree' ? 'border-purple-100 bg-purple-50 text-purple-600' : 'border-red-100 bg-red-50 text-red-600'
       )}
     >
       <Icon className="shrink-0" />
@@ -39,7 +39,7 @@ const FeedbackVoteChip: FC<{ feedback: Feedback; tone: 'agree' | 'disagree' }> =
 
 const FeedbackCommentCard: FC<{
   feedback: Feedback;
-  tone: 'agree' | 'disagree';
+  tone: VoteTone;
   isRemoving?: boolean;
   onRemove?: (feedback: Feedback) => void;
 }> = ({ feedback, tone, isRemoving = false, onRemove }) => {
@@ -83,7 +83,7 @@ const FeedbackCommentCard: FC<{
 
 const FeedbackSection: FC<{
   title: string;
-  tone: 'agree' | 'disagree';
+  tone: VoteTone;
   group: FeedbackGroup;
   isRemovingComment?: boolean;
   onRemoveComment?: (feedback: Feedback) => void;
@@ -143,12 +143,38 @@ const FeedbackSection: FC<{
   );
 };
 
+const SuggestionCommentCard: FC<{ feedback: Feedback }> = ({ feedback }) => {
+  return (
+    <figure className="min-w-0 rounded-lg border border-accent-200 bg-accent-50 px-3 py-2.5 text-accent-900">
+      <blockquote>
+        <p className="break-words text-pretty leading-snug">{feedback.comment}</p>
+      </blockquote>
+      <figcaption className="mt-2 text-sm italic text-accent-800">
+        - <UserLink user={feedback.submitter} className="font-semibold" />
+      </figcaption>
+    </figure>
+  );
+};
+
+const SuggestionCommentList: FC<{ comments: Feedback[] }> = ({ comments }) => {
+  if (comments.length === 0) return null;
+
+  return (
+    <div className="flex min-w-0 flex-col gap-2">
+      {comments.map(comment => (
+        <SuggestionCommentCard key={comment.id} feedback={comment} />
+      ))}
+    </div>
+  );
+};
+
 const FeedbackList: FC<FeedbackModalProps & Pick<ModalProps<FeedbackModalProps>, 'open'>> = props => {
   const canModerate = useHasPermission('moderate');
   const confirmRemoveComment = useConfirm();
   const removeFeedbackComment = useRemoveFeedbackComment();
   const agree: FeedbackGroup = { comments: [], votes: [] };
   const disagree: FeedbackGroup = { comments: [], votes: [] };
+  const suggestionComments: Feedback[] = [];
 
   props.feedback.forEach(feedback => {
     if (feedback.type === 'agree') {
@@ -163,10 +189,18 @@ const FeedbackList: FC<FeedbackModalProps & Pick<ModalProps<FeedbackModalProps>,
       } else {
         disagree.votes.push(feedback);
       }
+    } else if (feedback.type === 'justification' && feedback.comment) {
+      suggestionComments.push(feedback);
     }
   });
 
-  const hasFeedback = agree.comments.length + agree.votes.length + disagree.comments.length + disagree.votes.length > 0;
+  const hasFeedback =
+    agree.comments.length +
+      agree.votes.length +
+      disagree.comments.length +
+      disagree.votes.length +
+      suggestionComments.length >
+    0;
   const removeComment = (comment: Feedback) => {
     confirmRemoveComment.open({
       title: 'Delete comment?',
@@ -196,6 +230,7 @@ const FeedbackList: FC<FeedbackModalProps & Pick<ModalProps<FeedbackModalProps>,
 
         {hasFeedback ? (
           <div className="grid min-w-0 gap-3">
+            <SuggestionCommentList comments={suggestionComments} />
             <FeedbackSection
               title="Agree"
               tone="agree"

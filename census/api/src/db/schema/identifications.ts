@@ -6,7 +6,7 @@ import { tagAssignments } from './tags.js';
 import { users } from './users.js';
 
 export interface Feedback {
-  type: 'agree' | 'disagree';
+  type: 'agree' | 'disagree' | 'confirm' | 'justification';
   userId: number;
   comment?: string;
 }
@@ -63,7 +63,7 @@ export const identifications = pgTable(
   }
 );
 
-export const feedbackTypes = pgEnum('feedback_type', ['agree', 'disagree', 'confirm']);
+export const feedbackTypes = pgEnum('feedback_type', ['agree', 'disagree', 'confirm', 'justification']);
 
 export const feedback = pgTable(
   'feedback',

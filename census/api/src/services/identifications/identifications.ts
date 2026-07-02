@@ -22,6 +22,8 @@ type IdentificationAchievementType = 'vote' | 'comment' | 'assist' | 'identify' 
 
 const activeIdentification = () => isNull(identifications.deletedAt);
 const activeFeedback = () => isNull(feedback.deletedAt);
+const isVoteFeedbackType = (type: FeedbackRecord['type']): type is FeedbackType =>
+  type === 'agree' || type === 'disagree';
 
 const revokeAchievementsForIdentifications = async (
   identificationIds: number[],
@@ -46,6 +48,8 @@ const revokeFeedbackAchievements = async (entries: FeedbackRecord[]) => {
   const db = useDB();
 
   for (const entry of entries) {
+    if (!isVoteFeedbackType(entry.type)) continue;
+
     const achievementTypes: ('vote' | 'comment')[] = [];
     const activeVoteFeedback = await db.query.feedback.findFirst({
       where: and(
@@ -457,6 +461,53 @@ export const addFeedbackToIdentification = async (
   );
 };
 
+export const addJustificationToIdentification = async (identificationId: number, userId: number, comment: string) => {
+  const db = useDB();
+  const trimmedComment = comment.trim();
+  if (!trimmedComment) throw new BadRequestError('Comment is required');
+
+  return await db.transaction(async tx =>
+    withTransaction(tx, async () => {
+      const identification = await tx.query.identifications.findFirst({
+        where: and(eq(identifications.id, identificationId), activeIdentification())
+      });
+
+      if (!identification) throw new NotFoundError('Identification not found');
+      if (identification.suggestedBy !== userId) {
+        throw new ForbiddenError('You can only add a comment to your own suggestion.');
+      }
+
+      const existingJustification = await tx.query.feedback.findFirst({
+        where: and(
+          eq(feedback.identificationId, identificationId),
+          eq(feedback.userId, userId),
+          eq(feedback.type, 'justification'),
+          activeFeedback()
+        ),
+        columns: {
+          id: true
+        }
+      });
+
+      if (existingJustification) {
+        throw new BadRequestError('You have already added a comment to this suggestion');
+      }
+
+      const [entry] = await tx
+        .insert(feedback)
+        .values({
+          identificationId,
+          userId,
+          type: 'justification',
+          comment: trimmedComment
+        })
+        .returning({ id: feedback.id });
+
+      return entry;
+    })
+  );
+};
+
 export const removeFeedbackComment = async (feedbackId: number) => {
   const db = useDB();
   const permissions = getPermissions();
@@ -472,8 +523,8 @@ export const removeFeedbackComment = async (feedbackId: number) => {
       });
 
       if (!existingFeedback) throw new NotFoundError('Feedback not found');
-      if (existingFeedback.type === 'confirm') {
-        throw new BadRequestError('Confirmation feedback comments cannot be removed with this action');
+      if (existingFeedback.type !== 'agree' && existingFeedback.type !== 'disagree') {
+        throw new BadRequestError('Only agree or disagree feedback comments can be removed with this action');
       }
       if (!existingFeedback.comment) throw new BadRequestError('Feedback does not have a comment to remove');
 
