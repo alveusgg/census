@@ -3,7 +3,7 @@
 All code within this Alveus.gg project is released under the Apache License,
 Version 2.0.
 
-Copyright 2023 Alveus Sanctuary Inc. and the Alveus.gg team
+Copyright 2026 Alveus Sanctuary Inc. and the Alveus.gg team
 <opensource@alveussanctuary.org>
 
 This license does not apply to any images or other media contained within the

@@ -53,7 +53,7 @@ Open a GitHub issue. Include:
 
 ## Security Issues
 
-Please do not report security vulnerabilities in public issues. See [SECURITY.md](SECURITY.md) for how to report them privately.
+Please do not report security vulnerabilities in public issues. See the [Alveus security policy](https://github.com/alveusgg/.github/blob/main/SECURITY.md) for how to report them privately.
 
 ## Questions
 
