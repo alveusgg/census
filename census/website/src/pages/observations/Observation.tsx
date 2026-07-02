@@ -47,6 +47,17 @@ interface ObservationProps {
   observation: ObservationType;
 }
 
+const getObservationFeedDate = (observation: ObservationType) => {
+  const firstSightingCaptureStart = observation.sightings.reduce<Date | undefined>((earliest, sighting) => {
+    const captureStart = new Date(sighting.capture.startCaptureAt);
+    if (Number.isNaN(captureStart.getTime())) return earliest;
+    if (!earliest) return captureStart;
+    return captureStart.getTime() < earliest.getTime() ? captureStart : earliest;
+  }, undefined);
+
+  return firstSightingCaptureStart ?? new Date(observation.observedAt);
+};
+
 const findClosestAncestor = (node: Node<IdentificationType>, nodes: Node<IdentificationType>[]) => {
   const ancestors = node.data.sourceAncestorIds.map(id => id.toString());
   return nodes.reduce<Node<IdentificationType> | undefined>((closest, current) => {
@@ -159,6 +170,7 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
     identification => !identification.isAccessory
   );
   const observationImages = observation.sightings.flatMap(sighting => sighting.images);
+  const observationFeedDate = getObservationFeedDate(observation);
   const submittedTaxonIds = useMemo(
     () => new Set(observation.identifications.map(identification => identification.sourceId)),
     [observation.identifications]
@@ -206,8 +218,8 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
           <div className="pb-2 pt-4 px-4 flex gap-6 justify-between">
             <div className="font-mono mb-1">
               <p className="text-sm">
-                <Timestamp date={new Date(observation.observedAt)}>
-                  {formatInTimeZone(observation.observedAt, 'America/Chicago', 'MM/dd/yyyy hh:mma')}
+                <Timestamp date={observationFeedDate}>
+                  {formatInTimeZone(observationFeedDate, 'America/Chicago', 'MM/dd/yyyy hh:mma')}
                 </Timestamp>
               </p>
               <p className="text-sm">observed by</p>
