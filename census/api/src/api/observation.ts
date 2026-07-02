@@ -126,24 +126,24 @@ export const createObservationRouter = () =>
       const count = await getObservationCount(input.query);
       let data = await getObservations(input.meta, input.query);
 
-      // Fog of war: hide feedback from users who haven't given feedback yet
-      // in order to avoid existing votes influencing new votes
-      const hasGivenFeedback =
-        permissions.moderate ||
-        data.some(observation =>
-          observation.identifications.some(identification =>
+      // Fog of war: hide feedback on each observation until the user has
+      // given feedback on that observation, avoiding page-wide unlocks.
+      if (!permissions.moderate) {
+        data = data.map(observation => {
+          const hasGivenFeedback = observation.identifications.some(identification =>
             identification.feedback.some(feedback => feedback.userId === user.id)
-          )
-        );
+          );
 
-      if (!hasGivenFeedback) {
-        data = data.map(observation => ({
-          ...observation,
-          identifications: observation.identifications.map(identification => ({
-            ...identification,
-            feedback: []
-          }))
-        }));
+          if (hasGivenFeedback) return observation;
+
+          return {
+            ...observation,
+            identifications: observation.identifications.map(identification => ({
+              ...identification,
+              feedback: []
+            }))
+          };
+        });
       }
 
       return {
