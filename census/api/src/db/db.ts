@@ -48,7 +48,8 @@ export const initialise = async (
   });
 
   // Also do migrations in here
-  const db = drizzle(client, {
+  const db = drizzle({
+    client,
     schema,
     logger: {
       logQuery: (query, params) => {
