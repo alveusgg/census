@@ -1,6 +1,7 @@
 import { Database } from '@pulumi/azure-native/dbforpostgresql';
 import { getZoneOutput } from '@pulumi/cloudflare';
 import { Config, getProject, getStack } from '@pulumi/pulumi';
+import { getApiScale, getApiScaleBehaviour } from './helpers/apiScale';
 import { API } from './resources/API';
 import { ContainerAppsCluster } from './resources/ContainerAppsCluster';
 import { PostgreSQLFlexibleServer } from './resources/PostgreSQLFlexibleServer';
@@ -9,7 +10,6 @@ import { SPAWorker } from './resources/SPAWorker';
 
 const stack = getStack();
 const id = `${getProject()}-${stack}`;
-const simpleId = `apc${stack}`;
 
 // MARK: Config
 const config = new Config();
@@ -19,6 +19,15 @@ export = async () => {
     accountId: config.require('cf-account-id'),
     zoneId: config.require('cf-zone-id')
   });
+
+  const settings = {
+    deploymentEnvironment: config.require('deployment-environment'),
+    apiSubdomain: config.require('api-subdomain'),
+    apiScale: getApiScale(getApiScaleBehaviour(config.require('api-scale-behaviour'))),
+    siteHostname: config.require('site-hostname')
+  };
+  const apiUrl = zone.apply(z => `https://${settings.apiSubdomain}.${z.name}`);
+  const siteBaseUrl = `https://${settings.siteHostname}`;
 
   const project = new Project(id, {
     cloudflare: { zone }
@@ -48,13 +57,13 @@ export = async () => {
     name: 'api',
     project,
     cluster,
-    subdomain: 'census-api',
+    subdomain: settings.apiSubdomain,
     port: 3000,
     size: 'large',
     env: {
       HOST: '0.0.0.0',
       PORT: '3000',
-      API_URL: 'https://census-api.alveus.gg',
+      API_URL: apiUrl,
 
       TWITCH_CLIENT_ID: config.require('twitch-client-id'),
       TWITCH_CLIENT_SECRET: config.requireSecret('twitch-client-secret'),
@@ -76,18 +85,15 @@ export = async () => {
       S3_PUBLIC_URL: s3PublicUrl,
 
       ALVEUS_AUTH_ISSUER: 'https://www.alveussanctuary.org',
-      ALVEUS_AUTH_CLIENT_ID: 'census',
+      ALVEUS_AUTH_CLIENT_ID: config.require('alveus-client-id'),
       ALVEUS_AUTH_CLIENT_SECRET: config.requireSecret('alveus-client-secret'),
 
-      SENTRY_DSN: config.require('sentry-dsn')
+      SENTRY_DSN: config.require('sentry-dsn'),
+      SENTRY_ENVIRONMENT: settings.deploymentEnvironment
     },
     image: config.require('image'),
     sessionAffinity: false,
-    scale: {
-      min: 2,
-      max: 2,
-      noOfRequestsPerInstance: 100
-    }
+    scale: settings.apiScale
   });
 
   // MARK: Image Optimisation
@@ -115,14 +121,14 @@ export = async () => {
     account_id: config.require('cf-account-id'),
     name: 'site',
     env: stack,
-    route: `census.alveussanctuary.org`,
+    route: settings.siteHostname,
     assetsDirectory: 'ui',
     backstage: {
       variables: {
         // ipxBaseUrl: imageOptimisation.defaultUrl,
         sentryDSN: config.require('sentry-dsn'),
         apiBaseUrl: api.defaultUrl,
-        cloudflareImageBaseUrl: 'https://census.alveussanctuary.org'
+        cloudflareImageBaseUrl: siteBaseUrl
       },
       flags: {
         cloudflareImages: true
