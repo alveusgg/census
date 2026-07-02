@@ -78,7 +78,7 @@ export const Home: FC = () => {
                 <span>submit new clip</span>
               </Button>
             ) : (
-              <Link to="/forms/onboarding" className="mt-4 w-fit px-4 text-center">
+              <Link to="/forms/onboarding" className="mt-4 flex w-fit items-center gap-1 px-4 text-center">
                 <span>Sign up to help out!</span>
                 <ChevronRight className="size-4" />
               </Link>
