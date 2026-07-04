@@ -8,6 +8,7 @@ import { createContext, FC, PropsWithChildren, useRef } from 'react';
 import SuperJSON from 'superjson';
 import { useInvalidateRequestToken, useRequestToken } from '../authentication/hooks';
 import { Variables } from '../backstage/config';
+import { createAuthenticatedEventSource } from './eventSource';
 import { key } from './hooks';
 interface PointsLinkOptions {
   invalidate: {
@@ -103,9 +104,7 @@ export const APIProvider: FC<PropsWithChildren> = ({ children }) => {
           true: httpSubscriptionLink({
             url,
             transformer: SuperJSON,
-            connectionParams: async () => ({
-              authorization: `Bearer ${await requestToken()}`
-            })
+            EventSource: createAuthenticatedEventSource(requestToken)
           }),
           false: httpBatchLink({
             url,

@@ -536,28 +536,24 @@ live: {
 
 This keeps parameterization readable while allowing `defineListener` to stay concrete.
 
-## Phase 5: Do Not Send Auth Tokens On Public SSE
+## Phase 5: Move SSE Auth Out of URL via eventsource Ponyfill
 
 File: `census/website/src/services/query/APIProvider.tsx`
+Files: `census/website/src/services/query/eventSource.ts`
 
-Current subscription link sends bearer auth in `connectionParams` for every SSE subscription:
+The subscription link previously sent bearer auth in `connectionParams`, which tRPC serialises into the EventSource URL as query params. Native `EventSource` reconnects reuse the original URL, so a reconnect could keep using a stale bearer token.
+
+Instead of simply removing `connectionParams` (which would leave no renewal strategy for future authenticated subscriptions), the SSE branch now uses an `eventsource` ponyfill that injects a fresh token via a custom `fetch` on every (re)connect:
 
 ```ts
 true: httpSubscriptionLink({
   url,
   transformer: SuperJSON,
-  connectionParams: async () => ({ authorization: `Bearer ${await requestToken()}` })
+  EventSource: createAuthenticatedEventSource(requestToken)
 })
 ```
 
-Now that the current SSE subscriptions are public, remove `connectionParams` from the SSE branch:
-
-```ts
-true: httpSubscriptionLink({
-  url,
-  transformer: SuperJSON
-})
-```
+The `eventsource` npm package (v4) is fetch-based and calls the custom `fetch` on every connection attempt — including its own automatic reconnects. Auth moves from the URL into an `authorization` request header, so tokens no longer appear in `EventSource.url`, browser history, or server logs. `Last-Event-ID` is preserved across reconnects by the package internally, so tRPC's tracked-event resumption keeps working.
 
 Keep auth for queries and mutations:
 
@@ -569,9 +565,9 @@ false: httpBatchLink({
 })
 ```
 
-This avoids putting bearer tokens into EventSource URLs and removes token expiry from public SSE reconnects entirely.
+The server's `createContext` already reads `headers.authorization ?? info.connectionParams?.authorization`, so no server-side change is needed — the header is picked up automatically.
 
-If a future subscription must be authenticated, it should not share this public SSE branch without an explicit authenticated SSE renewal strategy.
+This covers both network-error retries (the ponyfill's own reconnects) and tRPC's inactivity-triggered stream recreation. If a future subscription must be authenticated, it can share this SSE branch without additional work.
 
 ## Phase 6: Configure SSE Keepalive Pings
 
@@ -658,7 +654,7 @@ Manual verification:
 5. Trigger one capture update.
 6. Confirm the API performs one `getCapture(id)` query per API process for that update.
 7. Confirm the final `complete` capture value reaches the client before the subscription closes.
-8. Confirm public SSE EventSource URLs no longer include `connectionParams` or bearer tokens.
+8. Confirm SSE EventSource URLs no longer include bearer tokens (auth is now sent via `authorization` header, not `connectionParams` query params).
 9. Leave a page idle beyond expected proxy idle timeout and confirm pings prevent unnecessary reconnect churn.
 
 ## Rollout Notes
