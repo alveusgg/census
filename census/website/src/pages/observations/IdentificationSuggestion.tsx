@@ -142,7 +142,7 @@ export const IdentificationSuggestion: FC<IdentificationSuggestionProps> = ({
                         })
                       }
                       className={cn(
-                        'relative flex h-7 w-7 items-center justify-center rounded-full bg-red-100 text-red-800 hover:bg-red-200 disabled:pointer-events-none disabled:opacity-50'
+                        'relative flex h-7 w-7 items-center justify-center rounded-full bg-red-100 text-red-800 hover:bg-red-200 disabled:pointer-events-none disabled:opacity-50 dark:bg-red-950/55 dark:text-red-200 dark:ring-1 dark:ring-inset dark:ring-red-300/40 dark:hover:bg-red-900/70'
                       )}
                     >
                       <span

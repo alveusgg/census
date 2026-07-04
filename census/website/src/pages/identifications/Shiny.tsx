@@ -8,7 +8,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { useMeasure } from '@uidotdev/usehooks';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
-import { ComponentProps, FC, useMemo, useState } from 'react';
+import { ComponentProps, CSSProperties, FC, useMemo, useState } from 'react';
 import { IdentificationModal, IdentificationProps } from './Identification';
 
 export const ShiniesForSeason = () => {
@@ -143,7 +143,7 @@ export const ShinyThumbnail: FC<ShinyThumbnailProps> = ({ shiny }) => {
   );
 };
 
-export const Image: FC<ComponentProps<'img'> & { src: string }> = ({ src, ...props }) => {
+export const Image: FC<ComponentProps<'span'> & { src: string }> = ({ src, className, style, ...props }) => {
   const source = useSuspenseQuery({
     queryKey: ['image', src],
     queryFn: async () => {
@@ -152,5 +152,25 @@ export const Image: FC<ComponentProps<'img'> & { src: string }> = ({ src, ...pro
       return imageSrc;
     }
   });
-  return <img src={source.data} {...props} />;
+
+  const silhouetteStyle: CSSProperties = {
+    WebkitMaskImage: `url(${source.data})`,
+    WebkitMaskPosition: 'center',
+    WebkitMaskRepeat: 'no-repeat',
+    WebkitMaskSize: 'contain',
+    maskImage: `url(${source.data})`,
+    maskPosition: 'center',
+    maskRepeat: 'no-repeat',
+    maskSize: 'contain',
+    ...style
+  };
+
+  return (
+    <span
+      aria-hidden="true"
+      {...props}
+      className={cn('block bg-[#F2E8BF] dark:bg-[#8B977F]', className)}
+      style={silhouetteStyle}
+    />
+  );
 };

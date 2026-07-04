@@ -4,10 +4,11 @@ import { Loader } from '../../../loaders/Loader';
 import { ButtonProps } from '../button';
 
 export const variants = {
-  primary: 'bg-accent-400 hover:bg-accent-500 text-accent-950',
+  primary: 'bg-accent-400 text-accent-950 hover:bg-accent-500 dark:text-accent-50',
   custom: 'bg-custom hover:bg-custom-darker text-white',
   danger: 'bg-red-500 hover:bg-red-600 text-white',
-  alveus: 'bg-alveus hover:bg-alveus-darker text-white'
+  alveus:
+    'bg-alveus hover:bg-alveus-darker text-white dark:bg-alveus-darker dark:text-white dark:ring-1 dark:ring-inset dark:ring-accent-300/80 dark:shadow-[inset_0_-8px_0px_-0.25rem_rgba(255,254,245,0.10),inset_0_1px_0px_rgba(255,254,245,0.14)] dark:hover:bg-alveus dark:hover:shadow-[inset_0_-10px_0px_-0.25rem_rgba(255,254,245,0.22),inset_0_1px_0px_rgba(255,254,245,0.16)] dark:active:shadow-[inset_0_-6px_0px_-0.25rem_rgba(255,254,245,0.16),inset_0_1px_0px_rgba(255,254,245,0.12)] dark:data-[pressed=true]:shadow-[inset_0_-6px_0px_-0.25rem_rgba(255,254,245,0.16),inset_0_1px_0px_rgba(255,254,245,0.12)] dark:data-[toggled=true]:shadow-[inset_0_2px_0px_2px_rgba(255,254,245,0.12)]'
 };
 
 export const Button = forwardRef<
@@ -28,6 +29,7 @@ export const Button = forwardRef<
           'active:shadow-[inset_0_-6px_0px_-0.25rem_rgba(0,0,0,0.15)] active:pt-2.5 active:pb-2.5',
           'data-[pressed=true]:shadow-[inset_0_-6px_0px_-0.25rem_rgba(0,0,0,0.15)] data-[pressed=true]:pt-2.5 data-[pressed=true]:pb-2.5',
           'data-[toggled=true]:shadow-[inset_0_2px_0px_2px_rgba(0,0,0,0.15)] data-[toggled=true]:pt-2.5 data-[toggled=true]:pb-2.5 hover:data-[toggled=true]:shadow-[inset_0_2px_0px_2px_rgba(0,0,0,0.15)]',
+          'juicy-control',
           variant && variants[variant],
           loading && 'pointer-events-none',
           disabled && 'pointer-events-none opacity-50',
@@ -41,6 +43,7 @@ export const Button = forwardRef<
           <span
             className={cn(
               'inset-0 absolute rounded-xl w-full h-full flex justify-center items-center shadow-[inset_0_2px_0px_2px_rgba(0,0,0,0.15)]',
+              'juicy-control',
               variant && variants[variant]
             )}
           >
@@ -81,6 +84,7 @@ export const Link: FC<PropsWithChildren<ButtonProps & LinkProps & {}>> = ({
         'active:shadow-[inset_0_-6px_0px_-0.25rem_rgba(0,0,0,0.15)] active:pt-2.5 active:pb-2.5',
         'data-[pressed=true]:shadow-[inset_0_-6px_0px_-0.25rem_rgba(0,0,0,0.15)] data-[pressed=true]:pt-2.5 data-[pressed=true]:pb-2.5',
         'data-[toggled=true]:shadow-[inset_0_2px_0px_2px_rgba(0,0,0,0.15)] data-[toggled=true]:pt-2.5 data-[toggled=true]:pb-2.5 hover:data-[toggled=true]:shadow-[inset_0_2px_0px_2px_rgba(0,0,0,0.15)]',
+        'juicy-control',
         variant && variants[variant],
         disabled && 'pointer-events-none opacity-50',
         className

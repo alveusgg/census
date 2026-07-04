@@ -4,7 +4,7 @@ import textStroke from './tailwind.text-stroke.mjs';
 
 /** @type {import('tailwindcss').Config} */
 export default {
-  darkMode: ['class', 'class'],
+  darkMode: 'class',
   content: ['./src/**/*.{js,jsx,ts,tsx}', './index.html', './node_modules/@critter/react/**/*.{js,jsx,ts,tsx}'],
   theme: {
     extend: {
@@ -16,7 +16,7 @@ export default {
       cursor: cursors,
       borderColor: {
         accent: {
-          DEFAULT: '#D4C0AC'
+          DEFAULT: 'rgba(var(--accent-color-300) / <alpha-value>)'
         }
       },
       colors: {

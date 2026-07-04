@@ -21,7 +21,7 @@ export const Podium: FC<PropsWithChildren<PodiumProps & HTMLMotionProps<'div'>>>
       <motion.div
         initial={{ height: 0, opacity: 0 }}
         animate={{ height: height ?? 0, opacity: 1 }}
-        className="relative z-20 h-fit w-full rounded-lg border border-leaderboard-700 bg-leaderboard-600 text-center font-mono text-2xl font-bold text-white shadow-inner"
+        className="relative z-20 h-fit w-full rounded-lg border border-leaderboard-700 bg-leaderboard-600 text-center font-mono text-2xl font-bold text-white shadow-inner dark:border-accent-300 dark:bg-accent-200 dark:text-accent-900"
         transition={{ delay, type: 'spring', stiffness: 120, damping: 10 }}
         {...props}
       >

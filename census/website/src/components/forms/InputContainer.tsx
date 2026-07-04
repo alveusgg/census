@@ -4,7 +4,8 @@ import { ComponentProps, FC, PropsWithChildren } from 'react';
 export type Variant = 'alveus' | 'primary' | 'custom';
 
 const variants: Record<Variant, string> = {
-  alveus: 'bg-alveus ring-alveus-darker text-white ring-white/30',
+  alveus:
+    'bg-alveus ring-alveus-darker text-white ring-white/30 dark:bg-accent-100 dark:text-accent-900 dark:ring-accent-300',
   primary: 'bg-accent-700 ring-accent-700/50 bg-opacity-[0.05] text-accent-900',
   custom: 'bg-custom hover:bg-custom-darker text-white'
 };

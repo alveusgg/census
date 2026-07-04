@@ -57,7 +57,7 @@ export const Home: FC = () => {
           </div>
         </RouterLink>
         <div className="@container relative col-span-8 grid overflow-clip rounded-2xl border border-accent border-opacity-50 bg-accent-100 px-6 py-8 leading-snug text-accent-900 sm:px-10 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,28rem)] lg:items-center lg:gap-8">
-          <img src={bg} alt="Background" className="absolute inset-y-0 right-0 h-full" />
+          <img src={bg} alt="Background" className="absolute inset-y-0 right-0 h-full dark:opacity-25" />
           <div className="relative z-10 min-w-0">
             <p>Welcome to the</p>
             <h2 className="mb-1.5 text-4xl font-serif font-bold tracking-wide text-accent-900 sm:text-5xl">
@@ -133,10 +133,10 @@ const LeaderboardCard: FC = () => {
         onTimeframeChange={handleTimeframeChange}
       />
 
-      <div className="@4xl:col-span-4 @container col-span-8 flex flex-col rounded-2xl border border-leaderboard-700 bg-leaderboard-500 px-5 pb-4 pt-5 sm:px-6 sm:pt-6">
+      <div className="@4xl:col-span-4 @container col-span-8 flex flex-col rounded-2xl border border-leaderboard-700 bg-leaderboard-500 px-5 pb-4 pt-5 sm:px-6 sm:pt-6 dark:border-accent-300 dark:bg-accent-100">
         <div className="flex items-center gap-3">
           <div className="flex min-w-0 items-center gap-3">
-            <h2 className="text-2xl font-bold text-white">Leaderboard</h2>
+            <h2 className="text-2xl font-bold text-white dark:text-accent-900">Leaderboard</h2>
           </div>
           <div className="ml-auto shrink-0">
             <LeaderboardTimeframeSelect value={timeframe} onValueChange={handleTimeframeChange} />
@@ -149,9 +149,9 @@ const LeaderboardCard: FC = () => {
               <LeaderboardPodium leaderboard={leaderboard.data.leaderboard} />
 
               <div className="flex items-center justify-center gap-1.5 py-0.5">
-                <span className="size-1.5 rounded-full bg-leaderboard-700/50" />
-                <span className="size-1.5 rounded-full bg-leaderboard-700/30" />
-                <span className="size-1.5 rounded-full bg-leaderboard-700/30" />
+                <span className="size-1.5 rounded-full bg-leaderboard-700/50 dark:bg-accent-300" />
+                <span className="size-1.5 rounded-full bg-leaderboard-700/30 dark:bg-accent-300/60" />
+                <span className="size-1.5 rounded-full bg-leaderboard-700/30 dark:bg-accent-300/60" />
               </div>
 
               {leaderboard.data.place.me && (
@@ -172,7 +172,7 @@ const LeaderboardCard: FC = () => {
           <motion.button
             type="button"
             onClick={() => leaderboardModalProps.open()}
-            className="mx-auto flex items-center rounded-lg border border-transparent px-3 py-1 text-base text-white transition-colors duration-300 hover:border-white/10 hover:bg-white/5"
+            className="mx-auto flex items-center rounded-lg border border-transparent px-3 py-1 text-base text-white transition-colors duration-300 hover:border-white/10 hover:bg-white/5 dark:text-accent-900 dark:hover:border-accent-300 dark:hover:bg-accent-200"
           >
             <SiChevronDown className={cn('-ml-1.5 text-xl transition-transform duration-300')} />
             <span>see all</span>
@@ -184,28 +184,28 @@ const LeaderboardCard: FC = () => {
 };
 
 const LeaderboardCardSkeleton: FC = () => (
-  <div className="@4xl:col-span-4 @container col-span-8 flex min-h-80 flex-col rounded-2xl border border-leaderboard-700 bg-leaderboard-500 px-5 pb-4 pt-5 sm:px-6 sm:pt-6">
+  <div className="@4xl:col-span-4 @container col-span-8 flex min-h-80 flex-col rounded-2xl border border-leaderboard-700 bg-leaderboard-500 px-5 pb-4 pt-5 sm:px-6 sm:pt-6 dark:border-accent-300 dark:bg-accent-100">
     <div className="flex items-center gap-3">
-      <h2 className="text-2xl font-bold text-white">Leaderboard</h2>
-      <div className="ml-auto h-9 w-28 rounded-md bg-white/15" />
+      <h2 className="text-2xl font-bold text-white dark:text-accent-900">Leaderboard</h2>
+      <div className="ml-auto h-9 w-28 rounded-md bg-white/15 dark:bg-accent-200" />
     </div>
 
     <div className="flex flex-1 flex-col justify-between gap-4 pt-4">
       <div className="grid flex-1 grid-cols-3 items-end gap-3">
-        <div className="h-28 rounded-lg border border-leaderboard-700 bg-leaderboard-600/60" />
-        <div className="h-40 rounded-lg border border-leaderboard-700 bg-leaderboard-600/80" />
-        <div className="h-24 rounded-lg border border-leaderboard-700 bg-leaderboard-600/60" />
+        <div className="h-28 rounded-lg border border-leaderboard-700 bg-leaderboard-600/60 dark:border-accent-300 dark:bg-accent-200" />
+        <div className="h-40 rounded-lg border border-leaderboard-700 bg-leaderboard-600/80 dark:border-accent-300 dark:bg-accent-200" />
+        <div className="h-24 rounded-lg border border-leaderboard-700 bg-leaderboard-600/60 dark:border-accent-300 dark:bg-accent-200" />
       </div>
 
       <div className="flex items-center justify-center gap-1.5 py-0.5">
-        <span className="size-1.5 rounded-full bg-leaderboard-700/50" />
-        <span className="size-1.5 rounded-full bg-leaderboard-700/30" />
-        <span className="size-1.5 rounded-full bg-leaderboard-700/30" />
+        <span className="size-1.5 rounded-full bg-leaderboard-700/50 dark:bg-accent-300" />
+        <span className="size-1.5 rounded-full bg-leaderboard-700/30 dark:bg-accent-300/60" />
+        <span className="size-1.5 rounded-full bg-leaderboard-700/30 dark:bg-accent-300/60" />
       </div>
 
-      <div className="h-11 rounded-lg border border-leaderboard-700 bg-leaderboard-600/70" />
+      <div className="h-11 rounded-lg border border-leaderboard-700 bg-leaderboard-600/70 dark:border-accent-300 dark:bg-accent-200" />
 
-      <div className="mx-auto h-8 w-24 rounded-lg bg-white/10" />
+      <div className="mx-auto h-8 w-24 rounded-lg bg-white/10 dark:bg-accent-200" />
     </div>
   </div>
 );

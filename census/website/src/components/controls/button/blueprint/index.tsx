@@ -11,7 +11,7 @@ export const variants = {
     'border-custom text-custom hover:border-custom-darker hover:text-custom-darker hover:bg-[color:var(--custom-color)]/[0.06]',
   danger: 'border-red-500/60 text-red-700 hover:border-red-600 hover:text-red-800 hover:bg-red-500/[0.06]',
   alveus:
-    'border-alveus/60 text-alveus-darker hover:border-alveus-darker hover:text-alveus-darker hover:bg-alveus/[0.06]'
+    'border-alveus/60 text-alveus-darker hover:border-alveus-darker hover:text-alveus-darker hover:bg-alveus/[0.06] dark:border-accent-300 dark:text-accent-900 dark:hover:bg-accent-200'
 };
 
 const baseClasses =

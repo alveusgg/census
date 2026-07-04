@@ -408,7 +408,7 @@ export const ConfirmationAnnotationEditor: FC<ConfirmationAnnotationEditorProps>
   return (
     <div className="grid gap-5 lg:grid-cols-[minmax(300px,460px)_minmax(280px,1fr)] lg:items-start">
       <div className="flex min-w-0 flex-col gap-3">
-        <div className="relative mx-auto aspect-square w-full max-w-[460px] overflow-hidden bg-white shadow-sm">
+        <div className="relative mx-auto aspect-square w-full max-w-[460px] overflow-hidden bg-accent-50 shadow-sm">
           <Square
             className="absolute inset-0 h-full w-full select-none"
             draggable={false}

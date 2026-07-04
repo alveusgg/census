@@ -91,7 +91,7 @@ const DesktopMenu = ({
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
             >
-              <Wordmark />
+              <Wordmark className="text-alveus-darker dark:text-accent-900" />
             </motion.span>
           )}
         </AnimatePresence>
@@ -131,7 +131,7 @@ const MobileMenu = ({ closeMenu }: { closeMenu: () => void }) => {
         <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-alveus text-white shadow-sm">
           <SimpleAlveus />
         </div>
-        <Wordmark />
+        <Wordmark className="text-alveus-darker dark:text-accent-900" />
       </div>
       <div className="flex flex-1 flex-col gap-2">
         <MobileMenuItem as={Link} to="/" onClick={closeMenu}>
@@ -169,7 +169,7 @@ function MobileMenuItem<E extends ElementType = 'button'>({ className, as, ...pr
   return (
     <Component
       className={cn(
-        'flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left font-semibold text-alveus-darker hover:bg-alveus hover:bg-opacity-5',
+        'flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left font-semibold text-alveus-darker hover:bg-alveus hover:bg-opacity-5 dark:text-accent-900 dark:hover:bg-accent-200',
         className
       )}
       {...props}
@@ -213,7 +213,7 @@ export function MenuItem<E extends ElementType = 'button'>({ className, as, onCl
         pointerTimeoutHandle.current = null;
       }}
       className={cn(
-        'py-1.5 px-4 flex items-center hover:bg-alveus hover:bg-opacity-5 rounded-lg font-medium text-alveus-darker',
+        'py-1.5 px-4 flex items-center hover:bg-alveus hover:bg-opacity-5 rounded-lg font-medium text-alveus-darker dark:text-accent-900 dark:hover:bg-accent-200',
         open ? 'w-full' : 'w-fit',
         className
       )}

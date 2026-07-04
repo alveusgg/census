@@ -34,7 +34,7 @@ export const SelectionContainer: FC<PropsWithChildren<SelectionContainerProps>> 
         aria-label={selected ? 'unselect item' : 'select item'}
         aria-pressed={selected}
         className={cn(
-          'absolute left-2.5 top-2.5 z-30 flex h-[1.8rem] w-[1.8rem] items-center justify-center rounded-full border-2 shadow-lg bg-white'
+          'absolute left-2.5 top-2.5 z-30 flex h-[1.8rem] w-[1.8rem] items-center justify-center rounded-full border-2 bg-accent-50 shadow-lg'
         )}
         onClick={event => {
           event.stopPropagation();
@@ -44,7 +44,7 @@ export const SelectionContainer: FC<PropsWithChildren<SelectionContainerProps>> 
         <div
           className={cn(
             'h-[1rem] w-[1rem] rounded-full bg-accent-700 transition-colors',
-            selected ? 'bg-accent-700' : 'bg-white'
+            selected ? 'bg-accent-700' : 'bg-accent-50'
           )}
         />
       </button>

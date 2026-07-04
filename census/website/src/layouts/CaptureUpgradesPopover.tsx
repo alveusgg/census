@@ -29,11 +29,11 @@ const statusLabels = {
 };
 
 const statusClasses = {
-  draft: 'border-alveus-darker/20 bg-alveus-darker/30 text-white',
-  pending: 'border-alveus-darker/20 bg-alveus-darker/30 text-white',
-  processing: 'border-alveus-darker/20 bg-alveus-darker/30 text-white',
+  draft: 'border-alveus-darker/20 bg-alveus-darker/30 text-white dark:border-accent-300 dark:bg-accent-200 dark:text-accent-900',
+  pending: 'border-alveus-darker/20 bg-alveus-darker/30 text-white dark:border-accent-300 dark:bg-accent-200 dark:text-accent-900',
+  processing: 'border-alveus-darker/20 bg-alveus-darker/30 text-white dark:border-accent-300 dark:bg-accent-200 dark:text-accent-900',
   complete: 'border-green-950/40 bg-green-700 text-white',
-  archived: 'border-alveus-darker/20 bg-alveus-darker/30 text-white',
+  archived: 'border-alveus-darker/20 bg-alveus-darker/30 text-white dark:border-accent-300 dark:bg-accent-200 dark:text-accent-900',
   failed: 'border-red-950/40 bg-red-700 text-white',
   dead: 'border-red-950/40 bg-red-700 text-white'
 };
@@ -58,7 +58,7 @@ export const CaptureUpgradesPopover = () => {
       <PopoverContent
         align="end"
         sideOffset={10}
-        className="max-h-[80vh] w-[22rem] p-0 max-w-[calc(100vw-2rem)] rounded-2xl border-2 border-alveus-darker/30 bg-alveus text-white shadow-xl"
+        className="max-h-[80vh] w-[22rem] p-0 max-w-[calc(100vw-2rem)] rounded-2xl border-2 border-alveus-darker/30 bg-alveus text-white shadow-xl dark:border-accent-300 dark:bg-accent-100 dark:text-accent-900"
       >
         <div className="flex max-h-[calc(80vh-2rem)] flex-col gap-3 overflow-y-auto pr-3 p-3">
           {query.isLoading && <CaptureUpgradeSkeleton />}
@@ -68,7 +68,7 @@ export const CaptureUpgradesPopover = () => {
             </p>
           )}
           {!query.isLoading && !query.isError && captures.length === 0 && (
-            <p className="rounded-xl border border-white/10 bg-white/10 px-4 py-6 text-center font-medium">
+            <p className="rounded-xl border border-white/10 bg-white/10 px-4 py-6 text-center font-medium dark:border-accent-300 dark:bg-accent-200">
               No clips waiting for your upgrades.
             </p>
           )}
@@ -80,7 +80,7 @@ export const CaptureUpgradesPopover = () => {
                 <Link
                   to={`/captures/${capture.id}`}
                   className={cn(
-                    `grid grid-cols-[8.75rem_1fr] gap-3 rounded-xl border-2 border-white/15 bg-white/15 p-2 transition hover:bg-white/20`,
+                    `grid grid-cols-[8.75rem_1fr] gap-3 rounded-xl border-2 border-white/15 bg-white/15 p-2 transition hover:bg-white/20 dark:border-accent-300 dark:bg-accent-200 dark:hover:bg-accent-300/40`,
                     capture.status !== 'complete' && 'pointer-events-none'
                   )}
                 >
@@ -98,7 +98,7 @@ export const CaptureUpgradesPopover = () => {
                   </div>
                   <div className="flex min-w-0 flex-col justify-center gap-0.5">
                     <p className="font-bold leading-none">Clip #{capture.id}</p>
-                    <p className="text-sm font-medium text-white/90 leading-none">
+                    <p className="text-sm font-medium text-white/90 leading-none dark:text-accent-800">
                       {formatDistanceToNow(capture.capturedAt, {
                         addSuffix: true
                       })}
@@ -115,7 +115,7 @@ export const CaptureUpgradesPopover = () => {
                 </Link>
                 <button
                   type="button"
-                  className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full border-2 border-alveus bg-white text-alveus-darker shadow-sm transition hover:bg-red-600 hover:text-white disabled:pointer-events-none disabled:opacity-60"
+                  className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full border-2 border-alveus bg-white text-alveus-darker shadow-sm transition hover:bg-red-600 hover:text-white disabled:pointer-events-none disabled:opacity-60 dark:border-accent-100 dark:bg-accent-50 dark:text-accent-900"
                   aria-label={`Clear clip ${capture.id}`}
                   title="Clear this upgrade"
                   disabled={markCaptureDead.isPending}
@@ -150,7 +150,7 @@ const CaptureUpgradeSkeleton = () => (
     {Array.from({ length: 3 }).map((_, index) => (
       <div
         key={index}
-        className="grid grid-cols-[8.75rem_1fr] gap-3 rounded-xl border-2 border-white/15 bg-white/15 p-2"
+        className="grid grid-cols-[8.75rem_1fr] gap-3 rounded-xl border-2 border-white/15 bg-white/15 p-2 dark:border-accent-300 dark:bg-accent-200"
       >
         <div className="aspect-video animate-pulse rounded-lg bg-black" />
         <div className="flex flex-col justify-center gap-2">

@@ -51,7 +51,7 @@ export const Controls: FC = () => {
           left: '-0.5rem',
           y: '-50%'
         }}
-        className="absolute z-10 bg-white border border-accent border-opacity-50 text-accent-darker p-1 rounded-full shadow-xl cursor-pointer"
+        className="absolute z-10 cursor-pointer rounded-full border border-accent border-opacity-50 bg-accent-50 p-1 text-accent-900 shadow-xl"
       >
         <SiChevronLeft className="text-3xl" />
       </SlideButton>
@@ -62,7 +62,7 @@ export const Controls: FC = () => {
           right: '-0.5rem',
           y: '-50%'
         }}
-        className="absolute z-10 bg-white border border-accent border-opacity-50 text-accent-darker p-1 rounded-full shadow-xl cursor-pointer"
+        className="absolute z-10 cursor-pointer rounded-full border border-accent border-opacity-50 bg-accent-50 p-1 text-accent-900 shadow-xl"
       >
         <SiChevronRight className="text-3xl" />
       </SlideButton>
@@ -86,7 +86,7 @@ export const SlidePips: FC<{ className?: string }> = ({ className }) => {
           }}
           key={slide}
           className={cn(
-            'w-2 h-2 rounded-full bg-white border border-black opacity-50',
+            'h-2 w-2 rounded-full border border-accent-950/50 bg-accent-50 opacity-50',
             current === slide && 'opacity-100'
           )}
         />

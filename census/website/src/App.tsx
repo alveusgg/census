@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import { RouterProvider } from 'react-router-dom';
 import { ComponentErrorBoundary } from './components/feedback/ErrorBoundary';
 import { Toaster } from './components/feedback/Toaster';
+import { useDarkMode } from './hooks/use-darkmode';
 import { useRouter } from './router';
 import { CritterAuthenticationProvider } from './services/authentication/CritterAuthenticationProvider';
 import { BackstageProvider } from './services/backstage/BackstageProvider';
@@ -12,6 +13,7 @@ import { APIProvider } from './services/query/APIProvider';
 import { QueryProvider } from './services/query/QueryProvider';
 
 export const App = () => {
+  useDarkMode();
   return (
     <Suspense fallback={<Loading />}>
       <QueryProvider>

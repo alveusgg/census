@@ -55,14 +55,14 @@ export const LeaderboardModal: FC<LeaderboardModalProps> = ({
   return (
     <Modal
       {...props}
-      className="w-[calc(100vw-2rem)] max-w-5xl gap-0 overflow-hidden rounded-3xl border border-leaderboard-700 bg-leaderboard-500 p-0 text-white sm:w-full"
+      className="w-[calc(100vw-2rem)] max-w-5xl gap-0 overflow-hidden rounded-3xl border border-leaderboard-700 bg-leaderboard-500 p-0 text-white sm:w-full dark:border-accent-300 dark:bg-accent-100 dark:text-accent-900"
     >
       <DialogTitle className="sr-only">Leaderboard</DialogTitle>
 
       <div className="flex max-h-[min(90vh,52rem)] min-h-[32rem] flex-col overflow-hidden">
-        <div className="flex items-start gap-3 border-b border-white/10 px-5 pb-4 pt-5 sm:px-6 sm:pb-5 sm:pt-6">
+        <div className="flex items-start gap-3 border-b border-white/10 px-5 pb-4 pt-5 sm:px-6 sm:pb-5 sm:pt-6 dark:border-accent-300">
           <div className="flex min-w-0 items-center gap-3">
-            <h2 className="text-2xl font-bold text-white">Leaderboard</h2>
+            <h2 className="text-2xl font-bold text-white dark:text-accent-900">Leaderboard</h2>
           </div>
 
           <div className="ml-auto flex items-center gap-2">
@@ -73,7 +73,7 @@ export const LeaderboardModal: FC<LeaderboardModalProps> = ({
             <button
               type="button"
               onClick={props.close}
-              className="rounded-lg border border-transparent p-2 text-white/90 transition-colors hover:border-white/10 hover:bg-white/5 hover:text-white"
+              className="rounded-lg border border-transparent p-2 text-white/90 transition-colors hover:border-white/10 hover:bg-white/5 hover:text-white dark:text-accent-900 dark:hover:border-accent-300 dark:hover:bg-accent-200"
               aria-label="Close leaderboard"
             >
               <X className="size-5" />
@@ -82,7 +82,7 @@ export const LeaderboardModal: FC<LeaderboardModalProps> = ({
         </div>
 
         {hasLeaderboardEntries && (
-          <div className="border-b border-white/10 px-5 pb-5 pt-4 sm:px-6">
+          <div className="border-b border-white/10 px-5 pb-5 pt-4 sm:px-6 dark:border-accent-300">
             <LeaderboardPodium leaderboard={leaderboard} />
           </div>
         )}
@@ -102,7 +102,7 @@ export const LeaderboardModal: FC<LeaderboardModalProps> = ({
                 ))}
 
                 {!rows.length && !query.isLoading && !query.isFetchingNextPage && (
-                  <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-center text-sm text-white/80">
+                  <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-center text-sm text-white/80 dark:border-accent-300 dark:bg-accent-200 dark:text-accent-800">
                     {totalRanks <= PODIUM_COUNT
                       ? "No leaderboard rows below the podium yet."
                       : "No additional leaderboard rows to show."}
@@ -111,7 +111,7 @@ export const LeaderboardModal: FC<LeaderboardModalProps> = ({
 
                 <InfiniteFeedSentinel
                   className={cn(
-                    "flex min-h-10 items-center justify-center text-sm text-white/80",
+                    "flex min-h-10 items-center justify-center text-sm text-white/80 dark:text-accent-800",
                     {
                       hidden: !query.hasNextPage && !query.isFetchingNextPage,
                     },
@@ -135,7 +135,7 @@ export const LeaderboardModal: FC<LeaderboardModalProps> = ({
         </ScrollArea>
 
         {place.me && hasLeaderboardEntries && (
-          <div className="border-t border-white/10 bg-leaderboard-500/95 px-5 py-4 backdrop-blur sm:px-6">
+          <div className="border-t border-white/10 bg-leaderboard-500/95 px-5 py-4 backdrop-blur sm:px-6 dark:border-accent-300 dark:bg-accent-100/95">
             <LeaderboardRow
               place={place.place}
               points={place.me.points}

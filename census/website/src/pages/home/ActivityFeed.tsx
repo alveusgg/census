@@ -141,7 +141,7 @@ const ActivityItem: FC<ActivityItemProps> = ({ achievement, index }) => {
         <p className="truncate text-base leading-tight">{message}</p>
       </div>
       <div className="flex flex-col items-end justify-end">
-        <span className="shrink-0 rounded-lg bg-leaderboard-500 px-3 py-1 font-mono text-base font-bold text-white shadow-sm">
+        <span className="shrink-0 rounded-lg bg-leaderboard-500 px-3 py-1 font-mono text-base font-bold text-white shadow-sm dark:border dark:border-leaderboard-300 dark:bg-leaderboard-700 dark:text-leaderboard-50">
           +{achievement.points}
         </span>
       </div>
@@ -165,7 +165,7 @@ export const ActivityFeedSkeleton: FC = () => {
           >
             <Skeleton className="size-5 shrink-0 rounded-sm" />
             <Skeleton className="h-4 flex-1" />
-            <Skeleton className="h-6 w-12 shrink-0 rounded-lg" />
+            <Skeleton className="h-6 w-12 shrink-0 rounded-lg dark:bg-leaderboard-700" />
           </li>
         ))}
       </ul>

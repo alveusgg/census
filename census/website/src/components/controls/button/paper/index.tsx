@@ -9,7 +9,8 @@ export const variants = {
     'bg-accent-700 bg-opacity-[0.05] hover:bg-opacity-[0.08] border border-accent-700 border-opacity-10 text-accent-900',
   custom: 'bg-custom hover:bg-custom-darker text-white',
   danger: 'bg-red-500 hover:bg-red-600 text-white',
-  alveus: 'bg-alveus hover:bg-alveus-darker text-white'
+  alveus:
+    'bg-alveus hover:bg-alveus-darker text-white dark:bg-[#6f7a68] dark:text-white dark:ring-1 dark:ring-inset dark:ring-accent-300 dark:hover:bg-[#7c8874]'
 };
 
 export const Button = forwardRef<

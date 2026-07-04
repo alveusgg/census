@@ -7,7 +7,7 @@ export const Polaroid: FC<PropsWithChildren & ComponentProps<'div'>> = ({ childr
     <GalleryProvider loop>
       <div
         className={cn(
-          'relative aspect-square w-full max-w-m h-fit p-6 bg-white border border-accent border-opacity-50 rounded-md',
+          'relative aspect-square w-full max-w-m h-fit rounded-md border border-accent border-opacity-50 bg-accent-50 p-6',
           className
         )}
         {...props}

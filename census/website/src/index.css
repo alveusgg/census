@@ -6,6 +6,7 @@
 
 html {
   font-size: 14px;
+  color-scheme: light;
 }
 
 :root {
@@ -37,11 +38,39 @@ html {
   --leaderboard-color-950: 49 16 69;
 }
 
+:root.dark {
+  color-scheme: dark;
+
+  --accent-color-50: 17 21 16;
+  --accent-color-100: 24 29 22;
+  --accent-color-200: 37 45 34;
+  --accent-color-300: 65 76 57;
+  --accent-color-400: 247 207 70;
+  --accent-color-500: 245 191 42;
+  --accent-color-600: 239 158 17;
+  --accent-color-700: 244 190 83;
+  --accent-color-800: 213 202 175;
+  --accent-color-900: 250 248 235;
+  --accent-color-950: 255 254 245;
+
+  --leaderboard-color-50: 250 248 255;
+  --leaderboard-color-100: 232 223 245;
+  --leaderboard-color-200: 192 171 222;
+  --leaderboard-color-300: 154 123 197;
+  --leaderboard-color-400: 123 91 171;
+  --leaderboard-color-500: 31 24 43;
+  --leaderboard-color-600: 42 31 60;
+  --leaderboard-color-700: 72 51 102;
+  --leaderboard-color-800: 102 75 140;
+  --leaderboard-color-900: 182 149 229;
+  --leaderboard-color-950: 238 229 255;
+}
+
 /*
- * shadcn/ui tokens are wired to the Alveus warm cream/brown ramp so any
- * component installed via `pnpm dlx shadcn add ...` inherits the project
- * look automatically. The HSL values mirror the RGB --accent-color-* ramp
- * above; keep them in sync if the brand palette ever shifts.
+ * shadcn/ui tokens are wired to the Alveus ramp so any component installed via
+ * `pnpm dlx shadcn add ...` inherits the project look automatically. The light
+ * HSL values mirror the RGB --accent-color-* ramp above; keep both light and
+ * dark ramps in sync if the brand palette ever shifts.
  *
  *   --background       = accent-50    (cream surface)
  *   --foreground       = accent-900   (deep brown ink)
@@ -88,39 +117,39 @@ html {
     --sidebar-border: 48 74% 91%;
     --sidebar-ring: 26 86% 37%;
   }
-  .dark {
-    --background: 26 72% 17%;
-    --foreground: 54 100% 98%;
-    --card: 26 72% 17%;
-    --card-foreground: 54 100% 98%;
-    --popover: 26 72% 17%;
-    --popover-foreground: 54 100% 98%;
+  :root.dark {
+    --background: 100 14% 6%;
+    --foreground: 55 60% 95%;
+    --card: 102 14% 10%;
+    --card-foreground: 55 60% 95%;
+    --popover: 102 14% 10%;
+    --popover-foreground: 55 60% 95%;
     --primary: 46 92% 62%;
-    --primary-foreground: 26 72% 17%;
-    --secondary: 24 82% 26%;
-    --secondary-foreground: 54 100% 98%;
-    --muted: 24 82% 26%;
-    --muted-foreground: 42 79% 85%;
-    --accent: 23 79% 31%;
-    --accent-foreground: 54 100% 98%;
+    --primary-foreground: 100 14% 6%;
+    --secondary: 101 14% 13%;
+    --secondary-foreground: 55 60% 95%;
+    --muted: 101 14% 13%;
+    --muted-foreground: 46 30% 76%;
+    --accent: 102 14% 18%;
+    --accent-foreground: 55 60% 95%;
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 54 100% 98%;
-    --border: 23 79% 31%;
-    --input: 23 79% 31%;
+    --destructive-foreground: 55 60% 95%;
+    --border: 103 14% 26%;
+    --input: 103 14% 26%;
     --ring: 46 92% 62%;
     --chart-1: 46 92% 62%;
     --chart-2: 38 87% 50%;
-    --chart-3: 26 86% 37%;
-    --chart-4: 42 79% 85%;
-    --chart-5: 23 79% 31%;
+    --chart-3: 102 22% 55%;
+    --chart-4: 43 48% 72%;
+    --chart-5: 280 40% 64%;
 
-    --sidebar-background: 24 82% 26%;
-    --sidebar-foreground: 54 100% 98%;
+    --sidebar-background: 102 14% 10%;
+    --sidebar-foreground: 55 60% 95%;
     --sidebar-primary: 46 92% 62%;
-    --sidebar-primary-foreground: 26 72% 17%;
-    --sidebar-accent: 23 79% 31%;
-    --sidebar-accent-foreground: 54 100% 98%;
-    --sidebar-border: 23 79% 31%;
+    --sidebar-primary-foreground: 100 14% 6%;
+    --sidebar-accent: 102 14% 18%;
+    --sidebar-accent-foreground: 55 60% 95%;
+    --sidebar-border: 103 14% 26%;
     --sidebar-ring: 46 92% 62%;
   }
 }
@@ -131,5 +160,32 @@ html {
   }
   body {
     @apply text-foreground;
+  }
+}
+
+@layer utilities {
+  :root.dark .shadow:not(.juicy-control),
+  :root.dark .shadow-sm:not(.juicy-control),
+  :root.dark .shadow-md:not(.juicy-control),
+  :root.dark .shadow-lg:not(.juicy-control),
+  :root.dark .shadow-xl:not(.juicy-control),
+  :root.dark .shadow-2xl:not(.juicy-control),
+  :root.dark .shadow-inner:not(.juicy-control),
+  :root.dark [class*='shadow-[']:not(.juicy-control) {
+    --tw-shadow: 0 0 #0000 !important;
+    --tw-shadow-colored: 0 0 #0000 !important;
+    box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow) !important;
+  }
+
+  :root.dark .drop-shadow,
+  :root.dark .drop-shadow-sm,
+  :root.dark .drop-shadow-md,
+  :root.dark .drop-shadow-lg,
+  :root.dark .drop-shadow-xl,
+  :root.dark .drop-shadow-2xl,
+  :root.dark [class*='drop-shadow'] {
+    --tw-drop-shadow: drop-shadow(0 0 #0000) !important;
+    filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate)
+      var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow) !important;
   }
 }

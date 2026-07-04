@@ -26,7 +26,7 @@ export const LeaderboardPodium: FC<{ leaderboard: LeaderboardPodiumEntry[] }> = 
         >
           <UserLink
             user={second}
-            className="block truncate font-sans text-base font-bold leading-tight text-white"
+            className="block truncate font-sans text-base font-bold leading-tight text-white dark:text-accent-900"
           />
           <Counter className="text-3xl" duration={1} delay={1.25}>
             {second.points}
@@ -44,7 +44,7 @@ export const LeaderboardPodium: FC<{ leaderboard: LeaderboardPodiumEntry[] }> = 
         >
           <UserLink
             user={first}
-            className="block truncate font-sans text-base font-bold leading-tight text-white"
+            className="block truncate font-sans text-base font-bold leading-tight text-white dark:text-accent-900"
           />
           <Counter className="text-4xl" duration={1} delay={0.5}>
             {first.points}
@@ -63,7 +63,7 @@ export const LeaderboardPodium: FC<{ leaderboard: LeaderboardPodiumEntry[] }> = 
         >
           <UserLink
             user={third}
-            className="block truncate font-sans text-base font-bold leading-tight text-white"
+            className="block truncate font-sans text-base font-bold leading-tight text-white dark:text-accent-900"
           />
           <Counter className="text-3xl" duration={1} delay={2.5}>
             {third.points}

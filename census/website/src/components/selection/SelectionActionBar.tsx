@@ -19,7 +19,7 @@ export const SelectionActionBar: FC<PropsWithChildren<{ className?: string }>> =
         >
           <div
             className={cn(
-              'mx-auto flex w-full max-w-3xl items-center gap-2 rounded-xl border border-accent-700/20 bg-white/90 p-2 shadow-xl backdrop-blur',
+              'mx-auto flex w-full max-w-3xl items-center gap-2 rounded-xl border border-accent-700/20 bg-accent-50/90 p-2 shadow-xl backdrop-blur',
               className
             )}
           >

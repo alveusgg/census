@@ -53,14 +53,17 @@ export const CreateFromClipModal: FC<ModalProps> = props => {
   const navigate = useNavigate();
 
   return (
-    <Modal className="bg-alveus-darker text-white px-5 py-4 w-full max-w-5xl" {...props}>
+    <Modal
+      className="bg-alveus-darker text-white px-5 py-4 w-full max-w-5xl dark:border dark:border-accent-300 dark:bg-accent-100 dark:text-accent-900"
+      {...props}
+    >
       <DialogTitle className="sr-only">Create a capture from a twitch clip</DialogTitle>
       <AutoAnimatedContainer>
         <div className="flex flex-col gap-4 py-1">
           <Form className="flex gap-4 items-center" methods={methods} onSubmit={onSubmit}>
             <SiTwitch className="text-3xl" />
             <Field name="url">
-              <TextField autoFocus placeholder="Paste a twitch clip link" variant="alveus" />
+              <TextField autoFocus placeholder="Paste a twitch clip link" variant="alveus" className="dark:bg-accent-50" />
             </Field>
             <Button
               type="submit"
@@ -87,7 +90,7 @@ export const CreateFromClipModal: FC<ModalProps> = props => {
           )}
 
           {createClip.data && createClip.data.result === 'error' && (
-            <div className="flex justify-center items-center bg-[#6C2A2A] p-4 rounded-md">
+            <div className="flex justify-center items-center bg-[#6C2A2A] p-4 rounded-md dark:border dark:border-red-300/40 dark:bg-red-950/55 dark:text-red-200">
               <p>{messages[createClip.data.type]}</p>
             </div>
           )}
@@ -98,7 +101,7 @@ export const CreateFromClipModal: FC<ModalProps> = props => {
 };
 
 const ClipCreationSteps: FC = () => (
-  <div className="border-t border-white/10 pt-5">
+  <div className="border-t border-white/10 pt-5 dark:border-accent-300">
     <div className="grid grid-cols-1 gap-5 md:grid-cols-3 md:gap-0 p-2">
       <ClipTutorialStep>
         <ClipTutorialTitle>Step 1</ClipTutorialTitle>
@@ -128,10 +131,10 @@ const ClipTutorialTitle: FC<ComponentProps<'h3'>> = props => (
   <h3 className="text-3xl font-serif tracking-wide font-bold" {...props} />
 );
 const ClipTutorialDescription: FC<ComponentProps<'p'>> = props => (
-  <p className="mt-3 font-medium leading-tight text-white/90" {...props} />
+  <p className="mt-3 font-medium leading-tight text-white/90 dark:text-accent-800" {...props} />
 );
 const ClipTutorialStep: FC<ComponentProps<'div'>> = props => (
-  <div className="md:border-l md:border-white/10 md:first:border-l-0 md:px-5 first:pl-0 last:pr-0" {...props} />
+  <div className="md:border-l md:border-white/10 md:first:border-l-0 md:px-5 first:pl-0 last:pr-0 dark:md:border-accent-300" {...props} />
 );
 
 const messages: Record<
@@ -215,14 +218,14 @@ export const ClipCreationProgress: FC<ClipCreationProgressProps> = ({ id, onComp
 
   if (capture.data.status === 'failed') {
     return (
-      <div className="flex justify-center items-center bg-[#6C2A2A] p-4 rounded-md w-full">
+      <div className="flex justify-center items-center bg-[#6C2A2A] p-4 rounded-md w-full dark:border dark:border-red-300/40 dark:bg-red-950/55 dark:text-red-200">
         <p>Sorry, we failed to create a capture from this clip. Please try again.</p>
       </div>
     );
   }
 
   return (
-    <div className="flex justify-between items-center gap-3 bg-alveus p-4 rounded-md w-full">
+    <div className="flex justify-between items-center gap-3 bg-alveus p-4 rounded-md w-full dark:border dark:border-accent-300 dark:bg-accent-200 dark:text-accent-900">
       <ProgressMessageRotator />
       <Loader />
     </div>

@@ -13,7 +13,7 @@ export const LeaderboardRow: FC<LeaderboardRowProps> = ({ place, points, userId,
   return (
     <div
       className={cn(
-        'flex w-full items-center justify-between gap-3 rounded-lg border border-leaderboard-700 bg-leaderboard-600 px-4 py-2.5 text-base text-white shadow-inner',
+        'flex w-full items-center justify-between gap-3 rounded-lg border border-leaderboard-700 bg-leaderboard-600 px-4 py-2.5 text-base text-white shadow-inner dark:border-accent-300 dark:bg-accent-200 dark:text-accent-900',
         className
       )}
       {...props}

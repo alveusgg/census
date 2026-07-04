@@ -99,6 +99,8 @@ const getUserAgreementId = (identifications: IdentificationType[], userId: numbe
 
 const PLANT_TAXON_ID = 47126;
 const USER_LINK_LIST_LIMIT = 3;
+const TWITCH_CLIP_BUTTON_CLASS =
+  'rounded-full w-10 h-10 p-1 flex items-center justify-center bg-purple-100 text-purple-800 transition-colors hover:bg-purple-200 dark:bg-leaderboard-700 dark:text-leaderboard-50 dark:ring-1 dark:ring-inset dark:ring-leaderboard-300/70 dark:hover:bg-leaderboard-800';
 
 const UserLinkList: FC<{ users: { id: number; username: string }[] }> = ({ users }) => {
   const uniqueUsers = Array.from(new Map(users.map(user => [user.username, user])).values());
@@ -243,7 +245,7 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
                       rel="noreferrer"
                       to={`https://clips.twitch.tv/${clipIds[0]}`}
                       variant={false}
-                      className="rounded-full w-10 h-10 p-1 flex items-center justify-center text-purple-800 bg-purple-700 bg-opacity-10 hover:bg-opacity-20"
+                      className={TWITCH_CLIP_BUTTON_CLASS}
                     >
                       <SiTwitch className="text-2xl" />
                     </Link>
@@ -253,13 +255,21 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
                   <DropdownMenu>
                     <DropdownMenuTrigger
                       aria-label="twitch clips"
-                      className="rounded-full w-10 h-10 p-1 flex items-center justify-center text-purple-800 bg-purple-700 bg-opacity-10 hover:bg-opacity-20"
+                      className={TWITCH_CLIP_BUTTON_CLASS}
                     >
                       <SiTwitch className="text-2xl" />
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent
+                      align="end"
+                      sideOffset={8}
+                      className="min-w-36 border-purple-200 bg-purple-50 text-purple-900 dark:border-leaderboard-300/60 dark:bg-leaderboard-500 dark:text-leaderboard-50"
+                    >
                       {clipIds.map((clipId, index) => (
-                        <DropdownMenuItem key={clipId} asChild>
+                        <DropdownMenuItem
+                          key={clipId}
+                          asChild
+                          className="font-semibold text-purple-900 focus:bg-purple-100 focus:text-purple-950 dark:text-leaderboard-50 dark:focus:bg-leaderboard-700 dark:focus:text-leaderboard-50"
+                        >
                           <a href={`https://clips.twitch.tv/${clipId}`} target="_blank" rel="noreferrer">
                             <SiTwitch className="text-lg" />
                             Clip #{index + 1}
@@ -280,7 +290,7 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
                     })
                   }
                   className={cn(
-                    'rounded-full w-10 h-10 p-1 flex items-center justify-center text-red-800 bg-red-100 hover:bg-red-200'
+                    'rounded-full w-10 h-10 p-1 flex items-center justify-center text-red-800 bg-red-100 hover:bg-red-200 dark:bg-red-950/55 dark:text-red-200 dark:ring-1 dark:ring-inset dark:ring-red-300/40 dark:hover:bg-red-900/70'
                   )}
                 >
                   <SiTrash className="text-2xl" />

@@ -38,7 +38,7 @@ export const SeasonProgressTile: FC = () => {
         </p>
         <div className="h-2.5 w-full rounded-full bg-accent-200 overflow-hidden">
           <div
-            className="h-full rounded-full bg-leaderboard-500 transition-all duration-500"
+            className="h-full rounded-full bg-leaderboard-500 transition-all duration-500 dark:bg-leaderboard-900"
             style={{ width: `${(totalShinies - shiniesLeft) * 100}%` }}
           />
         </div>

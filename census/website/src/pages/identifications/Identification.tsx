@@ -275,7 +275,7 @@ const AnnotationCarouselButton: FC<{
     <button
       aria-label={`${direction === 'next' ? 'next' : 'previous'} annotation image`}
       className={cn(
-        'absolute top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-accent border-opacity-50 bg-white p-1 text-accent-900 shadow-xl',
+        'absolute top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-accent border-opacity-50 bg-accent-50 p-1 text-accent-900 shadow-xl',
         'disabled:pointer-events-none disabled:opacity-0',
         direction === 'next' ? '-right-2' : '-left-2'
       )}
@@ -352,7 +352,7 @@ const ConfirmationAnnotationImageCarousel: FC<{ items: ConfirmationAnnotationIte
             >
               <AnnotationNumberBadge className="absolute left-0 top-0 z-10 h-7 min-w-7" number={item.number} />
               <div
-                className="ml-3 mt-2 h-36 overflow-hidden rounded-sm border border-accent-300/80 bg-white p-2"
+                className="ml-3 mt-2 h-36 overflow-hidden rounded-sm border border-accent-300/80 bg-accent-50 p-2"
                 style={{ width: getAnnotationCarouselImageWidth(item.crop) }}
               >
                 <AnnotationCropImage annotation={item.annotation} image={item.image} width={640} />

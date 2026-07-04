@@ -12,7 +12,7 @@ export const Header = () => {
   const hasBeenOnboarded = useHasPermission('vote');
 
   return (
-    <header className="relative flex h-[4rem] items-center justify-between px-4 pt-2 font-semibold text-alveus-darker sm:pl-8 sm:pr-12">
+    <header className="relative flex h-[4rem] items-center justify-between px-4 pt-2 font-semibold text-alveus-darker dark:text-accent-900 sm:pl-8 sm:pr-12">
       <CreateFromClipModal {...createFromClipModalProps} />
       <div className="flex items-center divide-x divide-alveus divide-opacity-50 space-x-4">
         <MenuTrigger />
@@ -34,7 +34,7 @@ export const Header = () => {
           </Link>
         )}
       </div>
-      <div className="pointer-events-none absolute inset-y-0 left-4 right-4 border-b border-dashed border-alveus border-opacity-50 sm:left-8 sm:right-12" />
+      <div className="pointer-events-none absolute inset-y-0 left-4 right-4 border-b border-dashed border-alveus border-opacity-50 dark:border-accent-300 sm:left-8 sm:right-12" />
     </header>
   );
 };

@@ -28,7 +28,9 @@ const FeedbackVoteChip: FC<{ feedback: Feedback; tone: VoteTone }> = ({ feedback
     <span
       className={cn(
         'inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-sm font-bold',
-        tone === 'agree' ? 'border-purple-100 bg-purple-50 text-purple-600' : 'border-red-100 bg-red-50 text-red-600'
+        tone === 'agree'
+          ? 'border-purple-100 bg-purple-50 text-purple-600 dark:border-leaderboard-300/70 dark:bg-leaderboard-900/20 dark:text-leaderboard-50'
+          : 'border-red-100 bg-red-50 text-red-600 dark:border-red-300/50 dark:bg-red-950/35 dark:text-red-200'
       )}
     >
       <Icon className="shrink-0" />
@@ -48,7 +50,7 @@ const FeedbackCommentCard: FC<{
   return (
     <article
       className={cn(
-        'relative min-w-0 rounded-lg border border-accent-200 bg-accent-50 px-3 py-2.5 text-accent-900',
+        'relative min-w-0 rounded-lg border border-accent-200 bg-accent-50 px-3 py-2.5 text-accent-900 dark:border-accent-300 dark:bg-accent-100',
         onRemove && 'pr-10'
       )}
     >
@@ -58,7 +60,7 @@ const FeedbackCommentCard: FC<{
           aria-label={`delete comment from ${feedback.submitter.username}`}
           disabled={isRemoving}
           onClick={() => onRemove(feedback)}
-          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-red-100 text-red-800 hover:bg-red-200 disabled:pointer-events-none disabled:opacity-50"
+          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-red-100 text-red-800 hover:bg-red-200 disabled:pointer-events-none disabled:opacity-50 dark:bg-red-950/55 dark:text-red-200 dark:ring-1 dark:ring-inset dark:ring-red-300/40 dark:hover:bg-red-900/70"
         >
           <span
             aria-hidden="true"
@@ -71,7 +73,7 @@ const FeedbackCommentCard: FC<{
       <p
         className={cn(
           'mt-2 flex min-w-0 items-center gap-1.5 text-sm font-semibold',
-          tone === 'agree' ? 'text-purple-600' : 'text-red-600'
+          tone === 'agree' ? 'text-purple-600 dark:text-leaderboard-900' : 'text-red-600 dark:text-red-300'
         )}
       >
         <Icon className="shrink-0" />
@@ -94,20 +96,22 @@ const FeedbackSection: FC<{
   if (total === 0) return null;
 
   return (
-    <section className="min-w-0 rounded-xl border border-accent-200 bg-white/45 p-4 shadow-sm">
+    <section className="min-w-0 rounded-xl border border-accent-200 bg-accent-50/75 p-4 shadow-sm dark:border-accent-300 dark:bg-accent-100/70">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="flex min-w-0 items-center gap-2 text-lg font-bold text-accent-900">
           <span
             className={cn(
-              'flex size-8 shrink-0 items-center justify-center rounded-full',
-              tone === 'agree' ? 'bg-purple-50 text-purple-600' : 'bg-red-50 text-red-600'
+              'flex size-8 shrink-0 items-center justify-center rounded-full border border-transparent',
+              tone === 'agree'
+                ? 'bg-purple-50 text-purple-600 dark:border-leaderboard-300/70 dark:bg-leaderboard-900/20 dark:text-leaderboard-50'
+                : 'bg-red-50 text-red-600 dark:border-red-300/50 dark:bg-red-950/35 dark:text-red-200'
             )}
           >
             <Icon />
           </span>
           <span className="min-w-0 truncate">{title}</span>
         </h2>
-        <span className="shrink-0 rounded-full bg-accent-100 px-2.5 py-1 text-sm font-bold text-accent-800">
+        <span className="shrink-0 rounded-full bg-accent-100 px-2.5 py-1 text-sm font-bold text-accent-800 dark:bg-accent-200 dark:text-accent-900">
           {total} {total === 1 ? 'person' : 'people'}
         </span>
       </div>
@@ -145,7 +149,7 @@ const FeedbackSection: FC<{
 
 const SuggestionCommentCard: FC<{ feedback: Feedback }> = ({ feedback }) => {
   return (
-    <figure className="min-w-0 rounded-lg border border-accent-200 bg-accent-50 px-3 py-2.5 text-accent-900">
+    <figure className="min-w-0 rounded-lg border border-accent-200 bg-accent-50 px-3 py-2.5 text-accent-900 dark:border-accent-300 dark:bg-accent-100">
       <blockquote>
         <p className="break-words text-pretty leading-snug">{feedback.comment}</p>
       </blockquote>
@@ -247,7 +251,7 @@ const FeedbackList: FC<FeedbackModalProps & Pick<ModalProps<FeedbackModalProps>,
             />
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed border-accent-300 bg-accent-50 px-4 py-8 text-center text-sm font-medium text-accent-800">
+          <div className="rounded-xl border border-dashed border-accent-300 bg-accent-50 px-4 py-8 text-center text-sm font-medium text-accent-800 dark:bg-accent-100 dark:text-accent-800">
             No feedback has been submitted yet.
           </div>
         )}
@@ -258,7 +262,7 @@ const FeedbackList: FC<FeedbackModalProps & Pick<ModalProps<FeedbackModalProps>,
 
 export const FeedbackModal: FC<ModalProps<FeedbackModalProps>> = props => {
   return (
-    <Modal className="w-[calc(100vw-2rem)] max-w-2xl bg-accent-100 p-4 sm:p-5" {...props}>
+    <Modal className="w-[calc(100vw-2rem)] max-w-2xl bg-accent-100 p-4 dark:border dark:border-accent-300 sm:p-5" {...props}>
       {props.props?.feedback && <FeedbackList feedback={props.props.feedback} open={props.open} />}
     </Modal>
   );
