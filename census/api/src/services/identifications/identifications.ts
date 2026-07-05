@@ -372,7 +372,7 @@ export const addFeedbackToIdentification = async (
         feedback => feedback.identificationId === identificationId
       );
 
-      const pointsAwarded = existingFeedbackInCategory.length === 0 ? 20 + (comment ? 20 : 0) : 0;
+      const pointsAwarded = existingFeedbackInCategory.length === 0 ? 10 + (comment ? 30 : 0) : 0;
 
       if (type === 'agree') {
         const feedbackToKeep = existingFeedbackForTarget[0] ?? existingFeedbackInCategory[0];
