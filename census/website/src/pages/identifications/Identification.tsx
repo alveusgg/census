@@ -436,7 +436,7 @@ const Identification: FC<IdentificationProps> = ({ identificationId }) => {
   return (
     <div className="@container w-full">
       <div className="flex min-h-0 flex-col gap-4 @lg:flex-row @lg:items-start">
-        <div className="flex min-h-0 flex-col gap-3">
+        <div className="flex min-h-0 w-full min-w-0 flex-col gap-3 @lg:w-96 @lg:shrink-0">
           <Polaroid className="mx-auto p-3 sm:p-4 w-96">
             <Preloader>
               {images.map(image => (
@@ -458,7 +458,7 @@ const Identification: FC<IdentificationProps> = ({ identificationId }) => {
             <SlidePips />
           </Polaroid>
 
-          <Note className="text-accent-900">
+          <Note className="min-w-0 text-accent-900">
             <div className="pt-3 text-lg font-bold">
               <SummaryRow label="Captured">
                 by <UserLinkList users={capturedBy} />
