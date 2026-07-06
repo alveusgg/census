@@ -1,7 +1,7 @@
 import { DownstreamError, NotFoundError } from '@alveusgg/error';
 import { Mux } from '@mux/mux-node';
 import { isBefore } from 'date-fns';
-import { and, asc, count, desc, eq, gte, inArray, isNull, lte, ne, or, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, inArray, isNull, lte, notInArray, or, sql } from 'drizzle-orm';
 import { Pagination } from '../../api/observation.js';
 import { Capture, captures, sightings } from '../../db/schema/index.js';
 import { useDB } from '../../db/transaction.js';
@@ -12,6 +12,14 @@ import { getCurrentSeason } from '../seasons/season.js';
 import { getClip } from '../twitch/index.js';
 
 const MAX_UPGRADE_ATTEMPTS = 15;
+// 'dead' means the retry queue exhausted its attempts, 'user_killed' means the
+// user explicitly cleared the capture. Both are terminal.
+const KILLED_STATUSES: Capture['status'][] = ['dead', 'user_killed'];
+
+// Statuses the capture queue is allowed to transition from. Terminal statuses
+// ('dead', 'user_killed') and 'complete' must never be overwritten by the
+// queue, e.g. when a user kills a capture while an attempt is in flight.
+const QUEUE_OWNED_STATUSES: Capture['status'][] = ['pending', 'processing', 'failed'];
 
 interface ClipAlreadyUsedResult {
   result: 'error';
@@ -121,6 +129,21 @@ export const createFromClip = async (
         result: 'success',
         type: 'retry_clip_capture',
         capture: existing
+      };
+    }
+
+    // Resubmitting a killed clip requeues it with a fresh retry budget
+    if (existing.status === 'dead' || existing.status === 'user_killed') {
+      const [capture] = await db
+        .update(captures)
+        .set({ status: 'pending', upgradeAttemptCount: 1, retryUpgradeFrom: null })
+        .where(eq(captures.id, existing.id))
+        .returning();
+
+      return {
+        result: 'success',
+        type: 'retry_clip_capture',
+        capture
       };
     }
 
@@ -266,18 +289,18 @@ export const getUnconvertedCapturesForUser = async (userId: number) => {
     .select({ capture: captures })
     .from(captures)
     .leftJoin(sightings, and(eq(sightings.captureId, captures.id), eq(sightings.observedBy, userId)))
-    .where(and(eq(captures.capturedBy, userId), ne(captures.status, 'dead'), isNull(sightings.id)))
+    .where(and(eq(captures.capturedBy, userId), notInArray(captures.status, KILLED_STATUSES), isNull(sightings.id)))
     .orderBy(desc(captures.capturedAt))
     .limit(10);
 
   return rows.map(row => row.capture);
 };
 
-export const markCaptureDeadForUser = async (id: number, userId: number) => {
+export const killCaptureForUser = async (id: number, userId: number) => {
   const db = useDB();
   const [capture] = await db
     .update(captures)
-    .set({ status: 'dead', retryUpgradeFrom: null })
+    .set({ status: 'user_killed', retryUpgradeFrom: null })
     .where(and(eq(captures.id, id), eq(captures.capturedBy, userId)))
     .returning();
 
@@ -297,7 +320,7 @@ export const getEncompassingCaptures = async (startDate: Date, endDate: Date) =>
   const db = useDB();
   return await db.query.captures.findMany({
     where: and(
-      ne(captures.status, 'dead'),
+      notInArray(captures.status, KILLED_STATUSES),
       lte(captures.startCaptureAt, startDate),
       gte(captures.endCaptureAt, endDate)
     )
@@ -309,7 +332,7 @@ export const getEncompassedByCaptures = async (startDate: Date, endDate: Date) =
   const db = useDB();
   return await db.query.captures.findMany({
     where: and(
-      ne(captures.status, 'dead'),
+      notInArray(captures.status, KILLED_STATUSES),
       gte(captures.startCaptureAt, startDate),
       lte(captures.endCaptureAt, endDate)
     )
@@ -321,7 +344,7 @@ export const getOverlappingCaptures = async (startDate: Date, endDate: Date) => 
   const db = useDB();
   return await db.query.captures.findMany({
     where: and(
-      ne(captures.status, 'dead'),
+      notInArray(captures.status, KILLED_STATUSES),
       or(
         and(gte(captures.endCaptureAt, startDate), lte(captures.startCaptureAt, startDate)),
         and(gte(captures.startCaptureAt, endDate), lte(captures.endCaptureAt, endDate))
@@ -361,14 +384,29 @@ export const completeCaptureRequest = async (id: number, videoUrl: string, lowQu
     updated.muxPlaybackId = playbackId;
   }
 
-  const [capture] = await db.update(captures).set(updated).where(eq(captures.id, id)).returning();
+  const [capture] = await db
+    .update(captures)
+    .set(updated)
+    .where(and(eq(captures.id, id), inArray(captures.status, QUEUE_OWNED_STATUSES)))
+    .returning();
 
   return capture;
 };
 
+/**
+ * Claims a capture for processing. Returns the updated capture, or undefined
+ * if the capture is no longer in a queue-owned status (e.g. the user killed it
+ * between it being picked up and the attempt starting).
+ */
 export const processingCaptureRequest = async (id: number) => {
   const db = useDB();
-  await db.update(captures).set({ status: 'processing', retryUpgradeFrom: null }).where(eq(captures.id, id));
+  const [capture] = await db
+    .update(captures)
+    .set({ status: 'processing', retryUpgradeFrom: null })
+    .where(and(eq(captures.id, id), inArray(captures.status, ['pending', 'failed'])))
+    .returning();
+
+  return capture;
 };
 
 export const failCaptureRequest = async (id: number) => {
@@ -383,42 +421,87 @@ export const failCaptureRequest = async (id: number) => {
         end
       `,
       upgradeAttemptCount: sql`${captures.upgradeAttemptCount} + 1`,
+      // Exponential backoff per capture (30s, 1m, 2m, ... capped at 1h) so the
+      // retry budget spans many hours rather than being burned within the
+      // first hour of a downstream outage.
       retryUpgradeFrom: sql`
         case
           when ${captures.upgradeAttemptCount} + 1 > ${MAX_UPGRADE_ATTEMPTS} then null
-          else now() + (${captures.upgradeAttemptCount} * interval '30 seconds')
+          else now() + least(interval '30 seconds' * power(2, ${captures.upgradeAttemptCount} - 1), interval '1 hour')
         end
       `
     })
-    .where(eq(captures.id, id));
+    .where(and(eq(captures.id, id), inArray(captures.status, QUEUE_OWNED_STATUSES)));
 };
 
+/**
+ * Requeues captures stranded in 'processing' by a crash or deploy so they are
+ * retried instead of being stuck forever. Doesn't consume a retry attempt.
+ * Captures currently being completed by this process can be excluded.
+ *
+ * Retry times are jittered over a window so that a deploy with a backlog of
+ * stranded captures doesn't hammer the cam manager all at once.
+ */
+export const requeueStuckProcessingCaptures = async (excludeIds: number[] = []) => {
+  const db = useDB();
+  const conditions = [eq(captures.status, 'processing')];
+  if (excludeIds.length > 0) conditions.push(notInArray(captures.id, excludeIds));
+
+  return await db
+    .update(captures)
+    .set({ status: 'failed', retryUpgradeFrom: sql`now() + (random() * interval '10 minutes')` })
+    .where(and(...conditions))
+    .returning({ id: captures.id });
+};
+
+const MUX_ASSET_POLL_INTERVAL_MS = 1_000;
+const MUX_ASSET_TIMEOUT_MS = 10 * 60_000;
+const MUX_ASSET_MAX_CONSECUTIVE_POLL_ERRORS = 5;
+
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 const waitForMuxAsset = async (mux: Mux, assetId: string) => {
-  return new Promise<void>((resolve, reject) => {
-    const interval = setInterval(() => {
-      mux.video.assets
-        .retrieve(assetId)
-        .then(asset => {
-          console.log(`Mux asset ${assetId} is ${asset.status}`);
-          if (asset.status === 'errored') {
-            console.error(`Mux asset ${assetId} is in error state`, asset);
-            reject(
-              new DownstreamError(
-                'mux',
-                `Mux asset ${assetId} is in error state: ${asset.errors?.messages?.join(', ')}`
-              )
-            );
-          }
-          if (asset.status === 'ready') {
-            console.log(`Mux asset ${assetId} is ready`);
-            clearInterval(interval);
-            resolve();
-          }
-        })
-        .catch(error => {
-          console.error(`Mux asset ${assetId} is in error state`, error);
-          reject(new DownstreamError('mux', `Mux asset ${assetId} is in error state`));
-        });
-    }, 1000);
-  });
+  const deadline = Date.now() + MUX_ASSET_TIMEOUT_MS;
+  let consecutivePollErrors = 0;
+
+  while (true) {
+    try {
+      const asset = await mux.video.assets.retrieve(assetId);
+      consecutivePollErrors = 0;
+
+      if (asset.status === 'ready') {
+        console.log(`Mux asset ${assetId} is ready`);
+        return;
+      }
+
+      if (asset.status === 'errored') {
+        console.error(`Mux asset ${assetId} is in error state`, asset);
+        throw new DownstreamError(
+          'mux',
+          `Mux asset ${assetId} is in error state: ${asset.errors?.messages?.join(', ')}`
+        );
+      }
+
+      console.log(`Mux asset ${assetId} is ${asset.status}`);
+    } catch (error) {
+      if (error instanceof DownstreamError) throw error;
+
+      // Transient polling errors (network blips etc.) shouldn't fail the
+      // capture, only give up after several consecutive failures.
+      consecutivePollErrors += 1;
+      console.error(
+        `Failed to poll mux asset ${assetId} (${consecutivePollErrors}/${MUX_ASSET_MAX_CONSECUTIVE_POLL_ERRORS})`,
+        error
+      );
+      if (consecutivePollErrors >= MUX_ASSET_MAX_CONSECUTIVE_POLL_ERRORS) {
+        throw new DownstreamError('mux', `Failed to poll mux asset ${assetId} after repeated errors`);
+      }
+    }
+
+    if (Date.now() >= deadline) {
+      throw new DownstreamError('mux', `Timed out waiting for mux asset ${assetId} to become ready`);
+    }
+
+    await sleep(MUX_ASSET_POLL_INTERVAL_MS);
+  }
 };

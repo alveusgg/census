@@ -176,6 +176,13 @@
       "when": 1783031609883,
       "tag": "0024_talented_boomer",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1783352424804,
+      "tag": "0025_worthless_blade",
+      "breakpoints": true
     }
   ]
 }

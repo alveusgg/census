@@ -24,8 +24,9 @@ const statusLabels = {
   processing: 'Upgrading...',
   complete: 'Ready',
   archived: 'Archived',
-  failed: 'Failed',
-  dead: 'Failed'
+  failed: 'Retrying...',
+  dead: 'Failed',
+  user_killed: 'Cleared'
 };
 
 const statusClasses = {
@@ -34,8 +35,9 @@ const statusClasses = {
   processing: 'border-alveus-darker/20 bg-alveus-darker/30 text-white',
   complete: 'border-green-950/40 bg-green-700 text-white',
   archived: 'border-alveus-darker/20 bg-alveus-darker/30 text-white',
-  failed: 'border-red-950/40 bg-red-700 text-white',
-  dead: 'border-red-950/40 bg-red-700 text-white'
+  failed: 'border-amber-950/40 bg-amber-600 text-white',
+  dead: 'border-red-950/40 bg-red-700 text-white',
+  user_killed: 'border-alveus-darker/20 bg-alveus-darker/30 text-white'
 };
 
 export const CaptureUpgradesPopover = () => {
@@ -120,14 +122,12 @@ export const CaptureUpgradesPopover = () => {
                   title="Clear this upgrade"
                   disabled={markCaptureDead.isPending}
                   onClick={() => {
-                    if (capture.status === 'failed') {
-                      markCaptureDead.mutate(capture.id);
-                      return;
-                    }
-
                     confirmClear.open({
                       title: 'Clear this clip?',
-                      description: "This means you won't be able to make observations with this clip.",
+                      description:
+                        capture.status === 'failed'
+                          ? "We're still retrying this clip. Clearing it will stop the retries and you won't be able to make observations with it."
+                          : "This means you won't be able to make observations with this clip.",
                       onConfirm: async () => {
                         await markCaptureDead.mutateAsync(capture.id);
                       }

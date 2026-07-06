@@ -213,10 +213,22 @@ export const ClipCreationProgress: FC<ClipCreationProgressProps> = ({ id, onComp
     }
   }, [capture]);
 
-  if (capture.data.status === 'failed') {
+  if (capture.data.status === 'dead' || capture.data.status === 'user_killed') {
     return (
       <div className="flex justify-center items-center bg-[#6C2A2A] p-4 rounded-md w-full">
         <p>Sorry, we failed to create a capture from this clip. Please try again.</p>
+      </div>
+    );
+  }
+
+  if (capture.data.status === 'failed') {
+    return (
+      <div className="flex justify-between items-center gap-3 bg-alveus p-4 rounded-md w-full">
+        <p className="font-medium">
+          This is taking longer than expected, but we're still trying. You can close this and check the upgrades menu
+          later.
+        </p>
+        <Loader />
       </div>
     );
   }

@@ -9,7 +9,13 @@ const DEFAULT_NAME = 'exponential-backoff';
 export interface ExponentialBackoffOptions {
   name?: string;
   baseDelayMs?: number;
+  /**
+   * Use Number.POSITIVE_INFINITY for strategies that should back off forever
+   * (e.g. long-lived workers) instead of throwing once exhausted.
+   */
   maxAttempts?: number;
+  /** Caps the delay between attempts. Required when maxAttempts is Infinity. */
+  maxDelayMs?: number;
   multiplier?: number;
   timeoutMs: number;
 }
@@ -19,18 +25,25 @@ export class ExponentialBackoffStrategy {
   private readonly name: string;
   private readonly baseDelayMs: number;
   private readonly maxAttempts: number;
+  private readonly maxDelayMs?: number;
   private readonly multiplier: number;
   private readonly timeoutMs: number;
   constructor(options: ExponentialBackoffOptions) {
     this.name = options.name ?? DEFAULT_NAME;
     this.baseDelayMs = options.baseDelayMs ?? DEFAULT_BASE_DELAY_MS;
     this.maxAttempts = options.maxAttempts ?? DEFAULT_MAX_ATTEMPTS;
+    this.maxDelayMs = options.maxDelayMs;
     this.multiplier = options.multiplier ?? DEFAULT_MULTIPLIER;
     this.timeoutMs = options.timeoutMs;
+
+    if (!Number.isFinite(this.maxAttempts) && this.maxDelayMs === undefined) {
+      throw new InternalServerError('maxDelayMs is required when maxAttempts is Infinity');
+    }
   }
 
   async wait() {
-    const delay = this.attempt === 0 ? 0 : this.baseDelayMs * this.multiplier ** (this.attempt - 1);
+    let delay = this.attempt === 0 ? 0 : this.baseDelayMs * this.multiplier ** (this.attempt - 1);
+    if (this.maxDelayMs !== undefined) delay = Math.min(delay, this.maxDelayMs);
     await new Promise(resolve => setTimeout(resolve, delay));
   }
 

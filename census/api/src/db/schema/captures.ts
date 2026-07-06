@@ -11,7 +11,10 @@ export const captureStatusEnum = pgEnum('capture_status', [
   'complete',
   'archived',
   'failed',
-  'dead'
+  'dead',
+  // Explicitly cleared by the user, as opposed to 'dead' which means the
+  // retry queue exhausted its attempts.
+  'user_killed'
 ]);
 
 export const captures = pgTable(

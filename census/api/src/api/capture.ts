@@ -6,7 +6,7 @@ import {
   getCaptureCount,
   getCaptures,
   getUnconvertedCapturesForUser,
-  markCaptureDeadForUser
+  killCaptureForUser
 } from '../services/capture/index.js';
 import { cache, procedure, procedureWithPermissions, publicProcedure, router } from '../trpc/trpc.js';
 import { useUser } from '../utils/env/env.js';
@@ -78,7 +78,7 @@ export const createCaptureRouter = () => {
       .use(cache.mutation({ key: ['captures'] }))
       .mutation(async ({ input }) => {
         const user = useUser();
-        return await markCaptureDeadForUser(input.id, user.id);
+        return await killCaptureForUser(input.id, user.id);
       }),
 
     createFromClip: procedureWithPermissions('capture')
