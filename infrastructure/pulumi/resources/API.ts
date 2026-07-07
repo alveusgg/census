@@ -120,6 +120,37 @@ const getStorageConnections = (volumes?: Record<string, Volume>) => {
   }));
 };
 
+const getProbes = (port?: number) => {
+  if (!port) return undefined;
+
+  return [
+    {
+      type: 'Startup',
+      httpGet: { path: '/healthz', port },
+      initialDelaySeconds: 5,
+      periodSeconds: 2,
+      timeoutSeconds: 1,
+      failureThreshold: 30
+    },
+    {
+      type: 'Liveness',
+      httpGet: { path: '/healthz', port },
+      initialDelaySeconds: 10,
+      periodSeconds: 10,
+      timeoutSeconds: 2,
+      failureThreshold: 3
+    },
+    {
+      type: 'Readiness',
+      httpGet: { path: '/readyz', port },
+      initialDelaySeconds: 5,
+      periodSeconds: 5,
+      timeoutSeconds: 2,
+      failureThreshold: 3
+    }
+  ];
+};
+
 const getCustomDomains = (project: Project, cluster: ContainerAppsCluster, subdomain?: string) => {
   if (!subdomain) return [];
   if (!project.zone) throw new Error('No zone found');
@@ -223,6 +254,7 @@ export class API extends ComponentResource {
                 ...(args.port ? [{ name: 'PORT', value: args.port.toString() }] : [])
               ],
               volumeMounts: [...getVolumeMounts(args.volumes), { volumeName: 'tmp', mountPath: '/tmp' }],
+              probes: getProbes(args.port),
               command: args.command
             },
             ...getSidecarContainers(args.sidecars)

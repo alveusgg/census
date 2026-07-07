@@ -12,20 +12,36 @@ import * as schema from './schema/index.js';
 
 let shuttingDownAfterPostgresError = false;
 
+const isAbortError = (reason: unknown) => {
+  if (!(reason instanceof Error)) return false;
+  return reason.name === 'AbortError' || ('code' in reason && reason.code === 'ABORT_ERR');
+};
+
+const exitAfterUnhandledRejection = (reason: unknown, tags: Record<string, string>) => {
+  console.error('Unhandled rejection, shutting down process', reason);
+  Sentry.captureException(reason, { tags });
+
+  void Sentry.flush(2000).finally(() => process.exit(1));
+};
+
 process.on('unhandledRejection', reason => {
-  if (!(reason instanceof postgres.PostgresError)) throw reason;
+  if (isAbortError(reason)) return;
+
+  if (!(reason instanceof postgres.PostgresError)) {
+    exitAfterUnhandledRejection(reason, {
+      component: 'process',
+      fatal: 'true'
+    });
+    return;
+  }
+
   if (shuttingDownAfterPostgresError) return;
 
   shuttingDownAfterPostgresError = true;
-  console.error('Unhandled Postgres error, shutting down process', reason);
-  Sentry.captureException(reason, {
-    tags: {
-      component: 'postgres',
-      fatal: 'true'
-    }
+  exitAfterUnhandledRejection(reason, {
+    component: 'postgres',
+    fatal: 'true'
   });
-
-  void Sentry.flush(2000).finally(() => process.exit(1));
 });
 
 export const initialise = async (
@@ -86,4 +102,9 @@ export const initialise = async (
 export const tearDownDatabase = async () => {
   const { postgres } = useEnvironment();
   await postgres.end();
+};
+
+export const checkDatabaseHealth = async () => {
+  const { postgres } = useEnvironment();
+  await postgres`SELECT 1`;
 };

@@ -11,7 +11,7 @@ import { fastifyTRPCPlugin, FastifyTRPCPluginOptions } from '@trpc/server/adapte
 import fastify from 'fastify';
 import Queue from 'p-queue';
 import { createRouter } from './api/index.js';
-import { tearDownDatabase } from './db/db.js';
+import { checkDatabaseHealth, tearDownDatabase } from './db/db.js';
 import { defineListener } from './db/defineListener.js';
 import { PostgresLeader } from './db/leader.js';
 import type { Capture } from './db/schema/index.js';
@@ -356,6 +356,18 @@ await withEnvironment(environment, async () => {
     allowedHeaders: ['authorization', 'content-type', 'sentry-trace', 'baggage'],
     exposedHeaders: ['X-Census-Points', 'X-Census-Achievements']
   });
+
+  server.get('/healthz', async () => ({ status: 'ok' }));
+  server.get('/readyz', async (_, reply) => {
+    try {
+      await withEnvironment(environment, checkDatabaseHealth);
+      return { status: 'ok' };
+    } catch (error) {
+      console.error('Readiness check failed', error);
+      return reply.status(503).send({ status: 'unavailable' });
+    }
+  });
+
   await server.register(websocket);
   await server.register(authRouter, { prefix: '/auth' });
   await server.register(fastifyTRPCPlugin, {
