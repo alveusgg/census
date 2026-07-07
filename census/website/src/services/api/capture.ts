@@ -47,8 +47,7 @@ export const useUnconvertedCaptures = () => {
 
   const result = useQuery({
     queryKey: snapshotQueryKey,
-    queryFn: () => trpc.capture.unconvertedCaptures.query(),
-    refetchOnWindowFocus: true
+    queryFn: () => trpc.capture.unconvertedCaptures.query()
   });
 
   useEffect(() => {

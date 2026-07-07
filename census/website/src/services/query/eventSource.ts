@@ -1,18 +1,75 @@
 import { EventSource as EventSourcePonyfill, type EventSourceFetchInit, type EventSourceInit } from 'eventsource';
 
+const BASE_DELAY_MS = 1_000;
+const MAX_DELAY_MS = 30_000;
+// A connection that dies before this counts as a failure, so servers that
+// accept and immediately drop connections still trigger backoff.
+const STABLE_CONNECTION_MS = 5_000;
+
+const sleep = (ms: number, signal?: AbortSignal) =>
+  new Promise<void>((resolve, reject) => {
+    if (signal?.aborted) return reject(signal.reason);
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(signal?.reason);
+    };
+    signal?.addEventListener('abort', onAbort, { once: true });
+  });
+
+const backoffDelay = (attempt: number) => {
+  const delay = Math.min(BASE_DELAY_MS * 2 ** (attempt - 1), MAX_DELAY_MS);
+  // Full jitter to spread reconnects from multiple subscriptions/tabs.
+  return Math.random() * delay;
+};
+
 export function createAuthenticatedEventSource(requestToken: () => Promise<string>) {
   return class AuthenticatedEventSource extends EventSourcePonyfill {
+    private failedAttempts = 0;
+    private connectedAt = 0;
     constructor(url: string | URL, init?: EventSourceInit) {
+      // Consecutive failed (or short-lived) connection attempts by this
+      // EventSource instance. The ponyfill reconnects on a fixed interval,
+      // so we add exponential backoff here to avoid reconnect storms.
+
       super(url, {
         ...init,
-        fetch: async (input: string | URL, fetchInit: EventSourceFetchInit) =>
-          fetch(input, {
-            ...fetchInit,
-            headers: {
-              ...fetchInit.headers,
-              authorization: `Bearer ${await requestToken()}`
+        fetch: async (input: string | URL, fetchInit: EventSourceFetchInit) => {
+          if (this.connectedAt) {
+            if (Date.now() - this.connectedAt >= STABLE_CONNECTION_MS) {
+              this.failedAttempts = 0;
+            } else {
+              this.failedAttempts += 1;
             }
-          })
+            this.connectedAt = 0;
+          }
+
+          if (this.failedAttempts > 0) {
+            await sleep(backoffDelay(this.failedAttempts), fetchInit.signal ?? undefined);
+          }
+
+          try {
+            const response = await fetch(input, {
+              ...fetchInit,
+              headers: {
+                ...fetchInit.headers,
+                authorization: `Bearer ${await requestToken()}`
+              }
+            });
+            if (response.ok) {
+              this.connectedAt = Date.now();
+            } else {
+              this.failedAttempts += 1;
+            }
+            return response;
+          } catch (error) {
+            this.failedAttempts += 1;
+            throw error;
+          }
+        }
       });
     }
   };
