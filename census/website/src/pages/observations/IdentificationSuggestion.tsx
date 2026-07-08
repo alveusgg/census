@@ -1,6 +1,7 @@
 import { Button } from '@/components/controls/button/paper';
 import { DownThumb, UpThumb } from '@/components/controls/ObservationEntry';
 import SiBug2 from '@/components/icons/SiBug2';
+import SiCheckmark from '@/components/icons/SiCheckmark';
 import SiClose from '@/components/icons/SiClose';
 import SiCommentCheck from '@/components/icons/SiCommentCheck';
 import SiLeaf from '@/components/icons/SiLeaf';
@@ -65,10 +66,12 @@ export const IdentificationSuggestion: FC<IdentificationSuggestionProps> = ({
     feedback => feedback.userId === me.id && feedback.type === 'justification'
   );
   const isOwnSuggestion = identification.suggester?.id === me.id;
+  const isConfirmed = Boolean(identification.confirmedBy);
   const canAgree = canVote && !isOwnSuggestion && currentAgreementId !== identification.id;
   const canDisagree = canVote && !isOwnSuggestion && currentAgreementId !== identification.id && !myDisagreement;
   const canAddComment = canSuggest && isOwnSuggestion && !myJustification;
   const canRemove = isOwnSuggestion || canModerate;
+  const canConfirmIdentification = canConfirm && !isConfirmed;
   const hasFeedback = positiveFeedback.length + negativeFeedback.length + justificationFeedback.length > 0;
   const TaxonIcon = identification.isAccessory ? SiLeaf : SiBug2;
 
@@ -189,15 +192,22 @@ export const IdentificationSuggestion: FC<IdentificationSuggestionProps> = ({
                 )}
               </div>
             )}
-            {canConfirm && (
-              <Button
-                onClick={() => confirmIdentificationModalProps.open({ identification, observationImages })}
-                className="text-sm font-semibold px-2.5 py-1 gap-0.5"
-                variant="primary"
-              >
-                <SiCommentCheck className="text-xl" />
-                confirm
-              </Button>
+            {isConfirmed ? (
+              <span className="flex items-center gap-1 rounded-full bg-green-700 px-2 py-0.5 text-xs font-bold text-white">
+                <SiCheckmark className="text-sm" />
+                confirmed
+              </span>
+            ) : (
+              canConfirmIdentification && (
+                <Button
+                  onClick={() => confirmIdentificationModalProps.open({ identification, observationImages })}
+                  className="text-sm font-semibold px-2.5 py-1 gap-0.5"
+                  variant="primary"
+                >
+                  <SiCommentCheck className="text-xl" />
+                  confirm
+                </Button>
+              )
             )}
           </div>
         </div>

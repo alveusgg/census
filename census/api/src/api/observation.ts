@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { notifyDiscordAboutObservation } from '../services/discord/index.js';
 import {
+  confirmObservationWithoutAccessoryIdentification,
   createObservationsFromCapture,
   deleteObservation,
   getObservationCount,
@@ -96,6 +97,17 @@ export const createObservationRouter = () =>
       )
       .mutation(async ({ input }) => {
         return await locateObservation(input.id, input.location);
+      }),
+
+    confirmWithoutAccessoryIdentification: procedureWithPermissions('moderate')
+      .input(z.object({ observationId: z.number() }))
+      .use(
+        cache.mutation({
+          keys: [['observations'], ['observations', 'unconfirmedCount'], ['identifications']]
+        })
+      )
+      .mutation(async ({ input }) => {
+        return await confirmObservationWithoutAccessoryIdentification(input.observationId);
       }),
 
     merge: procedureWithPermissions('moderate')

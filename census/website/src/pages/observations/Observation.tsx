@@ -16,7 +16,11 @@ import { UserLink } from '@/components/users/UserLink';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSuggestAccessoryIdentification, useSuggestIdentification } from '@/services/api/identifications';
 import { useMe } from '@/services/api/me';
-import { Identification as IdentificationType, Observation as ObservationType } from '@/services/api/observations';
+import {
+  Identification as IdentificationType,
+  Observation as ObservationType,
+  useConfirmObservationWithoutAccessoryIdentification
+} from '@/services/api/observations';
 import { useHasPermission } from '@/services/permissions/hooks';
 import { cn } from '@/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -158,6 +162,7 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
   const { data: me } = useSuspenseQuery(useMe());
   const suggestIdentification = useSuggestIdentification();
   const suggestAccessoryIdentification = useSuggestAccessoryIdentification();
+  const confirmObservationWithoutAccessoryIdentification = useConfirmObservationWithoutAccessoryIdentification();
   const canSuggest = useHasPermission('suggest');
   const canModerate = useHasPermission('moderate');
   const isMobile = useIsMobile();
@@ -169,6 +174,11 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
   const identificationIdentifications = observation.identifications.filter(
     identification => !identification.isAccessory
   );
+  const confirmedPrimaryIdentification = identificationIdentifications.find(
+    identification => identification.id === observation.confirmedAs && identification.confirmedBy
+  );
+  const canConfirmWithoutAccessoryIdentification =
+    canModerate && Boolean(confirmedPrimaryIdentification) && !confirmedAccessoryIdentification;
   const observationImages = observation.sightings.flatMap(sighting => sighting.images);
   const observationFeedDate = getObservationFeedDate(observation);
   const submittedTaxonIds = useMemo(
@@ -309,7 +319,7 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
               )}
             </button>
           )}
-          {accessoryTree.length > 0 && (
+          {(accessoryTree.length > 0 || canConfirmWithoutAccessoryIdentification) && (
             <div className="flex justify-between items-center">
               <motion.div className="py-3  flex flex-col gap-1 w-full">
                 <AnimatePresence initial={false}>
@@ -320,14 +330,30 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
                   {confirmedAccessoryIdentification ? (
                     <ConfirmedAccessoryIdentification identification={confirmedAccessoryIdentification} />
                   ) : (
-                    accessoryTree.map(identification => (
-                      <TopLevelIdentificationTree
-                        key={identification.id}
-                        observationImages={observationImages}
-                        tree={identification}
-                        currentAgreementId={currentAccessoryAgreementId}
-                      />
-                    ))
+                    <>
+                      {accessoryTree.map(identification => (
+                        <TopLevelIdentificationTree
+                          key={identification.id}
+                          observationImages={observationImages}
+                          tree={identification}
+                          currentAgreementId={currentAccessoryAgreementId}
+                        />
+                      ))}
+                      {canConfirmWithoutAccessoryIdentification && (
+                        <div className="mx-3 py-1">
+                          <Button
+                            compact
+                            loading={confirmObservationWithoutAccessoryIdentification.isPending}
+                            onClick={() => confirmObservationWithoutAccessoryIdentification.mutateAsync(observation.id)}
+                            className="gap-1"
+                            variant="primary"
+                          >
+                            <SiCheckmark className="text-lg" />
+                            confirm without identification
+                          </Button>
+                        </div>
+                      )}
+                    </>
                   )}
                 </AnimatePresence>
               </motion.div>

@@ -1,7 +1,7 @@
 import { BadRequestError, DownstreamError, ForbiddenError, NotFoundError } from '@alveusgg/error';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
-import { and, count, desc, eq, gte, inArray, isNull, lte, ne, or, SQL, sql } from 'drizzle-orm';
+import { and, count, desc, eq, gte, inArray, isNotNull, isNull, lte, ne, or, SQL, sql } from 'drizzle-orm';
 import ffmpeg from 'fluent-ffmpeg';
 import { createReadStream } from 'fs';
 import { z } from 'zod';
@@ -33,7 +33,11 @@ const frameUploadRetrier = createRetrier(3);
 export const observationDeletionReasons = ['no_valid_subject', 'too_poor_quality'] as const;
 export type ObservationDeletionReason = (typeof observationDeletionReasons)[number];
 
+const confirmWithoutAccessoryIdentificationModerationType = 'confirm_without_accessory_identification';
+
 const deletionReasonsThatRevokeSubmissionPoints = new Set<ObservationDeletionReason>(['no_valid_subject']);
+
+const activeIdentification = () => isNull(identifications.deletedAt);
 
 const observationDeletionReasonLabels: Record<ObservationDeletionReason, string> = {
   no_valid_subject: 'No valid subject',
@@ -237,6 +241,59 @@ export const locateObservation = async (observationId: number, location: { x: nu
     .where(eq(observations.id, observationId));
 };
 
+export const confirmObservationWithoutAccessoryIdentification = async (observationId: number) => {
+  const db = useDB();
+  const user = useUser();
+
+  const observation = await db.query.observations.findFirst({
+    where: and(eq(observations.id, observationId), eq(observations.removed, false)),
+    columns: {
+      confirmedAs: true,
+      moderated: true
+    }
+  });
+  if (!observation) throw new NotFoundError('Observation not found');
+  if (!observation.confirmedAs)
+    throw new BadRequestError('Observation does not have a confirmed primary identification');
+
+  const primaryIdentification = await db.query.identifications.findFirst({
+    where: and(
+      eq(identifications.id, observation.confirmedAs),
+      sql`${identifications.isAccessory} is not true`,
+      isNotNull(identifications.confirmedBy),
+      activeIdentification()
+    )
+  });
+  if (!primaryIdentification) throw new BadRequestError('Observation does not have a confirmed primary identification');
+
+  const confirmedAccessoryIdentification = await db.query.identifications.findFirst({
+    where: and(
+      eq(identifications.observationId, observationId),
+      eq(identifications.isAccessory, true),
+      isNotNull(identifications.confirmedBy),
+      activeIdentification()
+    )
+  });
+  if (confirmedAccessoryIdentification)
+    throw new BadRequestError('Observation already has a confirmed accessory identification');
+
+  if (observation.moderated.some(entry => entry.type === confirmWithoutAccessoryIdentificationModerationType)) return;
+
+  await db
+    .update(observations)
+    .set({
+      moderated: [
+        ...observation.moderated,
+        {
+          userId: user.id.toString(),
+          type: confirmWithoutAccessoryIdentificationModerationType,
+          message: 'Confirmed without accessory identification'
+        }
+      ]
+    })
+    .where(eq(observations.id, observationId));
+};
+
 const createObservations = async (captureId: number, selections: Selection[], nickname?: string) => {
   const db = useDB();
   const user = useUser();
@@ -302,9 +359,9 @@ const getObservationConditions = (query?: Query) => {
   const conditions: SQL<unknown>[] = [eq(observations.removed, false)];
 
   if (query?.confirmed) {
-    conditions.push(hasConfirmedPrimaryIdentification);
+    conditions.push(hasConfirmedObservation);
   } else {
-    conditions.push(sql`not ${hasConfirmedPrimaryIdentification}`);
+    conditions.push(sql`not ${hasConfirmedObservation}`);
   }
 
   if (query?.within) {
@@ -339,7 +396,34 @@ const hasConfirmedPrimaryIdentification = sql`
     from identifications
     where identifications.id = observations.confirmed_as
       and identifications.is_accessory is not true
+      and identifications.confirmed_by is not null
       and identifications.deleted_at is null
+  )
+`;
+
+const hasConfirmedAccessoryIdentification = sql`
+  exists (
+    select 1
+    from identifications
+    where identifications.observation_id = observations.id
+      and identifications.is_accessory is true
+      and identifications.confirmed_by is not null
+      and identifications.deleted_at is null
+  )
+`;
+
+const hasAccessoryIdentificationBypass = sql`
+  exists (
+    select 1
+    from json_array_elements(observations.moderated) as moderation_entry(value)
+    where moderation_entry.value->>'type' = ${confirmWithoutAccessoryIdentificationModerationType}
+  )
+`;
+
+const hasConfirmedObservation = sql`
+  (
+    ${hasConfirmedPrimaryIdentification}
+    and (${hasConfirmedAccessoryIdentification} or ${hasAccessoryIdentificationBypass})
   )
 `;
 
@@ -348,7 +432,7 @@ export const getUnconfirmedObservationCount = async () => {
   const [result] = await db
     .select({ count: count() })
     .from(observations)
-    .where(and(eq(observations.removed, false), sql`not ${hasConfirmedPrimaryIdentification}`));
+    .where(and(eq(observations.removed, false), sql`not ${hasConfirmedObservation}`));
   return result.count;
 };
 

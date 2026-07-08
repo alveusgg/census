@@ -84,6 +84,21 @@ export const useLocateObservation = () => {
   });
 };
 
+export const useConfirmObservationWithoutAccessoryIdentification = () => {
+  const trpc = useAPI();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (observationId: number) => {
+      return await trpc.observation.confirmWithoutAccessoryIdentification.mutate({ observationId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: key('observations') });
+      queryClient.invalidateQueries({ queryKey: key('observations', 'unconfirmed-count') });
+      queryClient.invalidateQueries({ queryKey: key('identifications') });
+    }
+  });
+};
+
 export const useNotifyDiscordAboutObservation = () => {
   const trpc = useAPI();
   const client = useQueryClient();
