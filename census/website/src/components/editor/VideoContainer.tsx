@@ -3,22 +3,25 @@ import * as Media from '@react-av/core';
 import { useMeasure } from '@uidotdev/usehooks';
 import { FC, PropsWithChildren } from 'react';
 
+const VIDEO_ASPECT_RATIO = 16 / 9;
+
 export const VideoContainer: FC<PropsWithChildren> = ({ children }) => {
-  const [ref, { height, width }] = useMeasure();
+  const [ref, { height, width }] = useMeasure<HTMLDivElement>();
+
+  const availableWidth = Math.max(width ?? 0, 0);
+  const availableHeight = Math.max(height ?? 0, 0);
+  const mediaWidth = Math.floor(Math.min(availableWidth, availableHeight * VIDEO_ASPECT_RATIO));
+  const mediaHeight = Math.floor(mediaWidth / VIDEO_ASPECT_RATIO);
+  const hasMeasuredSize = mediaWidth > 0 && mediaHeight > 0;
 
   return (
-    <div className="w-full relative flex-1" ref={ref}>
-      <div
-        style={{ height: height ?? 0 }}
-        className={cn('h-full flex flex-col gap-4 justify-center items-center absolute inset-0 px-2')}
+    <div className="grid h-full min-h-0 w-full place-items-center" ref={ref}>
+      <Media.Container
+        style={{ width: mediaWidth, height: mediaHeight }}
+        className={cn('relative max-w-full', !hasMeasuredSize && 'opacity-0')}
       >
-        <Media.Container
-          style={{ maxHeight: height ?? 0, maxWidth: width ?? 0 }}
-          className={cn('relative', width && height && width * 0.56 > height ? 'h-full' : 'w-full')}
-        >
-          {children}
-        </Media.Container>
-      </div>
+        {children}
+      </Media.Container>
     </div>
   );
 };
