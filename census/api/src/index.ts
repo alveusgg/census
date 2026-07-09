@@ -1,6 +1,7 @@
 import { config } from 'dotenv';
 config();
 
+import { monitorEventLoopDelay } from 'node:perf_hooks';
 import { createEnvironment, withEnvironment } from './utils/env/env.js';
 const environment = await createEnvironment();
 
@@ -34,6 +35,13 @@ export type AppRouter = ReturnType<typeof createRouter>;
 const leader = new PostgresLeader(703, 1);
 const CAPTURE_QUEUE_SAFETY_POLL_MS = 60_000;
 const CAPTURE_QUEUE_MAX_BACKOFF_MS = 5 * 60_000;
+const READINESS_SLOW_THRESHOLD_MS = 500;
+const EVENT_LOOP_DELAY_WARN_THRESHOLD_MS = 250;
+const CAPTURE_SSE_PROTOCOL_HEADER = 'x-census-sse-protocol';
+const CAPTURE_SSE_PROTOCOL_VERSION = '1';
+const UNCONVERTED_CAPTURES_SUBSCRIPTION_PATH = '/capture.live.unconvertedCaptures';
+const readinessEventLoopDelay = monitorEventLoopDelay({ resolution: 20 });
+readinessEventLoopDelay.enable();
 // Minimum spacing between consecutive clip requests when draining a backlog,
 // so residual captures don't hammer the cam manager back-to-back.
 const CAPTURE_QUEUE_DRAIN_PACE_MS = 10_000;
@@ -353,17 +361,51 @@ await withEnvironment(environment, async () => {
   const server = fastify(options);
 
   await server.register(cors, {
-    allowedHeaders: ['authorization', 'content-type', 'sentry-trace', 'baggage'],
+    allowedHeaders: ['authorization', 'content-type', 'sentry-trace', 'baggage', CAPTURE_SSE_PROTOCOL_HEADER],
     exposedHeaders: ['X-Census-Points', 'X-Census-Achievements']
+  });
+
+  server.addHook('onRequest', async (request, reply) => {
+    const path = request.url.split('?', 1)[0];
+
+    if (
+      request.method === 'GET' &&
+      path === UNCONVERTED_CAPTURES_SUBSCRIPTION_PATH &&
+      request.headers[CAPTURE_SSE_PROTOCOL_HEADER] !== CAPTURE_SSE_PROTOCOL_VERSION
+    ) {
+      return reply.code(204).send();
+    }
   });
 
   server.get('/healthz', async () => ({ status: 'ok' }));
   server.get('/readyz', async (_, reply) => {
+    const startedAt = performance.now();
+
     try {
       await withEnvironment(environment, checkDatabaseHealth);
+
+      const databaseRoundTripMs = Math.round(performance.now() - startedAt);
+      const eventLoopDelayMaxMs = Math.round(readinessEventLoopDelay.max / 1e6);
+      readinessEventLoopDelay.reset();
+
+      if (
+        databaseRoundTripMs >= READINESS_SLOW_THRESHOLD_MS ||
+        eventLoopDelayMaxMs >= EVENT_LOOP_DELAY_WARN_THRESHOLD_MS
+      ) {
+        console.warn(
+          `Readiness check slow: databaseRoundTripMs=${databaseRoundTripMs} eventLoopDelayMaxMs=${eventLoopDelayMaxMs}`
+        );
+      }
+
       return { status: 'ok' };
     } catch (error) {
-      console.error('Readiness check failed', error);
+      const databaseRoundTripMs = Math.round(performance.now() - startedAt);
+      const eventLoopDelayMaxMs = Math.round(readinessEventLoopDelay.max / 1e6);
+      readinessEventLoopDelay.reset();
+      console.error(
+        `Readiness check failed: databaseRoundTripMs=${databaseRoundTripMs} eventLoopDelayMaxMs=${eventLoopDelayMaxMs}`,
+        error
+      );
       return reply.status(503).send({ status: 'unavailable' });
     }
   });

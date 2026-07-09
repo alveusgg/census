@@ -7,6 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useMarkCaptureDead, useUnconvertedCaptures } from '@/services/api/capture';
 import { cn } from '@/utils/cn';
 import { formatDistanceToNow } from 'date-fns';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const thumbnailSizeRegex = /-\d+x\d+(?=\.\w+$)/;
@@ -41,13 +42,14 @@ const statusClasses = {
 };
 
 export const CaptureUpgradesPopover = () => {
-  const query = useUnconvertedCaptures();
+  const [open, setOpen] = useState(false);
+  const query = useUnconvertedCaptures(open);
   const markCaptureDead = useMarkCaptureDead();
   const confirmClear = useConfirm();
   const captures = query.data ?? [];
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <Confirm {...confirmClear} />
       <PopoverTrigger asChild>
         <Button variant="alveus" className="overflow-visible text-xl" aria-label="View clip upgrades">

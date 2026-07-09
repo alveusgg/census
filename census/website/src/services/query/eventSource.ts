@@ -2,6 +2,7 @@ import { EventSource as EventSourcePonyfill, type EventSourceFetchInit, type Eve
 
 const BASE_DELAY_MS = 1_000;
 const MAX_DELAY_MS = 30_000;
+const SSE_PROTOCOL_VERSION = '1';
 // A connection that dies before this counts as a failure, so servers that
 // accept and immediately drop connections still trigger backoff.
 const STABLE_CONNECTION_MS = 5_000;
@@ -56,7 +57,8 @@ export function createAuthenticatedEventSource(requestToken: () => Promise<strin
               ...fetchInit,
               headers: {
                 ...fetchInit.headers,
-                authorization: `Bearer ${await requestToken()}`
+                authorization: `Bearer ${await requestToken()}`,
+                'x-census-sse-protocol': SSE_PROTOCOL_VERSION
               }
             });
             if (response.ok) {

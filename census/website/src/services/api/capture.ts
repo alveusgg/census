@@ -1,6 +1,6 @@
 import type { ObservationPayload } from '@alveusgg/census-api/src/services/observations/observations';
 import { infiniteQueryOptions, useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { key, useAPI, useLiveQuery } from '../query/hooks';
 
 export const useCapture = (id: number) => {
@@ -40,22 +40,25 @@ export const useCaptures = () => {
   });
 };
 
-export const useUnconvertedCaptures = () => {
+export const useUnconvertedCaptures = (enabled = true) => {
   const trpc = useAPI();
-  const snapshotQueryKey = key('captures', 'unconverted');
+  const snapshotQueryKey = useMemo(() => key('captures', 'unconverted'), []);
   const callback = useLiveQuery(snapshotQueryKey);
 
   const result = useQuery({
     queryKey: snapshotQueryKey,
-    queryFn: () => trpc.capture.unconvertedCaptures.query()
+    queryFn: () => trpc.capture.unconvertedCaptures.query(),
+    enabled
   });
 
   useEffect(() => {
+    if (!enabled) return;
+
     const subscription = trpc.capture.live.unconvertedCaptures.subscribe(undefined, callback);
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [callback, enabled, trpc]);
 
   return result;
 };
