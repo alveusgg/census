@@ -21,7 +21,7 @@ export const createProfileRestRouter = () => async (router: FastifyInstance) => 
   router.get('/profile', async (request, reply) => {
     const query = ProfileQuery.safeParse(request.query);
     if (!query.success) {
-      return reply.status(400).type('text/plain; charset=utf-8').send('No user found for the given username.');
+      return reply.status(400).type('text/plain; charset=utf-8').send('Invalid request, sorry!');
     }
 
     try {
@@ -32,7 +32,10 @@ export const createProfileRestRouter = () => async (router: FastifyInstance) => 
         .send(formatUserProfileSummary(profile));
     } catch (error) {
       if (error instanceof NotFoundError) {
-        return reply.status(404).type('text/plain; charset=utf-8').send('No user found for the given username.');
+        return reply
+          .status(404)
+          .type('text/plain; charset=utf-8')
+          .send("You haven't signed up yet! https://alveus.gg/census");
       }
       throw error;
     }
