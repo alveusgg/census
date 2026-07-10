@@ -31,10 +31,11 @@ const getLeaderboardBaseQuery = (from: Date) => {
     .groupBy(users.id);
 };
 
-export const getPointsForUser = async (userId: number, from?: Date) => {
+export const getPointsForUser = async (userId: number, from?: Date, to?: Date) => {
   const db = useDB();
   const query = [eq(achievements.userId, userId), eq(achievements.redeemed, true), eq(achievements.revoked, false)];
   if (from) query.push(gte(achievements.createdAt, from));
+  if (to) query.push(lte(achievements.createdAt, to));
   const [user] = await db
     .select({ points: sum(achievements.points).mapWith(Number) })
     .from(achievements)

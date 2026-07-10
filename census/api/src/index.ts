@@ -9,6 +9,7 @@ import { fastifyTRPCPlugin, type FastifyTRPCPluginOptions } from '@trpc/server/a
 import fastify from 'fastify';
 import { createRouter } from './api/index.js';
 import { checkDatabaseHealth, tearDownDatabase } from './db/db.js';
+import profileRestRouter from './rest/profile.js';
 import authRouter from './services/auth/router.js';
 import { createCaptureQueueWorker } from './services/capture/worker.js';
 import { createContext } from './trpc/context.js';
@@ -85,6 +86,7 @@ await withEnvironment(environment, async () => {
 
   await server.register(websocket);
   await server.register(authRouter, { prefix: '/auth' });
+  await server.register(profileRestRouter, { prefix: '/rest' });
   await server.register(fastifyTRPCPlugin, {
     trpcOptions: {
       router: createRouter(),
