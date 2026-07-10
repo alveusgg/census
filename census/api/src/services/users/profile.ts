@@ -5,7 +5,7 @@ import { and, desc, eq, isNotNull, isNull, or, sql } from 'drizzle-orm';
 import { achievements, identifications, observations, sightings, users } from '../../db/schema/index.js';
 import { useDB } from '../../db/transaction.js';
 import { getLevelForPoints } from '../points/level.js';
-import { getPointsForUser } from '../points/points.js';
+import { getPlaceInLeaderboard, getPointsForUser } from '../points/points.js';
 
 interface IdentificationSummary {
   nickname: string;
@@ -31,6 +31,7 @@ export interface UserProfileSummary {
   username: string;
   level: number;
   pointsLast7Days: number;
+  rankLast7Days: number | null;
   additional: string;
 }
 
@@ -92,10 +93,11 @@ export const getUserProfileSummary = async (username: string, now = new Date()):
     primaryIdentification
   );
 
-  const [totalPoints, pointsLast7Days, confirmedIdentifications, latestObservations, suggestions, userAchievements] =
+  const sevenDaysAgo = subDays(now, 7);
+  const [totalPoints, weeklyPlace, confirmedIdentifications, latestObservations, suggestions, userAchievements] =
     await Promise.all([
       getPointsForUser(user.id, undefined, now),
-      getPointsForUser(user.id, subDays(now, 7), now),
+      getPlaceInLeaderboard(user.id, sevenDaysAgo, now),
       db
         .select({ nickname: identifications.nickname })
         .from(identifications)
@@ -133,7 +135,8 @@ export const getUserProfileSummary = async (username: string, now = new Date()):
   return {
     username: user.username,
     level: levels[level].number,
-    pointsLast7Days,
+    pointsLast7Days: weeklyPlace.me?.points ?? 0,
+    rankLast7Days: weeklyPlace.me ? weeklyPlace.place : null,
     additional: selectAdditionalProfileSummary(
       {
         confirmedIdentification: confirmedIdentifications[0],

@@ -14,7 +14,24 @@ const ProfileQuery = z.object({
 
 export const formatUserProfileSummary = (profile: UserProfileSummary) => {
   const points = new Intl.NumberFormat('en-US').format(profile.pointsLast7Days);
-  return `${profile.username} [lvl ${profile.level.toString()}] [${points} pts ∙ last 7 days] [${profile.additional}]`;
+  const rank = profile.rankLast7Days === null ? 'unranked' : formatOrdinal(profile.rankLast7Days);
+  return `${profile.username} [lvl ${profile.level.toString()}] [${points} pts (${rank}) ∙ last 7 days] [${profile.additional}]`;
+};
+
+export const formatOrdinal = (value: number) => {
+  const lastTwoDigits = value % 100;
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 13) return `${value.toString()}th`;
+
+  switch (value % 10) {
+    case 1:
+      return `${value.toString()}st`;
+    case 2:
+      return `${value.toString()}nd`;
+    case 3:
+      return `${value.toString()}rd`;
+    default:
+      return `${value.toString()}th`;
+  }
 };
 
 export const createProfileRestRouter = () => async (router: FastifyInstance) => {
@@ -32,10 +49,7 @@ export const createProfileRestRouter = () => async (router: FastifyInstance) => 
         .send(formatUserProfileSummary(profile));
     } catch (error) {
       if (error instanceof NotFoundError) {
-        return reply
-          .status(404)
-          .type('text/plain; charset=utf-8')
-          .send("You haven't signed up yet! https://alveus.gg/census");
+        return reply.status(404).type('text/plain; charset=utf-8').send("You haven't signed up yet!");
       }
       throw error;
     }

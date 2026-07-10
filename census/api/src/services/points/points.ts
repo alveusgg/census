@@ -8,7 +8,7 @@ interface LeaderboardQueryOptions {
   offset?: number;
 }
 
-const getLeaderboardBaseQuery = (from: Date) => {
+const getLeaderboardBaseQuery = (from: Date, to = new Date()) => {
   const db = useDB();
   return db
     .select({
@@ -23,7 +23,7 @@ const getLeaderboardBaseQuery = (from: Date) => {
       and(
         eq(users.status, 'active'),
         gte(achievements.createdAt, from),
-        lte(achievements.createdAt, new Date()),
+        lte(achievements.createdAt, to),
         eq(achievements.redeemed, true),
         eq(achievements.revoked, false)
       )
@@ -45,8 +45,8 @@ export const getPointsForUser = async (userId: number, from?: Date, to?: Date) =
   return user.points || 0;
 };
 
-export const getLeaderboard = async (from: Date, options: LeaderboardQueryOptions = {}) => {
-  const query = getLeaderboardBaseQuery(from).orderBy(({ id, points }) => [desc(points), asc(id)]);
+export const getLeaderboard = async (from: Date, options: LeaderboardQueryOptions = {}, to = new Date()) => {
+  const query = getLeaderboardBaseQuery(from, to).orderBy(({ id, points }) => [desc(points), asc(id)]);
 
   if (options.limit !== undefined && options.offset !== undefined) {
     return query.limit(options.limit).offset(options.offset);
@@ -95,8 +95,8 @@ export const getLeaderboardPage = async (from: Date, page: number, size: number,
   };
 };
 
-export const getPlaceInLeaderboard = async (userId: number, from: Date) => {
-  const leaderboard = await getLeaderboard(from);
+export const getPlaceInLeaderboard = async (userId: number, from: Date, to = new Date()) => {
+  const leaderboard = await getLeaderboard(from, {}, to);
   const index = leaderboard.findIndex(user => user.id === userId);
   return { place: index + 1, me: leaderboard[index] };
 };
