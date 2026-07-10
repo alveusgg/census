@@ -441,34 +441,88 @@ export const getObservations = async (pagination: Pagination, query?: Query) => 
   const conditions = getObservationConditions(query);
 
   const rows = await db.query.observations.findMany({
+    columns: {
+      id: true,
+      observedAt: true,
+      confirmedAs: true,
+      location: true
+    },
     with: {
       sightings: {
+        columns: {},
         with: {
-          images: true,
-          observer: true,
+          images: {
+            columns: {
+              id: true,
+              url: true,
+              width: true,
+              height: true,
+              boundingBox: true
+            }
+          },
+          observer: {
+            columns: {
+              id: true,
+              username: true
+            }
+          },
           capture: {
-            with: {
-              capturer: true
+            columns: {
+              startCaptureAt: true,
+              clipId: true
             }
           }
         }
       },
       identifications: {
+        columns: {
+          id: true,
+          name: true,
+          sourceId: true,
+          sourceAncestorIds: true,
+          confirmedBy: true,
+          alternateForId: true,
+          isAccessory: true
+        },
         where: isNull(identifications.deletedAt),
         with: {
-          suggester: true,
-          feedback: {
-            where: isNull(feedback.deletedAt),
-            with: {
-              submitter: true
+          suggester: {
+            columns: {
+              id: true,
+              username: true
             }
           },
-          shiny: true
+          feedback: {
+            where: isNull(feedback.deletedAt),
+            columns: {
+              id: true,
+              type: true,
+              userId: true,
+              comment: true
+            },
+            with: {
+              submitter: {
+                columns: {
+                  id: true,
+                  username: true
+                }
+              }
+            }
+          }
         }
       },
       confirmedIdentification: {
+        columns: {
+          id: true,
+          nickname: true
+        },
         with: {
-          suggester: true
+          suggester: {
+            columns: {
+              id: true,
+              username: true
+            }
+          }
         }
       }
     },

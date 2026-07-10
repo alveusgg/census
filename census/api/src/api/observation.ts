@@ -13,7 +13,7 @@ import {
   ObservationPayload
 } from '../services/observations/observations.js';
 import { getPermissions } from '../services/auth/role.js';
-import { cache, procedure, procedureWithPermissions, router } from '../trpc/trpc.js';
+import { cache, jsonResponse, procedure, procedureWithPermissions, router } from '../trpc/trpc.js';
 import { useUser } from '../utils/env/env.js';
 
 export const Pagination = z.object({
@@ -132,39 +132,40 @@ export const createObservationRouter = () =>
         return await mergeObservations(input.targetObservationId, input.sourceObservationIds);
       }),
 
-    list: procedure.input(z.object({ meta: Pagination, query: Query.optional() })).query(async ({ input }) => {
+    list: procedure.input(z.object({ meta: Pagination, query: Query.optional() })).query(async ({ ctx, input }) => {
       const user = useUser();
       const permissions = getPermissions();
+
+      const databaseStartedAt = performance.now();
       const count = await getObservationCount(input.query);
-      let data = await getObservations(input.meta, input.query);
+      const data = await getObservations(input.meta, input.query);
+      ctx.timing('db', performance.now() - databaseStartedAt);
 
       // Fog of war: hide feedback on each observation until the user has
       // given feedback on that observation, avoiding page-wide unlocks.
+      const fogOfWarStartedAt = performance.now();
       if (!permissions.moderate) {
-        data = data.map(observation => {
+        for (const observation of data) {
           const hasGivenFeedback = observation.identifications.some(identification =>
             identification.feedback.some(feedback => feedback.userId === user.id)
           );
 
-          if (hasGivenFeedback) return observation;
+          if (hasGivenFeedback) continue;
 
-          return {
-            ...observation,
-            identifications: observation.identifications.map(identification => ({
-              ...identification,
-              feedback: []
-            }))
-          };
-        });
+          for (const identification of observation.identifications) {
+            identification.feedback.length = 0;
+          }
+        }
       }
+      ctx.timing('fogofwar', performance.now() - fogOfWarStartedAt);
 
-      return {
+      return jsonResponse({
         meta: {
           ...input.meta,
           total: count
         },
         data
-      };
+      });
     }),
 
     unconfirmedCount: procedure

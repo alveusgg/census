@@ -16,9 +16,7 @@ import * as Sentry from '@sentry/node';
 import { initTRPC, TRPCError, TRPCMiddlewareBuilder } from '@trpc/server';
 import { middlewareMarker } from '@trpc/server/unstable-core-do-not-import';
 import { eq } from 'drizzle-orm';
-import { flatten } from 'flat';
 import { createRemoteJWKSet, errors as joseErrors, jwtVerify } from 'jose';
-import SuperJSON from 'superjson';
 import { z } from 'zod';
 import { feeds } from '../db/schema/index.js';
 import { useDB } from '../db/transaction.js';
@@ -27,9 +25,12 @@ import { TokenPayload } from '../services/auth/router.js';
 import { getUserByProviderId } from '../services/users/index.js';
 import { useEnvironment, withUser } from '../utils/env/env.js';
 import { createContext } from './context.js';
+import { transformer } from './transformer.js';
+
+export { jsonResponse } from './transformer.js';
 
 const t = initTRPC.context<typeof createContext>().create({
-  transformer: SuperJSON,
+  transformer,
   sse: {
     ping: {
       enabled: true,
@@ -275,7 +276,7 @@ const loggedProcedure = t.procedure.use(async opts => {
         const result = await opts.next();
         const rawInput = await opts.getRawInput();
         if (typeof rawInput === 'object' && (opts.type === 'query' || opts.type === 'subscription')) {
-          span.setAttributes(flatten({ input: SuperJSON.serialize(rawInput).json }));
+          span.setAttribute('input', JSON.stringify(rawInput));
         }
         span.setAttributes({
           ok: result.ok,

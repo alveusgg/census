@@ -5,7 +5,6 @@ import postgres from 'postgres';
 import { context, SpanKind, trace } from '@opentelemetry/api';
 import { SEMATTRS_DB_STATEMENT, SEMATTRS_DB_SYSTEM } from '@opentelemetry/semantic-conventions';
 import * as Sentry from '@sentry/node';
-import SuperJSON from 'superjson';
 import { useEnvironment } from '../utils/env/env.js';
 import { listen } from './listen.js';
 import * as schema from './schema/index.js';
@@ -67,7 +66,7 @@ export const initialise = async (
   const db = drizzle(client, {
     schema,
     logger: {
-      logQuery: (query, params) => {
+      logQuery: query => {
         const ctx = context.active();
         const tracer = trace.getTracer('ApplicationInsightsTracer');
 
@@ -76,7 +75,6 @@ export const initialise = async (
           {
             kind: SpanKind.CLIENT,
             attributes: {
-              params: SuperJSON.stringify(params),
               [SEMATTRS_DB_SYSTEM]: 'postgresql',
               [SEMATTRS_DB_STATEMENT]: query
             },

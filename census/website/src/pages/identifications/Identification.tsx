@@ -15,7 +15,6 @@ import { Timestamp } from '@/components/text/Timestamp';
 import { UserLink } from '@/components/users/UserLink';
 import type { RouterOutput } from '@/services/api/helpers';
 import { useIdentification } from '@/services/api/identifications';
-import type { Feedback, Identification as ObservationIdentification } from '@/services/api/observations';
 import { cn } from '@/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { formatInTimeZone } from 'date-fns-tz';
@@ -32,6 +31,8 @@ export interface IdentificationProps {
 type User = { id: number; username: string };
 type IdentificationDetail = RouterOutput['identification']['get'];
 type IdentificationObservation = IdentificationDetail['observation'];
+type ObservationIdentification = IdentificationObservation['identifications'][number];
+type Feedback = ObservationIdentification['feedback'][number];
 type ObservationImage = IdentificationObservation['sightings'][number]['images'][number];
 type ConfirmationAnnotation = Feedback['annotations'][number];
 type ConfirmationAnnotationItem = {
