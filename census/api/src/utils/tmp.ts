@@ -1,10 +1,21 @@
 import { mkdirSync } from 'fs';
-import { unlink } from 'fs/promises';
+import { rm } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { report } from './logs.js';
 
 const Cache = new Map<string, Promise<TemporaryFile>>();
+
+const reportCleanupFailure = (error: unknown) => {
+  console.error('Failed to clean up temporary file', error);
+  if (!(error instanceof Error)) return;
+
+  try {
+    report(error);
+  } catch (reportError) {
+    console.error('Failed to report temporary file cleanup error', reportError);
+  }
+};
 
 export const getTemporaryFile = (filename: string) => {
   if (Cache.has(filename)) return Cache.get(filename);
@@ -40,7 +51,7 @@ export class TemporaryFile {
       .then(() => file)
       .catch(async err => {
         console.error(err);
-        await file.delete();
+        await file.delete().catch(reportCleanupFailure);
         throw err;
       });
     Cache.set(filename, promise);
@@ -54,9 +65,13 @@ export class TemporaryFile {
     const path = join(dir, name);
     const file = new TemporaryFile(name, dir, path);
 
-    const result = await createCallbackFn(file);
-    await file.delete();
-    return result;
+    try {
+      return await createCallbackFn(file);
+    } finally {
+      // Cleanup must happen after the callback has completely consumed the
+      // file, and cleanup failure must not replace the operation's result.
+      await file.delete().catch(reportCleanupFailure);
+    }
   }
 
   static async createMany(
@@ -88,8 +103,11 @@ export class TemporaryFile {
   }
 
   async delete() {
-    await unlink(this.path);
-    Cache.delete(this.path);
+    try {
+      await rm(this.path, { force: true });
+    } finally {
+      Cache.delete(this.path);
+    }
   }
 }
 
@@ -98,7 +116,7 @@ setInterval(() => {
     promise
       .then(file => {
         if (file.expired()) {
-          void file.delete();
+          void file.delete().catch(reportCleanupFailure);
         }
       })
       .catch(err => {

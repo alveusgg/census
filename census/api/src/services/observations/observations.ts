@@ -3,7 +3,7 @@ import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
 import { and, count, desc, eq, gte, inArray, isNotNull, isNull, lte, ne, or, SQL, sql } from 'drizzle-orm';
 import ffmpeg from 'fluent-ffmpeg';
-import { createReadStream } from 'fs';
+import { readFile } from 'fs/promises';
 import { z } from 'zod';
 import { Pagination, Query } from '../../api/observation.js';
 import {
@@ -94,19 +94,67 @@ export const getObservation = async (id: number) => {
   return observation;
 };
 
-export const createObservationsFromCapture = async (captureId: number, observations: ObservationPayload[]) => {
+export const createObservationsFromCapture = async (captureId: number, observationPayloads: ObservationPayload[]) => {
   const db = useDB();
   const user = useUser();
 
   await recordAchievement('observe', user.id, { payload: { captureId } }, true);
 
+  if (observationPayloads.length === 0) return [];
+
+  const capture = await getCapture(captureId);
+  if (capture.status !== 'complete') throw new BadRequestError('Capture is not completed');
+  const videoUrl = capture.videoUrl;
+  assert(videoUrl, 'Capture has no video URL');
+
+  // Frame extraction and uploads are deliberately completed before opening a
+  // transaction. They can take seconds and must not occupy a database
+  // connection while waiting on ffmpeg, storage, or the long-operation queue.
+  const preparedObservations = await Promise.all(
+    observationPayloads.map(selections => prepareObservation(videoUrl, selections))
+  );
+
   return await db.transaction(async tx =>
     withTransaction(tx, async () => {
-      return await Promise.all(
-        observations.map(async selections => {
-          return await createObservations(captureId, selections);
-        })
-      );
+      const observationIds: number[] = [];
+
+      for (const prepared of preparedObservations) {
+        const [observation] = await tx
+          .insert(observations)
+          .values({
+            observedAt: prepared.observedAt
+          })
+          .returning({ id: observations.id });
+
+        const [sighting] = await tx
+          .insert(sightings)
+          .values({
+            observationId: observation.id,
+            captureId,
+            observedAt: prepared.observedAt,
+            observedBy: user.id
+          })
+          .returning({ id: sightings.id });
+
+        if (prepared.frames.length > 0) {
+          await tx.insert(images).values(
+            prepared.frames.map(frame => ({
+              sightingId: sighting.id,
+              timestamp: frame.timestamp.toString(),
+              url: frame.url,
+              width: prepared.width,
+              height: prepared.height,
+              boundingBox: scaleBoundingBox(frame.boundingBox, prepared.width, prepared.height)
+            }))
+          );
+        }
+
+        observationIds.push(observation.id);
+      }
+
+      // Keep response loading in the transaction so a read failure cannot
+      // commit data while returning an error that encourages a duplicate retry.
+      return await Promise.all(observationIds.map(getObservation));
     })
   );
 };
@@ -294,59 +342,26 @@ export const confirmObservationWithoutAccessoryIdentification = async (observati
     .where(eq(observations.id, observationId));
 };
 
-const createObservations = async (captureId: number, selections: Selection[], nickname?: string) => {
-  const db = useDB();
-  const user = useUser();
-
+const prepareObservation = async (videoUrl: string, selections: Selection[]) => {
   return runLongOperation(async () => {
-    const capture = await getCapture(captureId);
-    if (capture.status !== 'complete') throw new BadRequestError('Capture is not completed');
-    assert(capture.videoUrl, 'Capture has no video URL');
-    const videoUrl = capture.videoUrl;
-
     await new Promise(resolve => setTimeout(resolve, 4000));
 
     const observedAt = new Date();
-    const [observation] = await db
-      .insert(observations)
-      .values({
-        observedAt
-      })
-      .returning();
-
-    const [sighting] = await db
-      .insert(sightings)
-      .values({
-        observationId: observation.id,
-        captureId,
-        nickname,
-        observedAt,
-        observedBy: user.id
-      })
-      .returning();
-
     const stats = await getStreamStats(videoUrl);
     const width = stats.width;
     const height = stats.height;
     assert(width && height, 'Failed to get stream stats');
 
-    await Promise.all(
+    const frames = await Promise.all(
       selections.map(async ({ timestamp, boundingBox }) => {
         console.log(`Getting frame from video for timestamp ${timestamp}`);
         const url = await getFrameFromVideo(videoUrl, timestamp);
 
-        await db.insert(images).values({
-          sightingId: sighting.id,
-          timestamp: timestamp.toString(),
-          url,
-          width,
-          height,
-          boundingBox: scaleBoundingBox(boundingBox, width, height)
-        });
+        return { timestamp, boundingBox, url };
       })
     );
 
-    return await getObservation(observation.id);
+    return { observedAt, width, height, frames };
   }, 'Processing capture images');
 };
 
@@ -694,13 +709,20 @@ export const getFrameFromVideo = async (videoUrl: string, timestamp: number) => 
   return await TemporaryFile.with(`${randomUUID()}.jpg`, async frame => {
     await extractFrameFromVideo(videoUrl, timestamp, frame);
     return await frameUploadLimiter.run(async () => {
+      // Read the completed JPEG once while holding an upload slot. A Buffer is
+      // replayable across retries and has a stable length, unlike a lazy file
+      // stream whose backing temporary file can disappear before middleware
+      // opens or measures it.
+      const body = await readFile(frame.path);
+
       return await frameUploadRetrier.run(async () => {
         try {
           await storage.send(
             new PutObjectCommand({
               Bucket: variables.S3_BUCKET,
               Key: frame.name,
-              Body: createReadStream(frame.path)
+              Body: body,
+              ContentLength: body.byteLength
             })
           );
           return buildObjectUrl(variables, frame.name);
