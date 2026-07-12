@@ -5,6 +5,11 @@
   "scripts": {
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
+    "lint": "pnpm --filter @alveusgg/census-api lint && pnpm --filter @alveusgg/census-website lint",
+    "typecheck": "tsc --noEmit -p census/api/tsconfig.json && tsc --noEmit -p infrastructure/pulumi/tsconfig.json",
+    "test": "pnpm --filter @alveusgg/census-website test",
+    "build": "pnpm --filter @alveusgg/census-website build",
+    "verify": "pnpm fmt:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "deps:up": "docker compose --file local/core-services.yml up -d",
     "deps:down": "docker compose --file local/core-services.yml down",
     "stream:up": "docker compose --file local/clip-services.yml up -d",
@@ -15,6 +20,7 @@
   "license": "MIT",
   "devDependencies": {
     "drizzle-kit": "^0.24.2",
-    "oxfmt": "latest"
+    "oxfmt": "latest",
+    "typescript": "^5.7.2"
   }
 }

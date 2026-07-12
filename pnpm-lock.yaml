@@ -23,6 +23,9 @@ importers:
       oxfmt:
         specifier: latest
         version: 0.58.0
+      typescript:
+        specifier: ^5.7.2
+        version: 5.7.2
 
   census/api:
     dependencies:
