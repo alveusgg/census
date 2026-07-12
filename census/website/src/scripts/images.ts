@@ -18,13 +18,16 @@ async function processImages(src: string, dst: string) {
       const croppedMetadata = await cropped.metadata();
       const { width = 0 } = croppedMetadata;
       const { padding, thickness } = getOutlineSizes(width);
-      const padded = cropped.clone().ensureAlpha().extend({
-        top: padding,
-        bottom: padding,
-        left: padding,
-        right: padding,
-        background: { r: 0, g: 0, b: 0, alpha: 0 }
-      });
+      const padded = cropped
+        .clone()
+        .ensureAlpha()
+        .extend({
+          top: padding,
+          bottom: padding,
+          left: padding,
+          right: padding,
+          background: { r: 0, g: 0, b: 0, alpha: 0 }
+        });
       const paddedMetadata = await padded.metadata();
       console.log('[images:process]', {
         id,

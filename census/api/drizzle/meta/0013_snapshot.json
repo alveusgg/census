@@ -130,12 +130,8 @@
           "name": "achievements_user_id_users_id_fk",
           "tableFrom": "achievements",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -143,12 +139,8 @@
           "name": "achievements_identification_id_identifications_id_fk",
           "tableFrom": "achievements",
           "tableTo": "identifications",
-          "columnsFrom": [
-            "identification_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["identification_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -156,12 +148,8 @@
           "name": "achievements_observation_id_observations_id_fk",
           "tableFrom": "achievements",
           "tableTo": "observations",
-          "columnsFrom": [
-            "observation_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["observation_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -277,12 +265,8 @@
           "name": "captures_captured_by_users_id_fk",
           "tableFrom": "captures",
           "tableTo": "users",
-          "columnsFrom": [
-            "captured_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["captured_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -290,12 +274,8 @@
           "name": "captures_feed_id_feeds_id_fk",
           "tableFrom": "captures",
           "tableTo": "feeds",
-          "columnsFrom": [
-            "feed_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["feed_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -305,9 +285,7 @@
         "captures_clip_id_unique": {
           "name": "captures_clip_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "clip_id"
-          ]
+          "columns": ["clip_id"]
         }
       }
     },
@@ -561,12 +539,8 @@
           "name": "feedback_identification_id_identifications_id_fk",
           "tableFrom": "feedback",
           "tableTo": "identifications",
-          "columnsFrom": [
-            "identification_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["identification_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -574,12 +548,8 @@
           "name": "feedback_user_id_users_id_fk",
           "tableFrom": "feedback",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -681,12 +651,8 @@
           "name": "identifications_observation_id_observations_id_fk",
           "tableFrom": "identifications",
           "tableTo": "observations",
-          "columnsFrom": [
-            "observation_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["observation_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -694,12 +660,8 @@
           "name": "identifications_suggested_by_users_id_fk",
           "tableFrom": "identifications",
           "tableTo": "users",
-          "columnsFrom": [
-            "suggested_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["suggested_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -707,12 +669,8 @@
           "name": "identifications_confirmed_by_users_id_fk",
           "tableFrom": "identifications",
           "tableTo": "users",
-          "columnsFrom": [
-            "confirmed_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["confirmed_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -720,12 +678,8 @@
           "name": "identifications_shiny_id_shinies_id_fk",
           "tableFrom": "identifications",
           "tableTo": "shinies",
-          "columnsFrom": [
-            "shiny_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["shiny_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -792,12 +746,8 @@
           "name": "images_sighting_id_sightings_id_fk",
           "tableFrom": "images",
           "tableTo": "sightings",
-          "columnsFrom": [
-            "sighting_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["sighting_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -898,12 +848,8 @@
           "name": "metrics_user_id_users_id_fk",
           "tableFrom": "metrics",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -976,12 +922,8 @@
           "name": "notifications_user_id_users_id_fk",
           "tableFrom": "notifications",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1117,12 +1059,8 @@
           "name": "responses_user_id_users_id_fk",
           "tableFrom": "responses",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1236,12 +1174,8 @@
           "name": "shinies_season_id_seasons_id_fk",
           "tableFrom": "shinies",
           "tableTo": "seasons",
-          "columnsFrom": [
-            "season_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["season_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1296,12 +1230,8 @@
           "name": "sightings_observation_id_observations_id_fk",
           "tableFrom": "sightings",
           "tableTo": "observations",
-          "columnsFrom": [
-            "observation_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["observation_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1309,12 +1239,8 @@
           "name": "sightings_capture_id_captures_id_fk",
           "tableFrom": "sightings",
           "tableTo": "captures",
-          "columnsFrom": [
-            "capture_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["capture_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1322,12 +1248,8 @@
           "name": "sightings_observed_by_users_id_fk",
           "tableFrom": "sightings",
           "tableTo": "users",
-          "columnsFrom": [
-            "observed_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["observed_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1358,12 +1280,8 @@
           "name": "tag_assignments_tag_id_tags_id_fk",
           "tableFrom": "tag_assignments",
           "tableTo": "tags",
-          "columnsFrom": [
-            "tag_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["tag_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1371,12 +1289,8 @@
           "name": "tag_assignments_identification_id_identifications_id_fk",
           "tableFrom": "tag_assignments",
           "tableTo": "identifications",
-          "columnsFrom": [
-            "identification_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["identification_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1384,10 +1298,7 @@
       "compositePrimaryKeys": {
         "tag_assignments_tag_id_identification_id_pk": {
           "name": "tag_assignments_tag_id_identification_id_pk",
-          "columns": [
-            "tag_id",
-            "identification_id"
-          ]
+          "columns": ["tag_id", "identification_id"]
         }
       },
       "uniqueConstraints": {}
@@ -1490,50 +1401,27 @@
     "public.capture_status": {
       "name": "capture_status",
       "schema": "public",
-      "values": [
-        "draft",
-        "pending",
-        "processing",
-        "complete",
-        "archived",
-        "failed",
-        "dead"
-      ]
+      "values": ["draft", "pending", "processing", "complete", "archived", "failed", "dead"]
     },
     "public.status": {
       "name": "status",
       "schema": "public",
-      "values": [
-        "offline",
-        "unhealthy",
-        "healthy"
-      ]
+      "values": ["offline", "unhealthy", "healthy"]
     },
     "public.feedback_type": {
       "name": "feedback_type",
       "schema": "public",
-      "values": [
-        "agree",
-        "disagree",
-        "confirm"
-      ]
+      "values": ["agree", "disagree", "confirm"]
     },
     "public.tag_type": {
       "name": "tag_type",
       "schema": "public",
-      "values": [
-        "generic",
-        "event",
-        "campaign"
-      ]
+      "values": ["generic", "event", "campaign"]
     },
     "public.user_status": {
       "name": "user_status",
       "schema": "public",
-      "values": [
-        "active",
-        "pending"
-      ]
+      "values": ["active", "pending"]
     }
   },
   "schemas": {},

@@ -138,7 +138,15 @@ async function renderLevel({
   }
 }
 
-async function writeManifest({ config, manifest, output }: { config: PanoTileConfig; manifest: string; output: string }) {
+async function writeManifest({
+  config,
+  manifest,
+  output
+}: {
+  config: PanoTileConfig;
+  manifest: string;
+  output: string;
+}) {
   await mkdir(dirname(manifest), { recursive: true });
 
   const baseHeight = Math.round(config.baseWidth / 2);

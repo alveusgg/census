@@ -10,7 +10,10 @@ interface SubscribeParams {
   events: ('insert' | 'update' | 'delete')[];
 }
 
-export const subscribeToChanges = async function* (params: SubscribeParams & KeyParams, options?: { signal?: AbortSignal }) {
+export const subscribeToChanges = async function* (
+  params: SubscribeParams & KeyParams,
+  options?: { signal?: AbortSignal }
+) {
   const key = getReceiveKey(params);
 
   for await (const [change] of on(ee, key, { signal: options?.signal })) {

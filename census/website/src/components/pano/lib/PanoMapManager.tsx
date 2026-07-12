@@ -415,10 +415,7 @@ function isUvInTile(uv: THREE.Vector2, descriptor: TileDescriptor) {
   const v1 = (descriptor.y + descriptor.height) / descriptor.level.height;
 
   return (
-    u >= u0 - UV_EDGE_EPSILON &&
-    u <= u1 + UV_EDGE_EPSILON &&
-    v >= v0 - UV_EDGE_EPSILON &&
-    v <= v1 + UV_EDGE_EPSILON
+    u >= u0 - UV_EDGE_EPSILON && u <= u1 + UV_EDGE_EPSILON && v >= v0 - UV_EDGE_EPSILON && v <= v1 + UV_EDGE_EPSILON
   );
 }
 

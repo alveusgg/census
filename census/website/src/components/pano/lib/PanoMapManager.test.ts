@@ -12,9 +12,7 @@ const LEVEL: PanoTileLevel = {
   columns: 24,
   rows: 12,
   showBelowFov: 20,
-  tiles: Array.from({ length: 12 }, (_, row) =>
-    Array.from({ length: 24 }, (_, column) => `/${row}/${column}.webp`)
-  )
+  tiles: Array.from({ length: 12 }, (_, row) => Array.from({ length: 24 }, (_, column) => `/${row}/${column}.webp`))
 };
 
 function createCamera({ fov, aspect, pan = 0 }: { fov: number; aspect: number; pan?: number }) {

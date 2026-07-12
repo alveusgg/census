@@ -66,13 +66,7 @@ export const Menu = () => {
   );
 };
 
-const DesktopMenu = ({
-  open,
-  setOpen
-}: {
-  open: boolean;
-  setOpen: Dispatch<SetStateAction<boolean>>;
-}) => {
+const DesktopMenu = ({ open, setOpen }: { open: boolean; setOpen: Dispatch<SetStateAction<boolean>> }) => {
   return (
     <>
       <div className="flex gap-2 mb-2">

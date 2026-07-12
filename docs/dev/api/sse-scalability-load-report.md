@@ -123,12 +123,12 @@ Container limit:
 --cpus=1 --memory=512m
 ```
 
-| Target connections | Connected | Client errors | Max memory | Avg CPU | Max CPU | Outcome |
-| ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| 100 | 100 | 0 | 268.3 MiB | 3.43% | 33.37% | Pass |
-| 500 | 500 | 0 | 374.1 MiB | 3.11% | 10.46% | Pass |
-| 1000 | 1000 | 0 | 442.0 MiB | 8.08% | 74.84% | Pass |
-| 1500 | 1239 | 1500 | 471.7 MiB before exit | 12.00% while alive | 96.79% | Failed during ramp |
+| Target connections | Connected | Client errors |            Max memory |            Avg CPU | Max CPU | Outcome            |
+| -----------------: | --------: | ------------: | --------------------: | -----------------: | ------: | ------------------ |
+|                100 |       100 |             0 |             268.3 MiB |              3.43% |  33.37% | Pass               |
+|                500 |       500 |             0 |             374.1 MiB |              3.11% |  10.46% | Pass               |
+|               1000 |      1000 |             0 |             442.0 MiB |              8.08% |  74.84% | Pass               |
+|               1500 |      1239 |          1500 | 471.7 MiB before exit | 12.00% while alive |  96.79% | Failed during ramp |
 
 The 1500-connection run exited during ramp. Docker reported `OOMKilled:false` and `ExitCode:134`. The process failed inside V8:
 
@@ -144,10 +144,10 @@ Container limit:
 --cpus=1 --memory=512m
 ```
 
-| Connections | Connected | Client errors | Post-trigger data frames | Trigger command time | First post-trigger data | Max memory | Avg CPU | Max CPU | Outcome |
-| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| 500 | 500 | 0 | 500 | 131 ms | 448 ms after command finished | 433.7 MiB | 3.91% | 10.14% | Pass |
-| 1000 | 1000 | 0 | 1010 | 110 ms | immediately after command finished | 460.0 MiB | 9.68% | 78.70% | Pass |
+| Connections | Connected | Client errors | Post-trigger data frames | Trigger command time |            First post-trigger data | Max memory | Avg CPU | Max CPU | Outcome |
+| ----------: | --------: | ------------: | -----------------------: | -------------------: | ---------------------------------: | ---------: | ------: | ------: | ------- |
+|         500 |       500 |             0 |                      500 |               131 ms |      448 ms after command finished |  433.7 MiB |   3.91% |  10.14% | Pass    |
+|        1000 |      1000 |             0 |                     1010 |               110 ms | immediately after command finished |  460.0 MiB |   9.68% |  78.70% | Pass    |
 
 The `Post-trigger data frames` value is from a raw SSE frame counter, not a typed tRPC application-message counter. It is good enough to prove delivery, but it can slightly over-count application messages. The 1000-client burst over-counted by 10 frames.
 
@@ -162,10 +162,10 @@ Container limit:
 These runs were done sequentially in one API container, so later rows include normal V8 heap growth and GC behavior from earlier rows rather than a fresh-process baseline.
 
 | Target connections | Connected | Client errors | Max memory | Avg CPU | Max CPU | Outcome |
-| ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| 1500 | 1500 | 0 | 665.8 MiB | 4.98% | 13.53% | Pass |
-| 2000 | 2000 | 0 | 726.5 MiB | 6.71% | 25.41% | Pass |
-| 3000 | 3000 | 0 | 971.0 MiB | 9.72% | 39.54% | Pass |
+| -----------------: | --------: | ------------: | ---------: | ------: | ------: | ------- |
+|               1500 |      1500 |             0 |  665.8 MiB |   4.98% |  13.53% | Pass    |
+|               2000 |      2000 |             0 |  726.5 MiB |   6.71% |  25.41% | Pass    |
+|               3000 |      3000 |             0 |  971.0 MiB |   9.72% |  39.54% | Pass    |
 
 The 3000-connection idle run had no client errors and the API container remained healthy. During ramp the script briefly logged `connected:2989`, but all 3000 connections completed before the final summary.
 
@@ -177,9 +177,9 @@ Container limit:
 --cpus=1 --memory=2g
 ```
 
-| Connections | Connected | Client errors | Post-trigger data frames | Trigger command time | First post-trigger data | Max memory | Avg CPU | Max CPU | Outcome |
-| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| 3000 | 3000 | 0 | 3027 | 149 ms | 1 ms after command finished | 1019.0 MiB | 16.71% | 98.84% | Pass |
+| Connections | Connected | Client errors | Post-trigger data frames | Trigger command time |     First post-trigger data | Max memory | Avg CPU | Max CPU | Outcome |
+| ----------: | --------: | ------------: | -----------------------: | -------------------: | --------------------------: | ---------: | ------: | ------: | ------- |
+|        3000 |      3000 |             0 |                     3027 |               149 ms | 1 ms after command finished | 1019.0 MiB |  16.71% |  98.84% | Pass    |
 
 The 3000-subscriber update burst briefly saturated the single CPU while fanning out to every open response. It still completed without client errors, container OOM, or process failure.
 

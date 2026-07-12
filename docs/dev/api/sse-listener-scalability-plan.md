@@ -221,10 +221,9 @@ const load = async (): Promise<LoadResult<T>> => {
 
 const loadSnapshot = async () => {
   if (!inFlight) {
-    inFlight = load()
-      .finally(() => {
-        inFlight = undefined;
-      });
+    inFlight = load().finally(() => {
+      inFlight = undefined;
+    });
   }
 
   return await inFlight;

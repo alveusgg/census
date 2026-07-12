@@ -113,13 +113,10 @@ export class PostgresKVCache implements KVCache {
   async set(key: string, value: string, ttl?: number) {
     const expiredAt = ttl ? new Date(Date.now() + ttl * 1000) : null;
 
-    await this.db
-      .insert(cacheTable)
-      .values({ key, value, expiredAt })
-      .onConflictDoUpdate({
-        target: cacheTable.key,
-        set: { value, expiredAt }
-      });
+    await this.db.insert(cacheTable).values({ key, value, expiredAt }).onConflictDoUpdate({
+      target: cacheTable.key,
+      set: { value, expiredAt }
+    });
   }
 }
 

@@ -1,18 +1,18 @@
-import { InfiniteFeedSentinel } from "@/components/feed/InfiniteFeedSentinel";
-import { Modal } from "@/components/modal/Modal";
-import { ModalProps } from "@/components/modal/useModal";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useInfiniteLeaderboard } from "@/services/api/me";
-import { cn } from "@/utils/cn";
-import { DialogTitle } from "@radix-ui/react-dialog";
-import { useInfiniteQuery } from "@tanstack/react-query";
-import { X } from "lucide-react";
-import { FC, useMemo } from "react";
-import { LeaderboardEmptyState } from "./LeaderboardEmptyState";
-import { LeaderboardPodium } from "./LeaderboardPodium";
-import { LeaderboardRow } from "./LeaderboardRow";
-import { LeaderboardTimeframeSelect } from "./LeaderboardTimeframeSelect";
-import { LeaderboardTimeframe, getLeaderboardFromDate } from "./timeframes";
+import { InfiniteFeedSentinel } from '@/components/feed/InfiniteFeedSentinel';
+import { Modal } from '@/components/modal/Modal';
+import { ModalProps } from '@/components/modal/useModal';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useInfiniteLeaderboard } from '@/services/api/me';
+import { cn } from '@/utils/cn';
+import { DialogTitle } from '@radix-ui/react-dialog';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { X } from 'lucide-react';
+import { FC, useMemo } from 'react';
+import { LeaderboardEmptyState } from './LeaderboardEmptyState';
+import { LeaderboardPodium } from './LeaderboardPodium';
+import { LeaderboardRow } from './LeaderboardRow';
+import { LeaderboardTimeframeSelect } from './LeaderboardTimeframeSelect';
+import { LeaderboardTimeframe, getLeaderboardFromDate } from './timeframes';
 
 interface LeaderboardModalProps extends ModalProps {
   leaderboard: { id: number; username: string; points: number }[];
@@ -38,18 +38,16 @@ export const LeaderboardModal: FC<LeaderboardModalProps> = ({
     ...useInfiniteLeaderboard({
       from: getLeaderboardFromDate(timeframe),
       offset: PODIUM_COUNT,
-      size: PAGE_SIZE,
+      size: PAGE_SIZE
     }),
-    enabled: props.isOpen,
+    enabled: props.isOpen
   });
 
   const totalRanks = query.data?.pages[0]?.meta.total ?? leaderboard.length;
   const hasLeaderboardEntries = leaderboard.length > 0;
   const rows = useMemo(() => {
     const meId = place.me?.id;
-    return (query.data?.pages.flatMap((page) => page.data) ?? []).filter(
-      (entry) => entry.id !== meId,
-    );
+    return (query.data?.pages.flatMap(page => page.data) ?? []).filter(entry => entry.id !== meId);
   }, [place.me?.id, query.data?.pages]);
 
   return (
@@ -66,10 +64,7 @@ export const LeaderboardModal: FC<LeaderboardModalProps> = ({
           </div>
 
           <div className="ml-auto flex items-center gap-2">
-            <LeaderboardTimeframeSelect
-              value={timeframe}
-              onValueChange={onTimeframeChange}
-            />
+            <LeaderboardTimeframeSelect value={timeframe} onValueChange={onTimeframeChange} />
             <button
               type="button"
               onClick={props.close}
@@ -88,10 +83,12 @@ export const LeaderboardModal: FC<LeaderboardModalProps> = ({
         )}
 
         <ScrollArea className="flex-1">
-          <div className={cn("px-5 py-5 sm:px-6", !hasLeaderboardEntries && "flex min-h-full items-center justify-center")}>
+          <div
+            className={cn('px-5 py-5 sm:px-6', !hasLeaderboardEntries && 'flex min-h-full items-center justify-center')}
+          >
             {hasLeaderboardEntries ? (
               <div className="space-y-4">
-                {rows.map((entry) => (
+                {rows.map(entry => (
                   <LeaderboardRow
                     key={entry.id}
                     place={entry.place}
@@ -104,18 +101,15 @@ export const LeaderboardModal: FC<LeaderboardModalProps> = ({
                 {!rows.length && !query.isLoading && !query.isFetchingNextPage && (
                   <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-center text-sm text-white/80">
                     {totalRanks <= PODIUM_COUNT
-                      ? "No leaderboard rows below the podium yet."
-                      : "No additional leaderboard rows to show."}
+                      ? 'No leaderboard rows below the podium yet.'
+                      : 'No additional leaderboard rows to show.'}
                   </div>
                 )}
 
                 <InfiniteFeedSentinel
-                  className={cn(
-                    "flex min-h-10 items-center justify-center text-sm text-white/80",
-                    {
-                      hidden: !query.hasNextPage && !query.isFetchingNextPage,
-                    },
-                  )}
+                  className={cn('flex min-h-10 items-center justify-center text-sm text-white/80', {
+                    hidden: !query.hasNextPage && !query.isFetchingNextPage
+                  })}
                   fetchNextPage={() => query.fetchNextPage()}
                   hasNextPage={query.hasNextPage}
                   isFetchingNextPage={query.isFetchingNextPage}

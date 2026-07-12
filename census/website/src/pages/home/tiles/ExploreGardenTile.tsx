@@ -1,31 +1,19 @@
-import { ChevronRight } from "lucide-react";
-import { FC } from "react";
-import { Link } from "react-router-dom";
+import { ChevronRight } from 'lucide-react';
+import { FC } from 'react';
+import { Link } from 'react-router-dom';
 
-import pano from "@/assets/pano.png";
+import pano from '@/assets/pano.png';
 
 export const ExploreGardenTile: FC = () => {
   return (
-    <Link
-      to="/identifications"
-      className="group flex items-center gap-4 py-4 md:pl-6 md:py-2 @container"
-    >
-      <div
-        className="w-20 md:w-28 h-16 shrink-0"
-        aria-label="Pano preview placeholder"
-      >
-        <img
-          src={pano}
-          alt="Pano preview"
-          className="w-full h-full object-contain"
-        />
+    <Link to="/identifications" className="group flex items-center gap-4 py-4 md:pl-6 md:py-2 @container">
+      <div className="w-20 md:w-28 h-16 shrink-0" aria-label="Pano preview placeholder">
+        <img src={pano} alt="Pano preview" className="w-full h-full object-contain" />
       </div>
       <div className="flex flex-col gap-1 min-w-0 flex-1">
-        <h3 className="font-serif text-xl font-bold text-accent-900 leading-tight">
-          explore the garden
-        </h3>
+        <h3 className="font-serif text-xl font-bold text-accent-900 leading-tight">explore the garden</h3>
         <p className="text-sm text-accent-800 transition-colors leading-snug group-hover:text-accent-700">
-          See the 360° pano and see if you can spot anything!{" "}
+          See the 360° pano and see if you can spot anything!{' '}
           <ChevronRight className="size-4 inline-block align-text-bottom transition-transform group-hover:translate-x-0.5" />
         </p>
       </div>

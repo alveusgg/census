@@ -6,13 +6,13 @@
 
 ## 1. Technology Stack
 
-| Layer | Library / Driver | Version (from `census/api/package.json`) |
-|-------|------------------|------------------------------------------|
-| ORM | Drizzle ORM | `^0.33.0` |
-| Driver | `postgres` (postgres-js) | `^3.4.4` |
-| Migration CLI | drizzle-kit | `^0.24.2` |
-| Validation | Zod | `^3.23.8` |
-| Async Context | `node:async_hooks` (wrapped via `@alveusgg/node`) | Node built-in |
+| Layer         | Library / Driver                                  | Version (from `census/api/package.json`) |
+| ------------- | ------------------------------------------------- | ---------------------------------------- |
+| ORM           | Drizzle ORM                                       | `^0.33.0`                                |
+| Driver        | `postgres` (postgres-js)                          | `^3.4.4`                                 |
+| Migration CLI | drizzle-kit                                       | `^0.24.2`                                |
+| Validation    | Zod                                               | `^3.23.8`                                |
+| Async Context | `node:async_hooks` (wrapped via `@alveusgg/node`) | Node built-in                            |
 
 ---
 
@@ -200,6 +200,7 @@ export type User = typeof users.$inferSelect;
 ```
 
 Key conventions:
+
 - Prefer `pgTable`, `pgEnum`, `serial`, `timestamp`, `json`, `text`, etc. from `drizzle-orm/pg-core`.
 - Indexes are declared in the second argument callback.
 - Types are inferred with `typeof table.$inferSelect` (or `$inferInsert`).
@@ -228,6 +229,7 @@ export const getUser = async (id: number) => {
 ```
 
 Important rules:
+
 - **Always use `useDB()`** rather than importing a raw `db` instance. `useDB()` is context-aware and will return an active transaction if one exists (see §6 AsyncLocalStorage).
 - Use Drizzle's SQL builder (`eq`, `desc`, `gt`, etc.) for filtering and ordering.
 - Throw domain errors (`NotAuthenticatedError`, `NotFoundError`) when rows are missing.
@@ -312,6 +314,7 @@ export const config = z.object({
 ```
 
 Key Zod patterns used:
+
 - `z.string()` — required string.
 - `z.coerce.number()` — casts env strings to numbers (e.g. `PORT=3000`).
 - `z.coerce.boolean().default(false)` — casts `"true"` / `"false"` strings to booleans; falls back to `false` if missing.
@@ -346,6 +349,7 @@ export const createEnvironment = async (): Promise<Env> => {
 ```
 
 Flow:
+
 1. `dotenv` is loaded first in `src/index.ts`.
 2. `createEnvironment()` parses `process.env` through the Zod schema.
 3. `services(variables)` is awaited, which initialises every external client (Postgres, S3, Twitch, etc.).
@@ -365,11 +369,17 @@ export const services = async (variables: z.infer<typeof config>) => {
     ensure we make only one client for each service.
   */
 
-  const sentry = (() => { /* … */ })();
+  const sentry = (() => {
+    /* … */
+  })();
 
   // Optional clients
-  const mux = (() => { /* … */ })();
-  const cache = (() => { /* … */ })();
+  const mux = (() => {
+    /* … */
+  })();
+  const cache = (() => {
+    /* … */
+  })();
 
   // Required clients
   const database = await initialise(
@@ -380,11 +390,11 @@ export const services = async (variables: z.infer<typeof config>) => {
     variables.POSTGRES_SSL
   );
 
-  const storage = new S3Client({ /* … */ });
-  const twitch = new ApiClient({ /* … */ });
+  const storage = new S3Client({/* … */});
+  const twitch = new ApiClient({/* … */});
 
   return {
-    db: database.db,          // Drizzle instance
+    db: database.db, // Drizzle instance
     postgres: database.client, // Raw postgres-js client
     storage,
     twitch,
@@ -396,6 +406,7 @@ export const services = async (variables: z.infer<typeof config>) => {
 ```
 
 Why this pattern matters:
+
 - **Fail-fast** — if Postgres is unreachable, the server crashes immediately during startup instead of on the first request.
 - **Singleton guarantee** — every service gets exactly one client instance.
 - **Conditional initialisation** — optional services (Mux, Cloudflare KV) are only created when their env vars are present.
@@ -427,6 +438,7 @@ export const createStore = <T>(name: string) => {
 ```
 
 `createStore` returns a tuple `[withStore, useStore]`:
+
 - `withStore(value, callback)` — runs the callback inside an async context where `value` is retrievable.
 - `useStore()` — retrieves the current value from the active async context. Throws if called outside a `withStore` block.
 
@@ -454,6 +466,7 @@ await withEnvironment(environment, async () => {
 ```
 
 `useEnvironment()` is called by:
+
 - `tearDownDatabase()` to grab the raw `postgres` client.
 - `useDB()` as a fallback when no transaction is active.
 
@@ -522,6 +535,7 @@ const getUser = async (id: number, tx?: DB) => { … }
 ```
 
 With the store pattern:
+
 - `useDB()` transparently resolves to the correct instance.
 - Nested service calls automatically participate in the parent transaction.
 - The code stays flat and readable.
@@ -555,7 +569,7 @@ recentAchievements: procedure.subscription(async function* () {
   for await (const _ of subscribeToChanges({ table: 'achievements', events: ['insert', 'update'] })) {
     yield await getRecentRedeemedAchievements(7);
   }
-})
+});
 ```
 
 Every time an achievement row is inserted or updated, the subscription re-fetches and pushes the latest 7 achievements to connected WebSocket clients.
@@ -564,17 +578,17 @@ Every time an achievement row is inserted or updated, the subscription re-fetche
 
 ## 9. Quick Reference Cheatsheet
 
-| Task | File / Command |
-|------|---------------|
-| Add a new table | `census/api/src/db/schema/<name>.ts` → export in `index.ts` |
-| Generate migration | `pnpm db:generate` |
-| Run migrations | **Automatic** on server start via `initialise()` |
-| Query the DB | Call `useDB()` then `db.select().from(table)` |
-| Start a transaction | `db.transaction(async tx => withTransaction(tx, async () => { … }))` |
-| Get current user | `useUser()` inside any tRPC handler |
-| Get env / host | `useEnvironment()` |
-| Listen to table changes | `subscribeToChanges({ table: 'users', events: ['insert'] })` |
-| Close DB gracefully | `tearDownDatabase()` (called by SIGTERM handler) |
+| Task                    | File / Command                                                       |
+| ----------------------- | -------------------------------------------------------------------- |
+| Add a new table         | `census/api/src/db/schema/<name>.ts` → export in `index.ts`          |
+| Generate migration      | `pnpm db:generate`                                                   |
+| Run migrations          | **Automatic** on server start via `initialise()`                     |
+| Query the DB            | Call `useDB()` then `db.select().from(table)`                        |
+| Start a transaction     | `db.transaction(async tx => withTransaction(tx, async () => { … }))` |
+| Get current user        | `useUser()` inside any tRPC handler                                  |
+| Get env / host          | `useEnvironment()`                                                   |
+| Listen to table changes | `subscribeToChanges({ table: 'users', events: ['insert'] })`         |
+| Close DB gracefully     | `tearDownDatabase()` (called by SIGTERM handler)                     |
 
 ---
 
@@ -604,4 +618,4 @@ census/api/
 
 ---
 
-*Document generated from codebase audit on 2026-05-10.*
+_Document generated from codebase audit on 2026-05-10._

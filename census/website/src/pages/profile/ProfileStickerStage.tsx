@@ -120,11 +120,7 @@ export const ProfileStickerStage: FC<ProfileStickerStageProps> = ({
         />
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <h2 className="bg-accent-100 px-8 py-6 rounded-lg text-accent-900 font-bold [font-size:clamp(2rem,7.5cqw,3.75rem)]">
-            {userId ? (
-              <UserLink user={{ id: userId, username }} className="pointer-events-auto" />
-            ) : (
-              username
-            )}
+            {userId ? <UserLink user={{ id: userId, username }} className="pointer-events-auto" /> : username}
           </h2>
         </div>
         {editable && (
