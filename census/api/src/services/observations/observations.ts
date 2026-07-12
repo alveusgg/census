@@ -488,7 +488,8 @@ export const getObservations = async (pagination: Pagination, query?: Query) => 
           capture: {
             columns: {
               startCaptureAt: true,
-              clipId: true
+              clipId: true,
+              muxPlaybackId: true
             }
           }
         }
