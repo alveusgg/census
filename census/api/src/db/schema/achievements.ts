@@ -1,6 +1,6 @@
 import { Actions, AnyAchievementPayload } from '@alveusgg/census-levels';
 import { relations, sql } from 'drizzle-orm';
-import { boolean, index, integer, json, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
+import { boolean, index, integer, json, pgTable, serial, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 import { Sticker } from '../../services/points/achievement.js';
 import { identifications } from './identifications.js';
 import { observations } from './observations.js';
@@ -36,7 +36,10 @@ export const achievements = pgTable(
         .where(sql`${table.redeemed} = true AND ${table.revoked} = false`),
       pendingByUserIdx: index('achievements_pending_by_user_idx')
         .on(table.userId)
-        .where(sql`${table.redeemed} = false AND ${table.revoked} = false`)
+        .where(sql`${table.redeemed} = false AND ${table.revoked} = false`),
+      uniqueActiveObservationRewardIdx: uniqueIndex('achievements_unique_active_observation_reward_idx')
+        .on(table.userId, sql`((${table.payload}->'payload'->>'captureId')::integer)`)
+        .where(sql`${table.type} = 'observe' AND ${table.revoked} = false`)
     };
   }
 );

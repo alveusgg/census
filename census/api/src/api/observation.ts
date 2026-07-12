@@ -43,7 +43,7 @@ export type Query = z.infer<typeof Query>;
 export const createObservationRouter = () =>
   router({
     createObservationsFromCapture: procedureWithPermissions('capture')
-      .input(z.object({ captureId: z.number(), observations: z.array(ObservationPayload) }))
+      .input(z.object({ captureId: z.number(), observations: z.array(ObservationPayload).min(1) }))
       .use(
         cache.mutation({
           keys: [['observations'], ['captures'], ['users', 'identifications']]

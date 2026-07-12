@@ -183,6 +183,13 @@
       "when": 1783352424804,
       "tag": "0025_worthless_blade",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1783859872950,
+      "tag": "0026_zippy_big_bertha",
+      "breakpoints": true
     }
   ]
 }

@@ -30,12 +30,13 @@ export const recordAchievement = async <A extends Actions>(
   action: A,
   userId: number,
   payload: { payload: AchievementPayload<A>['payload']; sticker?: Sticker },
-  immediate = false
+  immediate = false,
+  idempotent = false
 ) => {
   const db = useDB();
   return await db.transaction(async tx =>
     withTransaction(tx, async () => {
-      await addAchievement(action, userId, payload.payload, payload.sticker, immediate);
+      await addAchievement(action, userId, payload.payload, payload.sticker, immediate, idempotent);
     })
   );
 };
@@ -138,14 +139,15 @@ const addAchievement = async <A extends Actions>(
   userId: number,
   payload: AchievementPayload<A>['payload'],
   sticker?: Sticker,
-  immediate = false
+  immediate = false,
+  idempotent = false
 ) => {
   const db = useDB();
   const details = registry[action];
   assert(details, `Invalid action: ${action}`);
   const parsed = details.schema.parse(payload);
 
-  await db.insert(achievements).values({
+  const insert = db.insert(achievements).values({
     type: action,
     userId,
     points: details.points,
@@ -154,6 +156,9 @@ const addAchievement = async <A extends Actions>(
     redeemed: immediate,
     sticker: sticker
   });
+
+  if (idempotent) await insert.onConflictDoNothing();
+  else await insert;
 };
 
 const redeemAchievement = async (userId: number, id: number) => {

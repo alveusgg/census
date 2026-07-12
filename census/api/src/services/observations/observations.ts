@@ -51,7 +51,7 @@ const Selection = z.object({
 
 export type Selection = z.infer<typeof Selection>;
 
-export const ObservationPayload = z.array(Selection);
+export const ObservationPayload = z.array(Selection).min(1);
 
 export type ObservationPayload = z.infer<typeof ObservationPayload>;
 
@@ -98,9 +98,9 @@ export const createObservationsFromCapture = async (captureId: number, observati
   const db = useDB();
   const user = useUser();
 
-  await recordAchievement('observe', user.id, { payload: { captureId } }, true);
-
-  if (observationPayloads.length === 0) return [];
+  if (observationPayloads.length === 0 || observationPayloads.some(selections => selections.length === 0)) {
+    throw new BadRequestError('At least one non-empty observation is required');
+  }
 
   const capture = await getCapture(captureId);
   if (capture.status !== 'complete') throw new BadRequestError('Capture is not completed');
@@ -151,6 +151,10 @@ export const createObservationsFromCapture = async (captureId: number, observati
 
         observationIds.push(observation.id);
       }
+
+      // Award at most once per user and capture, and only as part of a
+      // transaction that successfully persists at least one observation.
+      await recordAchievement('observe', user.id, { payload: { captureId } }, true, true);
 
       // Keep response loading in the transaction so a read failure cannot
       // commit data while returning an error that encourages a duplicate retry.
