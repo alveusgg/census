@@ -13,8 +13,8 @@
   "license": "ISC",
   "dependencies": {
     "@trpc/server": "catalog:",
-    "fastify": "^4.28.1",
-    "fastify-plugin": "^4.5.1",
+    "fastify": "^5.10.0",
+    "fastify-plugin": "^5.1.0",
     "zod": "^3.23.8"
   }
 }

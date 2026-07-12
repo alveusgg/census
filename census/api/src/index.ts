@@ -39,7 +39,7 @@ const getReadinessMetrics = (startedAt: number) => {
 };
 
 await withEnvironment(environment, async () => {
-  const server = fastify({ maxParamLength: 5000 });
+  const server = fastify({ routerOptions: { maxParamLength: 5000 } });
   const captureQueueWorker = createCaptureQueueWorker();
 
   await server.register(cors, {
