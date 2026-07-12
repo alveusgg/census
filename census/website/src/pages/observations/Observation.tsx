@@ -43,9 +43,11 @@ import SiLeaf from '@/components/icons/SiLeaf';
 import SiPin from '@/components/icons/SiPin';
 import SiTrash from '@/components/icons/SiTrash';
 import SiTwitch from '@/components/icons/SiTwitch';
+import SiVideo from '@/components/icons/SiVideo';
 import { DeleteObservationModal, DeleteObservationModalProps } from './DeleteObservationModal';
 import { Controls, SlidePips } from './gallery/Controls';
 import { getMinimizedTree, Node } from './helpers';
+import { ObservationVideoModal, ObservationVideoModalProps } from './ObservationVideoModal';
 
 interface ObservationProps {
   observation: ObservationType;
@@ -168,6 +170,7 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
   const isMobile = useIsMobile();
   const deleteObservationModal = useModal<DeleteObservationModalProps>();
   const locationModal = useModal<PanoLocationModalProps>();
+  const videoModal = useModal<ObservationVideoModalProps>();
 
   const accessoryIdentifications = observation.identifications.filter(identification => identification.isAccessory);
   const confirmedAccessoryIdentification = accessoryIdentifications.find(identification => identification.confirmedBy);
@@ -180,6 +183,13 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
   const canConfirmWithoutAccessoryIdentification =
     canModerate && Boolean(confirmedPrimaryIdentification) && !confirmedAccessoryIdentification;
   const observationImages = observation.sightings.flatMap(sighting => sighting.images);
+  const muxPlaybackIds = Array.from(
+    new Set(
+      observation.sightings
+        .map(sighting => sighting.capture.muxPlaybackId)
+        .filter((playbackId): playbackId is string => Boolean(playbackId))
+    )
+  );
   const observationFeedDate = getObservationFeedDate(observation);
   const submittedTaxonIds = useMemo(
     () => new Set(observation.identifications.map(identification => identification.sourceId)),
@@ -203,6 +213,7 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
   return (
     <div className="@container">
       <DeleteObservationModal {...deleteObservationModal} />
+      {canModerate && <ObservationVideoModal {...videoModal} />}
       {!isMobile && <PanoLocationModal {...locationModal} />}
       <div className="flex gap-4 flex-col @lg:flex-row" key={observation.id}>
         <Polaroid>
@@ -280,6 +291,21 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
                   </DropdownMenu>
                 );
               })()}
+              {canModerate && muxPlaybackIds.length > 0 && (
+                <Button
+                  variant={false}
+                  aria-label="view stored video"
+                  onClick={() =>
+                    videoModal.open({
+                      observationId: observation.id,
+                      playbackIds: muxPlaybackIds
+                    })
+                  }
+                  className="rounded-full w-10 h-10 p-1 flex items-center justify-center text-accent-800 bg-accent-100 hover:bg-accent-200"
+                >
+                  <SiVideo className="text-2xl" />
+                </Button>
+              )}
               {canModerate && (
                 <Button
                   variant={false}
