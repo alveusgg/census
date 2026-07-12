@@ -712,8 +712,11 @@ export const getFrameFromVideo = async (videoUrl: string, timestamp: number) => 
   const { storage, variables } = useEnvironment();
   console.log(`Extracting frame from video for timestamp ${timestamp}`);
   return await TemporaryFile.with(`${randomUUID()}.jpg`, async frame => {
-    await extractFrameFromVideo(videoUrl, timestamp, frame);
     return await frameUploadLimiter.run(async () => {
+      // Keep extraction and upload in the same queue slot so a completed frame
+      // cannot sit in /tmp waiting for capacity and disappear before it is read.
+      await extractFrameFromVideo(videoUrl, timestamp, frame);
+
       // Read the completed JPEG once while holding an upload slot. A Buffer is
       // replayable across retries and has a stable length, unlike a lazy file
       // stream whose backing temporary file can disappear before middleware
