@@ -463,7 +463,7 @@ const TopLevelIdentificationTree: FC<TopLevelIdentificationTreeProps> = ({
   const minimizedTree = getMinimizedTree(tree);
 
   const [expanded, setExpanded] = useState(false);
-  let treeToRender = expanded ? tree : minimizedTree;
+  const treeToRender = expanded ? tree : minimizedTree;
 
   return (
     <div>

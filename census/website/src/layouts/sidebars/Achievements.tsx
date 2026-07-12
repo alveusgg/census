@@ -44,6 +44,7 @@ export const Achievements = () => {
   const [knownLevel, setKnownLevel] = useState<number | null>(null);
 
   const levelUpModalProps = useModal<{ level: number }>();
+  const openLevelUpModal = levelUpModalProps.open;
 
   const confetti = useConfetti();
   useEffect(() => {
@@ -51,12 +52,12 @@ export const Achievements = () => {
       setKnownLevel(level);
       if (knownLevel !== null) {
         setTimeout(() => {
-          levelUpModalProps.open({ level });
+          openLevelUpModal({ level });
           confetti();
         }, 3000);
       }
     }
-  }, [level]);
+  }, [confetti, knownLevel, level, openLevelUpModal]);
 
   return (
     <>

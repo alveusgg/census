@@ -1,4 +1,4 @@
-import { FC, PropsWithChildren, ReactNode, useState } from 'react';
+import { FC, ReactNode, useState } from 'react';
 import { Button } from '../controls/button/juicy';
 import { Modal } from './Modal';
 import { ModalProps, useModal } from './useModal';
@@ -13,7 +13,7 @@ export const useConfirm = () => {
   return useModal<ConfirmModalProps>();
 };
 
-export const Confirm: FC<PropsWithChildren<ModalProps<ConfirmModalProps>>> = ({ children, ...props }) => {
+export const Confirm: FC<ModalProps<ConfirmModalProps>> = props => {
   const [loading, setLoading] = useState(false);
   const confirm = async () => {
     if (!props.props) throw new Error('props are required');

@@ -36,7 +36,7 @@ export const Checkbox = forwardRef<
   </CheckboxPrimitive.Root>
 ));
 
-interface CheckboxInputProps {}
+type CheckboxInputProps = object;
 
 export const CheckboxInput: FC<InputProps<boolean> & CheckboxInputProps> = ({ value, onChange, ...props }) => {
   return <Checkbox checked={value} onCheckedChange={onChange} {...props} />;

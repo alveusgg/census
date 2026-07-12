@@ -43,7 +43,7 @@ export const Overlay = () => {
 
   const run = useCallback(
     async (alert: Alert) => {
-      const level = levels[alert.level as keyof typeof levels];
+      const level = levels[alert.level];
       const image = await loadLevelArtwork(level);
       if (!image) {
         console.error('No image found for level', alert.level);

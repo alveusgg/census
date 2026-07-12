@@ -34,7 +34,7 @@ export const useActions = () => {
 };
 
 export const useBankPoints = () => {
-  const [points, setPoints] = usePoints();
+  const [, setPoints] = usePoints();
   return useCallback(
     (id: string, value: number) => {
       setPoints(prev => [...prev, { id, value }]);
@@ -42,6 +42,6 @@ export const useBankPoints = () => {
         setPoints(prev => prev.filter(point => point.id !== id));
       }, 500);
     },
-    [points, setPoints]
+    [setPoints]
   );
 };

@@ -9,9 +9,11 @@ export const FieldError: FC = () => {
   } = useFormContext();
   const error = errors[name];
   if (!error) return null;
+  const message = typeof error.message === 'string' ? error.message : undefined;
+  if (!message) return null;
   return (
     <div className="bg-[#FFCFCD] text-[#811D1D] py-1.5 px-4 text-sm font-medium text-center rounded-lg w-full border border-[#E08A85]">
-      {error.message?.toString()}
+      {message}
     </div>
   );
 };
@@ -26,7 +28,7 @@ export const FormError: FC = () => {
       <p className="text-sm font-medium">There are some issues:</p>
       <ul className="bg-[#FFCFCD] text-[#811D1D] py-1.5 px-4 text-sm font-medium rounded-lg w-full border border-[#E08A85]">
         {Object.entries(errors).map(([key, error]) => {
-          const message = error?.message?.toString();
+          const message = typeof error?.message === 'string' ? error.message : undefined;
           if (!message) return null;
           return (
             <li key={key}>

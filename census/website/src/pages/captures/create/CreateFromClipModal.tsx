@@ -12,7 +12,7 @@ import { useCapture, useCreateCaptureFromClip } from '@/services/api/capture';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { DialogTitle } from '@radix-ui/react-dialog';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ComponentProps, FC, Suspense, useEffect, useState } from 'react';
+import { ComponentProps, FC, Suspense, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router';
 import { z } from 'zod';
@@ -206,12 +206,14 @@ const ProgressMessageRotator: FC = () => {
 export const ClipCreationProgress: FC<ClipCreationProgressProps> = ({ id, onComplete }) => {
   // This is a live updating query, so this will re-render as the capture is updated
   const capture = useCapture(id);
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   useEffect(() => {
     if (capture.data.status === 'complete') {
-      onComplete();
+      onCompleteRef.current();
     }
-  }, [capture]);
+  }, [capture.data.status]);
 
   if (capture.data.status === 'dead' || capture.data.status === 'user_killed') {
     return (

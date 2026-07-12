@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { flushSync } from 'react-dom';
 
 export interface ModalProps<T = void> {
@@ -13,22 +13,25 @@ export function useModal<T = void>(initial: boolean = false): ModalProps<T> {
   const [props, setProps] = useState<T>();
   const [isOpen, setIsOpen] = useState(!!props || initial);
 
-  const open = (props?: T) => {
+  const open = useCallback((props?: T) => {
     if (props) setProps(props);
     setIsOpen(true);
-  };
+  }, []);
 
-  const close = () => {
+  const close = useCallback(() => {
     flushSync(() => {
       setIsOpen(false);
       setProps(undefined as unknown as T);
     });
-  };
+  }, []);
 
-  const toggle = (props?: T) => {
-    if (isOpen) close();
-    else open(props);
-  };
+  const toggle = useCallback(
+    (props?: T) => {
+      if (isOpen) close();
+      else open(props);
+    },
+    [close, isOpen, open]
+  );
 
   return { isOpen, open, close, toggle, props };
 }

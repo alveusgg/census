@@ -6,7 +6,6 @@ import type {
   StickerHandle,
   StickerPositionMap,
   StickerSpec,
-  StickerValue,
   StickerValueMap
 } from './types';
 
@@ -39,7 +38,7 @@ const getSizeScale = (stageSize: StageSize, referenceSize?: StickerBoardReferenc
   referenceSize ? Math.min(stageSize.width / referenceSize.width, stageSize.height / referenceSize.height) : 1;
 
 const getHighestZIndex = (valueMap: StickerValueMap, minimum: number): number =>
-  Math.max(...(Object.values(valueMap) as StickerValue[]).map(layout => layout.zIndex), minimum);
+  Math.max(...Object.values(valueMap).map(layout => layout.zIndex), minimum);
 
 const buildPositions = (
   stickers: readonly StickerSpec[],

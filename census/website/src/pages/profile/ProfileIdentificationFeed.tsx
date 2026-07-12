@@ -11,8 +11,10 @@ export const ProfileIdentificationFeed: FC<{ userId: number; className?: string 
   const query = useUserIdentifications(userId);
   const identifications = useInfiniteQuery(query);
 
-  const pages = identifications.data?.pages ?? [];
-  const allIdentifications = useMemo(() => pages.flatMap(page => page.data), [pages]);
+  const allIdentifications = useMemo(
+    () => identifications.data?.pages.flatMap(page => page.data) ?? [],
+    [identifications.data]
+  );
   const grouped = useMemo(() => {
     return Object.groupBy(allIdentifications, identification =>
       format(new Date(identification.observation.observedAt), 'do MMM')

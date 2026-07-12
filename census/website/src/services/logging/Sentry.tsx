@@ -7,9 +7,9 @@ import { Variables } from '../backstage/config';
 export const SentryProvider: FC<PropsWithChildren> = ({ children }) => {
   const sentryDSN = useVariable<Variables>('sentryDSN');
   const apiBaseUrl = useVariable<Variables>('apiBaseUrl');
-  if (!sentryDSN || !apiBaseUrl) return children;
 
   useEffect(() => {
+    if (!sentryDSN || !apiBaseUrl) return;
     Sentry.init({
       dsn: sentryDSN,
       release: build,

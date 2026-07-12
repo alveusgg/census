@@ -33,8 +33,8 @@ export class Node<T> {
   }
 
   getAncestors(): Node<T>[] {
-    const ancestors: Node<T>[] = [];
-    let current: Node<T> | undefined = this;
+    const ancestors: Node<T>[] = [this];
+    let current = this.parent;
     while (current) {
       ancestors.push(current);
       current = current.parent;
@@ -69,7 +69,7 @@ const getCommonAncestor = <T>(a: Node<T>, b: Node<T>) => {
 
 export const getMinimizedTree = <T>(tree: Node<T>) => {
   const leaves = tree.getLeafs();
-  let common = leaves.reduce((acc, leaf) => getCommonAncestor(acc, leaf));
+  const common = leaves.reduce((acc, leaf) => getCommonAncestor(acc, leaf));
   if (common.isLeaf() && common.parent) return common.parent;
   return common;
 };

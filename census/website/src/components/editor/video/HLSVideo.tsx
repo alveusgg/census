@@ -36,9 +36,8 @@ export const HLSVideo = forwardRef<HTMLVideoElement, ComponentProps<typeof Video
       {...props}
       ref={current => {
         if (typeof f_ref === 'function') f_ref(current);
-        // @ts-ignore
         else if (f_ref) f_ref.current = current;
-        // @ts-ignore
+        // @ts-expect-error The internal ref is synchronized by the composed callback ref.
         ref.current = current;
       }}
     >
@@ -76,9 +75,8 @@ export const HLSAudio = forwardRef<HTMLAudioElement, ComponentProps<typeof Audio
       {...props}
       ref={current => {
         if (typeof f_ref === 'function') f_ref(current);
-        // @ts-ignore
         else if (f_ref) f_ref.current = current;
-        // @ts-ignore
+        // @ts-expect-error The internal ref is synchronized by the composed callback ref.
         ref.current = current;
       }}
     >

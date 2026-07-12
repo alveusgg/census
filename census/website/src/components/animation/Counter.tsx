@@ -34,7 +34,7 @@ export const Counter: FC<CounterProps & ComponentProps<'p'>> = ({ children, dura
       },
       delay
     });
-  }, [children]);
+  }, [animate, children, delay, duration]);
 
   return <p ref={ref} {...props} />;
 };

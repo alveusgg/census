@@ -7,16 +7,19 @@ const SSE_PROTOCOL_VERSION = '1';
 // accept and immediately drop connections still trigger backoff.
 const STABLE_CONNECTION_MS = 5_000;
 
+const abortError = (signal: AbortSignal) =>
+  signal.reason instanceof Error ? signal.reason : new DOMException('The operation was aborted', 'AbortError');
+
 const sleep = (ms: number, signal?: AbortSignal) =>
   new Promise<void>((resolve, reject) => {
-    if (signal?.aborted) return reject(signal.reason);
+    if (signal?.aborted) return reject(abortError(signal));
     const timer = setTimeout(() => {
       signal?.removeEventListener('abort', onAbort);
       resolve();
     }, ms);
     const onAbort = () => {
       clearTimeout(timer);
-      reject(signal?.reason);
+      reject(signal ? abortError(signal) : new DOMException('The operation was aborted', 'AbortError'));
     };
     signal?.addEventListener('abort', onAbort, { once: true });
   });

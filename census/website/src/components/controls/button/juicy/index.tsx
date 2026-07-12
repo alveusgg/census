@@ -15,7 +15,17 @@ export const Button = forwardRef<
   PropsWithChildren<ButtonProps & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'disabled'> & {}>
 >(
   (
-    { children, variant = 'primary', type = 'button', loading, className, disabled, shortcut, onShortcut, ...props },
+    {
+      children,
+      variant = 'primary',
+      type = 'button',
+      loading,
+      className,
+      disabled,
+      shortcut,
+      onShortcut: _onShortcut,
+      ...props
+    },
     ref
   ) => {
     return (

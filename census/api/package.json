@@ -52,7 +52,8 @@
     "dev": "tsx watch src/index.ts",
     "setup:api": "tsx src/scripts/api.ts",
     "setup:feed": "tsx src/scripts/feed.ts",
-    "db:generate": "NODE_OPTIONS='--import tsx' drizzle-kit generate"
+    "db:generate": "NODE_OPTIONS='--import tsx' drizzle-kit generate",
+    "lint": "eslint ."
   },
   "keywords": [],
   "author": "",

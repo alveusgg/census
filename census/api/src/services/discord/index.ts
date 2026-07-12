@@ -1,4 +1,4 @@
-import { DownstreamError } from '@alveusgg/error';
+import { DownstreamError, InternalServerError } from '@alveusgg/error';
 import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 import { observations } from '../../db/schema/index.js';
@@ -39,7 +39,7 @@ export const notifyDiscordAboutObservation = async (observationId: number) => {
   const [image] = await getImagesForObservationId(observationId);
 
   if (!image) {
-    const error = new Error(`No image found for observation ${observationId}`);
+    const error = new InternalServerError(`No image found for observation ${observationId}`);
     report(error);
     console.error(error);
     return;

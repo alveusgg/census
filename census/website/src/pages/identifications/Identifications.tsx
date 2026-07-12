@@ -46,8 +46,7 @@ const ConfirmedObservationsFeed = ({ filter }: { filter: ReturnType<typeof getCo
   const query = useConfirmedObservations(filter);
   const observations = useInfiniteQuery(query);
 
-  const pages = observations.data?.pages ?? [];
-  const allObservations = useMemo(() => pages.flatMap(page => page.data), [pages]);
+  const allObservations = useMemo(() => observations.data?.pages.flatMap(page => page.data) ?? [], [observations.data]);
   const grouped = useMemo(() => {
     return Object.groupBy(allObservations, observation => format(new Date(observation.observedAt), 'do MMM'));
   }, [allObservations]);
@@ -196,12 +195,7 @@ export const Identifications = () => {
                     </Button>
                   ))}
                 </div>
-                <Calendar
-                  mode="range"
-                  selected={filters.dateRange}
-                  onSelect={setDateRange}
-                  showOutsideDays={false}
-                />
+                <Calendar mode="range" selected={filters.dateRange} onSelect={setDateRange} showOutsideDays={false} />
               </PopoverContent>
             </Popover>
             <Select

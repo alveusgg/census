@@ -21,7 +21,8 @@ export const SlideButton: FC<PropsWithChildren<SlideButtonProps & HTMLMotionProp
       ref={buttonRef}
       {...props}
       onClick={() => {
-        direction === 'next' ? next() : previous();
+        if (direction === 'next') next();
+        else previous();
         if (!buttonRef.current) return;
         animate([
           [buttonRef.current, { x: direction === 'next' ? 5 : -5 }, { duration: 0.1 }],

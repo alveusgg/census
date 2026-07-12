@@ -110,7 +110,7 @@ export const BoundingBoxInput: FC<InputProps<BoundingBox[]>> = ({ onChange, valu
       // Otherwise, we are in resize mode.
       pending.current = updateBoxSizeFromMousePosition(box, point.x, point.y);
     } finally {
-      applyBoundingBoxToElement(pendingBoxRef.current!, pending.current!);
+      applyBoundingBoxToElement(pendingBoxRef.current!, pending.current);
       event.stopPropagation();
       event.preventDefault();
     }

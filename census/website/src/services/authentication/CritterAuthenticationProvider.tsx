@@ -65,7 +65,7 @@ const restoreAuthentication = (): AuthenticationInformation => {
       account,
       status: AuthenticationStatus.Authenticated
     };
-  } catch (error) {
+  } catch {
     return {
       status: AuthenticationStatus.NotAuthenticated
     };
@@ -75,6 +75,7 @@ const restoreAuthentication = (): AuthenticationInformation => {
 export const CritterAuthenticationProvider: FC<PropsWithChildren> = ({ children }) => {
   const apiBaseUrl = useVariable<Variables>('apiBaseUrl');
   const performTokenRefresh = usePerformTokenRefresh();
+  const mutateRefreshToken = performTokenRefresh.mutateAsync;
   const store = useMemo(() => {
     const restoredAuthentication = restoreAuthentication();
 
@@ -89,11 +90,11 @@ export const CritterAuthenticationProvider: FC<PropsWithChildren> = ({ children 
           const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
           if (!refreshToken) throw new Error('No refresh token found');
           if (isTokenExpired(refreshToken)) throw new Error('Token and refresh token are expired');
-          const tokens = await performTokenRefresh.mutateAsync(refreshToken);
+          const tokens = await mutateRefreshToken(refreshToken);
           localStorage.setItem(TOKEN_KEY, tokens.accessToken);
           localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
           return tokens.accessToken;
-        } catch (e) {
+        } catch {
           return await signInUp();
         }
       },
@@ -143,7 +144,7 @@ export const CritterAuthenticationProvider: FC<PropsWithChildren> = ({ children 
         window.location.href = `${apiBaseUrl}/auth/signout?origin=${window.location.origin}`;
       }
     }));
-  }, [apiBaseUrl]);
+  }, [apiBaseUrl, mutateRefreshToken]);
 
   useEffect(() => {
     const syncSentryUser = ({ account }: AuthenticationStore) => {
