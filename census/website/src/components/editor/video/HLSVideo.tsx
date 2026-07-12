@@ -16,16 +16,41 @@ export const HLSVideo = forwardRef<HTMLVideoElement, ComponentProps<typeof Video
   useEffect(() => {
     const video = ref.current;
     if (!video) return;
-    if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = src;
-    } else if (Hls.isSupported()) {
-      const hls = new Hls();
+
+    if (Hls.isSupported()) {
+      // The HLS.js transmuxing worker can stall silently on Mux's MPEG-TS
+      // renditions before appending the first fragment. Main-thread transmuxing
+      // is reliable here and inexpensive for these short, resolution-capped clips.
+      const hls = new Hls({
+        enableWorker: false,
+        // Avoid eagerly downloading and transmuxing an entire high-bitrate clip.
+        // A small forward buffer is sufficient for playback and limits memory use.
+        maxBufferLength: 8,
+        maxMaxBufferLength: 12,
+        backBufferLength: 4
+      });
+
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        console.error('HLS playback error', data);
+      });
+      const reportWaiting = () => console.warn('HLS video waiting for media data');
+      const reportStalled = () => console.warn('HLS video download stalled');
+      video.addEventListener('waiting', reportWaiting);
+      video.addEventListener('stalled', reportStalled);
+
       hls.loadSource(src);
       hls.attachMedia(video);
+
       return () => {
+        video.removeEventListener('waiting', reportWaiting);
+        video.removeEventListener('stalled', reportStalled);
         // TODO: first class support for resetting value
         hls.destroy();
       };
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      // Native HLS is required where Media Source Extensions are unavailable,
+      // notably iOS. Prefer HLS.js elsewhere for consistent playback behavior.
+      video.src = src;
     } else {
       // TODO: fallback
     }

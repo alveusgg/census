@@ -98,7 +98,7 @@ export const Editor: FC<CaptureProps> = ({ id }) => {
   };
 
   const videoUrl = capture.data.muxPlaybackId
-    ? `https://stream.mux.com/${capture.data.muxPlaybackId}.m3u8`
+    ? `https://stream.mux.com/${capture.data.muxPlaybackId}.m3u8?max_resolution=720p`
     : (capture.data.lowQualityVideoUrl ?? capture.data.videoUrl);
   const videoSlotHeight = Math.max((editorHeight ?? 0) - (controlsHeight ?? 0) - EDITOR_GAP, 0);
 
