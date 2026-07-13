@@ -107,7 +107,7 @@ export const useCreateObservationsFromCapture = () => {
         captureId,
         observations
       });
-      await client.invalidateQueries({ queryKey: key('capture', captureId.toString()) });
+      await client.invalidateQueries({ queryKey: key('capture', captureId.toString()), refetchType: 'none' });
       await client.invalidateQueries({ queryKey: key('captures') });
       await client.invalidateQueries({ queryKey: key('observations') });
       await client.invalidateQueries({ queryKey: key('users') });
