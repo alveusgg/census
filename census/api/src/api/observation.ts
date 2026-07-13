@@ -56,7 +56,6 @@ export const createObservationRouter = () =>
         return await createObservationsFromCapture(input.captureId, input.observations);
       }),
 
-   
     delete: procedureWithPermissions('moderate')
       .input(z.object({ observationId: z.number(), reason: z.enum(observationDeletionReasons) }))
       .use(

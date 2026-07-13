@@ -99,8 +99,6 @@ export const useConfirmObservationWithoutAccessoryIdentification = () => {
   });
 };
 
-
-
 export const useDeleteObservation = () => {
   const trpc = useAPI();
   const client = useQueryClient();

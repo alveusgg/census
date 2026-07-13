@@ -5,13 +5,7 @@ import { useDB } from '../../db/transaction.js';
 import { useEnvironment, useUser } from '../../utils/env/env.js';
 import { report } from '../../utils/logs.js';
 
-
-
-
-export const notifyDiscordModerationFeed = async (
-  feedbackId: number,
-  comment: string
-) => {
+export const notifyDiscordModerationFeed = async (feedbackId: number, comment: string) => {
   const { variables } = useEnvironment();
   const user = useUser();
   if (!variables.DISCORD_MODERATION_WEBHOOK_URL) return;
@@ -34,7 +28,7 @@ export const notifyDiscordModerationFeed = async (
       signal: AbortSignal.timeout(5_000),
       body: JSON.stringify({
         content: `**${user.username}**: "${comment}"`,
-        allowed_mentions: { parse: [] },
+        allowed_mentions: { parse: [] }
       }),
       headers: { 'Content-Type': 'application/json' }
     });
@@ -53,4 +47,3 @@ export const notifyDiscordModerationFeed = async (
     console.error(notificationError);
   }
 };
-

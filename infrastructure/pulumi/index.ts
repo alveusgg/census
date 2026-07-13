@@ -80,7 +80,7 @@ export = async () => {
       ALVEUS_AUTH_CLIENT_SECRET: config.requireSecret('alveus-client-secret'),
 
       SENTRY_DSN: config.require('sentry-dsn'),
-      DISCORD_MODERATION_WEBHOOK_URL: config.requireSecret('discord-moderation-webhook-url'),
+      DISCORD_MODERATION_WEBHOOK_URL: config.requireSecret('discord-moderation-webhook-url')
     },
     image: config.require('image'),
     sessionAffinity: false,
