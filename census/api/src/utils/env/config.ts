@@ -48,6 +48,7 @@ export const config = z.object({
   CF_KV_TOKEN: z.string().optional(),
 
   DISCORD_WEBHOOK_URL: z.string().optional(),
+  DISCORD_MODERATION_WEBHOOK_URL: z.string().url().optional(),
   DISCORD_SERVER_ID: z.string().optional(),
   DISCORD_IS_FORUM: z.coerce.boolean().optional().default(false),
 

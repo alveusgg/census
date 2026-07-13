@@ -1,8 +1,10 @@
 import { z } from 'zod';
+import { notifyDiscordModerationFeed } from '../services/discord/index.js';
 import {
   addFeedbackToIdentification,
   addJustificationToIdentification,
   confirmIdentification,
+  editJustificationComment,
   getIdentification,
   getIdentificationsGroupedBySource,
   removeFeedbackComment,
@@ -62,6 +64,9 @@ export const createIdentificationRouter = () =>
         if (result.pointsAwarded > 0) {
           ctx.points();
         }
+        if (input.comment && result.feedbackId) {
+          await notifyDiscordModerationFeed(result.feedbackId, input.comment.trim());
+        }
         return result;
       }),
     justification: procedureWithPermissions('suggest')
@@ -78,7 +83,9 @@ export const createIdentificationRouter = () =>
       )
       .mutation(async ({ input }) => {
         const user = useUser();
-        return await addJustificationToIdentification(input.id, user.id, input.comment);
+        const result = await addJustificationToIdentification(input.id, user.id, input.comment);
+        await notifyDiscordModerationFeed(result.id, input.comment);
+        return result;
       }),
     removeFeedbackComment: procedureWithPermissions('moderate')
       .input(z.object({ id: z.number() }))
@@ -98,6 +105,19 @@ export const createIdentificationRouter = () =>
         await removeFeedbackComment(input.id);
         ctx.points();
         ctx.achievements();
+      }),
+    editJustificationComment: procedureWithPermissions('suggest')
+      .input(z.object({ id: z.number(), comment: z.string().trim().min(1) }))
+      .use(
+        cache.mutation({
+          keys: [['observations'], ['identifications'], ['users', 'identifications']]
+        })
+      )
+      .mutation(async ({ input }) => {
+        const user = useUser();
+        const result = await editJustificationComment(input.id, user.id, input.comment);
+        await notifyDiscordModerationFeed(input.id, input.comment);
+        return result;
       }),
     searchForTaxa: procedure
       .input(z.object({ query: z.string(), taxonId: z.number().optional() }))

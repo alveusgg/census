@@ -40,6 +40,8 @@ export class CustomError extends Error {
         return new DownstreamError(service, message.trim());
       case 'BadRequestError':
         return new BadRequestError(error.message);
+      case 'FrameUnavailableError':
+        return new FrameUnavailableError(error.message);
       case 'AuthenticationTimeoutError':
         return new AuthenticationTimeoutError(error.message);
       case 'ProcessingError':
@@ -119,4 +121,14 @@ export class BadRequestError extends CustomError {
   public name: string = 'BadRequestError';
   public code: number = 400;
   public category: TRPC_ERROR_CODE_KEY = 'BAD_REQUEST';
+}
+
+export class FrameUnavailableError extends BadRequestError {
+  public name: string = 'FrameUnavailableError';
+
+  constructor(
+    message = 'That frame isn’t available in the source video. Move the selection slightly earlier and try again.'
+  ) {
+    super(message);
+  }
 }

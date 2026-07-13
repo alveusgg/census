@@ -3,6 +3,7 @@ import { and, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import {
   achievements,
   feedback,
+  feedbackCommentEdits,
   identifications,
   observations,
   shinies,
@@ -456,7 +457,17 @@ export const addFeedbackToIdentification = async (
         }
       }
 
-      return { pointsAwarded };
+      const savedFeedback = await tx.query.feedback.findFirst({
+        where: and(
+          eq(feedback.identificationId, identificationId),
+          eq(feedback.userId, userId),
+          eq(feedback.type, type),
+          activeFeedback()
+        ),
+        columns: { id: true }
+      });
+
+      return { pointsAwarded, feedbackId: savedFeedback?.id };
     })
   );
 };
@@ -530,6 +541,42 @@ export const removeFeedbackComment = async (feedbackId: number) => {
 
       await revokeCommentAchievements(existingFeedback);
       await tx.update(feedback).set({ comment: null, commentDeletedAt: new Date() }).where(eq(feedback.id, feedbackId));
+    })
+  );
+};
+
+const COMMENT_EDIT_WINDOW_MS = 60 * 60 * 1000;
+
+export const editJustificationComment = async (feedbackId: number, userId: number, comment: string) => {
+  const db = useDB();
+  const trimmedComment = comment.trim();
+  if (!trimmedComment) throw new BadRequestError('Comment is required');
+
+  return await db.transaction(async tx =>
+    withTransaction(tx, async () => {
+      const existingFeedback = await tx.query.feedback.findFirst({
+        where: and(eq(feedback.id, feedbackId), activeFeedback())
+      });
+
+      if (!existingFeedback) throw new NotFoundError('Feedback not found');
+      if (existingFeedback.userId !== userId) {
+        throw new ForbiddenError('You can only edit your own comment.');
+      }
+      if (!existingFeedback.comment || existingFeedback.commentDeletedAt) {
+        throw new BadRequestError('Feedback does not have a comment to edit');
+      }
+      if (existingFeedback.type !== 'justification') {
+        throw new BadRequestError('Only justification comments can be edited');
+      }
+
+      const isWithinEditWindow = Date.now() - existingFeedback.createdAt.getTime() < COMMENT_EDIT_WINDOW_MS;
+      if (isWithinEditWindow) {
+        await tx.update(feedback).set({ comment: trimmedComment }).where(eq(feedback.id, feedbackId));
+      } else {
+        await tx.insert(feedbackCommentEdits).values({ feedbackId, comment: trimmedComment });
+      }
+
+      return { mode: isWithinEditWindow ? ('replace' as const) : ('amend' as const) };
     })
   );
 };

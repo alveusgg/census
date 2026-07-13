@@ -98,6 +98,22 @@ export const useRemoveFeedbackComment = () => {
   });
 };
 
+export const useEditJustificationComment = () => {
+  const trpc = useAPI();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, comment }: { id: number; comment: string }) =>
+      await trpc.identification.editJustificationComment.mutate({ id, comment }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: key('observations') });
+      queryClient.invalidateQueries({ queryKey: key('identifications') });
+      queryClient.invalidateQueries({ queryKey: key('identification') });
+      queryClient.invalidateQueries({ queryKey: key('users') });
+    }
+  });
+};
+
 export const useRemoveIdentification = () => {
   const trpc = useAPI();
   const queryClient = useQueryClient();

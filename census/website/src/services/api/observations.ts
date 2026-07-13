@@ -99,18 +99,7 @@ export const useConfirmObservationWithoutAccessoryIdentification = () => {
   });
 };
 
-export const useNotifyDiscordAboutObservation = () => {
-  const trpc = useAPI();
-  const client = useQueryClient();
-  return useMutation({
-    mutationFn: async (observationId: number) => {
-      await trpc.observation.notifyDiscordAboutObservation.mutate({ observationId });
-    },
-    onSuccess: () => {
-      client.invalidateQueries({ queryKey: key('observations') });
-    }
-  });
-};
+
 
 export const useDeleteObservation = () => {
   const trpc = useAPI();

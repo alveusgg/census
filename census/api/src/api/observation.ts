@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { notifyDiscordAboutObservation } from '../services/discord/index.js';
+import { getPermissions } from '../services/auth/role.js';
 import {
   confirmObservationWithoutAccessoryIdentification,
   createObservationsFromCapture,
@@ -12,7 +12,6 @@ import {
   observationDeletionReasons,
   ObservationPayload
 } from '../services/observations/observations.js';
-import { getPermissions } from '../services/auth/role.js';
 import { cache, jsonResponse, procedure, procedureWithPermissions, router } from '../trpc/trpc.js';
 import { useUser } from '../utils/env/env.js';
 
@@ -57,12 +56,7 @@ export const createObservationRouter = () =>
         return await createObservationsFromCapture(input.captureId, input.observations);
       }),
 
-    notifyDiscordAboutObservation: procedureWithPermissions('capture')
-      .input(z.object({ observationId: z.number() }))
-      .mutation(async ({ input }) => {
-        return await notifyDiscordAboutObservation(input.observationId);
-      }),
-
+   
     delete: procedureWithPermissions('moderate')
       .input(z.object({ observationId: z.number(), reason: z.enum(observationDeletionReasons) }))
       .use(

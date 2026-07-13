@@ -90,7 +90,22 @@ export const feedback = pgTable(
   }
 );
 
-export const feedbackRelations = relations(feedback, ({ one }) => ({
+export const feedbackCommentEdits = pgTable(
+  'feedback_comment_edits',
+  {
+    id: serial('id').primaryKey(),
+    feedbackId: integer('feedback_id')
+      .references(() => feedback.id, { onDelete: 'cascade' })
+      .notNull(),
+    comment: text('comment').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull()
+  },
+  table => ({
+    feedbackIdIdx: index('feedback_comment_edits_feedback_id_idx').on(table.feedbackId)
+  })
+);
+
+export const feedbackRelations = relations(feedback, ({ one, many }) => ({
   identification: one(identifications, {
     fields: [feedback.identificationId],
     references: [identifications.id]
@@ -98,6 +113,14 @@ export const feedbackRelations = relations(feedback, ({ one }) => ({
   submitter: one(users, {
     fields: [feedback.userId],
     references: [users.id]
+  }),
+  edits: many(feedbackCommentEdits)
+}));
+
+export const feedbackCommentEditsRelations = relations(feedbackCommentEdits, ({ one }) => ({
+  feedback: one(feedback, {
+    fields: [feedbackCommentEdits.feedbackId],
+    references: [feedback.id]
   })
 }));
 

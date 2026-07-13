@@ -1,14 +1,18 @@
 import { DownThumb, UpThumb } from '@/components/controls/ObservationEntry';
 import SiClose from '@/components/icons/SiClose';
+import SiPencil from '@/components/icons/SiPencil';
 import { Confirm, useConfirm } from '@/components/modal/Confirm';
 import { Modal } from '@/components/modal/Modal';
-import { ModalProps } from '@/components/modal/useModal';
+import { ModalProps, useModal } from '@/components/modal/useModal';
 import { UserLink } from '@/components/users/UserLink';
 import { useRemoveFeedbackComment } from '@/services/api/identifications';
 import { Feedback } from '@/services/api/observations';
+import { useMe } from '@/services/api/me';
 import { useHasPermission } from '@/services/permissions/hooks';
 import { cn } from '@/utils/cn';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { FC } from 'react';
+import { EditCommentModal, EditCommentModalProps } from './EditCommentModal';
 
 export interface FeedbackModalProps {
   feedback: Feedback[];
@@ -60,14 +64,17 @@ const FeedbackCommentCard: FC<{
           onClick={() => onRemove(feedback)}
           className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-red-100 text-red-800 hover:bg-red-200 disabled:pointer-events-none disabled:opacity-50"
         >
-          <span
-            aria-hidden="true"
-            className="absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2 sm:hidden"
-          />
           <SiClose className="text-lg" />
         </button>
       )}
       <p className="break-words leading-snug">{feedback.comment}</p>
+      {[...feedback.edits]
+        .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+        .map(edit => (
+          <p key={edit.id} className="mt-2 break-words text-sm leading-snug text-accent-800">
+            <span className="font-bold">Edit:</span> {edit.comment}
+          </p>
+        ))}
       <p
         className={cn(
           'mt-2 flex min-w-0 items-center gap-1.5 text-sm font-semibold',
@@ -143,11 +150,31 @@ const FeedbackSection: FC<{
   );
 };
 
-const SuggestionCommentCard: FC<{ feedback: Feedback }> = ({ feedback }) => {
+const SuggestionCommentCard: FC<{ feedback: Feedback; onEdit?: (feedback: Feedback) => void }> = ({
+  feedback,
+  onEdit
+}) => {
   return (
-    <figure className="min-w-0 rounded-lg border border-accent-200 bg-accent-50 px-3 py-2.5 text-accent-900">
+    <figure className="relative min-w-0 rounded-lg border border-accent-200 bg-accent-50 px-3 py-2.5 pr-10 text-accent-900">
+      {onEdit && (
+        <button
+          type="button"
+          aria-label="edit your comment"
+          onClick={() => onEdit(feedback)}
+          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-accent-100 text-accent-800 hover:bg-accent-200"
+        >
+          <SiPencil className="text-base" />
+        </button>
+      )}
       <blockquote>
         <p className="break-words text-pretty leading-snug">{feedback.comment}</p>
+        {[...feedback.edits]
+          .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+          .map(edit => (
+            <p key={edit.id} className="mt-2 break-words text-sm leading-snug text-accent-800">
+              <span className="font-bold">Edit:</span> {edit.comment}
+            </p>
+          ))}
       </blockquote>
       <figcaption className="mt-2 text-sm italic text-accent-800">
         - <UserLink user={feedback.submitter} className="font-semibold" />
@@ -156,20 +183,30 @@ const SuggestionCommentCard: FC<{ feedback: Feedback }> = ({ feedback }) => {
   );
 };
 
-const SuggestionCommentList: FC<{ comments: Feedback[] }> = ({ comments }) => {
+const SuggestionCommentList: FC<{
+  comments: Feedback[];
+  onEdit?: (feedback: Feedback) => void;
+  editableUserId?: number;
+}> = ({ comments, onEdit, editableUserId }) => {
   if (comments.length === 0) return null;
 
   return (
     <div className="flex min-w-0 flex-col gap-2">
       {comments.map(comment => (
-        <SuggestionCommentCard key={comment.id} feedback={comment} />
+        <SuggestionCommentCard
+          key={comment.id}
+          feedback={comment}
+          onEdit={comment.userId === editableUserId ? onEdit : undefined}
+        />
       ))}
     </div>
   );
 };
 
 const FeedbackList: FC<FeedbackModalProps & Pick<ModalProps<FeedbackModalProps>, 'open'>> = props => {
+  const { data: me } = useSuspenseQuery(useMe());
   const canModerate = useHasPermission('moderate');
+  const editCommentModal = useModal<EditCommentModalProps>();
   const confirmRemoveComment = useConfirm();
   const removeFeedbackComment = useRemoveFeedbackComment();
   const agree: FeedbackGroup = { comments: [], votes: [] };
@@ -217,9 +254,31 @@ const FeedbackList: FC<FeedbackModalProps & Pick<ModalProps<FeedbackModalProps>,
     });
   };
 
+  const editComment = (comment: Feedback) => {
+    editCommentModal.open({
+      feedback: comment,
+      onSaved: (text, mode) => {
+        props.open({
+          feedback: props.feedback.map(feedback => {
+            if (feedback.id !== comment.id) return feedback;
+            if (mode === 'replace') return { ...feedback, comment: text };
+            return {
+              ...feedback,
+              edits: [
+                ...feedback.edits,
+                { id: -Date.now(), feedbackId: feedback.id, comment: text, createdAt: new Date() }
+              ]
+            };
+          })
+        });
+      }
+    });
+  };
+
   return (
     <>
       <Confirm {...confirmRemoveComment} />
+      <EditCommentModal {...editCommentModal} />
       <div className="flex max-h-[min(80vh,42rem)] w-full min-w-0 flex-col gap-5 overflow-y-auto">
         <div>
           <h1 className="text-2xl font-bold text-accent-900">Feedback</h1>
@@ -230,7 +289,7 @@ const FeedbackList: FC<FeedbackModalProps & Pick<ModalProps<FeedbackModalProps>,
 
         {hasFeedback ? (
           <div className="grid min-w-0 gap-3">
-            <SuggestionCommentList comments={suggestionComments} />
+            <SuggestionCommentList comments={suggestionComments} onEdit={editComment} editableUserId={me.id} />
             <FeedbackSection
               title="Agree"
               tone="agree"

@@ -1,4 +1,10 @@
-import { BadRequestError, DownstreamError, ForbiddenError, NotFoundError } from '@alveusgg/error';
+import {
+  BadRequestError,
+  DownstreamError,
+  ForbiddenError,
+  FrameUnavailableError,
+  NotFoundError
+} from '@alveusgg/error';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
 import { and, count, desc, eq, gte, inArray, isNotNull, isNull, lte, ne, or, SQL, sql } from 'drizzle-orm';
@@ -78,7 +84,8 @@ const getObservationRecord = async (id: number) => {
           feedback: {
             where: isNull(feedback.deletedAt),
             with: {
-              submitter: true
+              submitter: true,
+              edits: true
             }
           },
           shiny: true
@@ -518,9 +525,11 @@ export const getObservations = async (pagination: Pagination, query?: Query) => 
               id: true,
               type: true,
               userId: true,
-              comment: true
+              comment: true,
+              createdAt: true
             },
             with: {
+              edits: true,
               submitter: {
                 columns: {
                   id: true,
@@ -715,13 +724,20 @@ export const getFrameFromVideo = async (videoUrl: string, timestamp: number) => 
     return await frameUploadLimiter.run(async () => {
       // Keep extraction and upload in the same queue slot so a completed frame
       // cannot sit in /tmp waiting for capacity and disappear before it is read.
-      await extractFrameFromVideo(videoUrl, timestamp, frame);
+      let body: Buffer;
+      try {
+        await extractFrameFromVideo(videoUrl, timestamp, frame);
 
-      // Read the completed JPEG once while holding an upload slot. A Buffer is
-      // replayable across retries and has a stable length, unlike a lazy file
-      // stream whose backing temporary file can disappear before middleware
-      // opens or measures it.
-      const body = await readFile(frame.path);
+        // Read the completed JPEG once while holding an upload slot. A Buffer is
+        // replayable across retries and has a stable length, unlike a lazy file
+        // stream whose backing temporary file can disappear before middleware
+        // opens or measures it.
+        body = await readFile(frame.path);
+        if (body.byteLength === 0) throw new FrameUnavailableError();
+      } catch (error) {
+        console.error(`Failed to extract frame from video at timestamp ${timestamp}`, error);
+        throw new FrameUnavailableError();
+      }
 
       return await frameUploadRetrier.run(async () => {
         try {
@@ -772,7 +788,7 @@ export const getStreamStats = async (videoUrl: string) => {
 export const takeScreenshot = async (videoUrl: string, timestamp: number, frame: TemporaryFile) => {
   return new Promise<void>((resolve, reject) => {
     ffmpeg(videoUrl)
-      .inputOptions(['-ss', timestamp.toString()])
+      .inputOptions(['-ignore_editlist', '1', '-ss', timestamp.toString()])
       .outputOptions(['-frames:v', '1', '-q:v', '2', '-update', '1'])
       .output(frame.path)
       .on('end', () => resolve())

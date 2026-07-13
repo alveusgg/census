@@ -7,19 +7,23 @@ import { SubjectToggle } from '@/components/editor/SubjectToggle';
 import { AutoVideo } from '@/components/editor/video/AutoVideo';
 import { PlaybackBar } from '@/components/editor/video/PlaybackBar';
 import { VideoContainer } from '@/components/editor/VideoContainer';
+import { handleTRPCError } from '@/components/feedback/ErrorBoundary';
 import { usePointAction } from '@/components/points/hooks';
 import { PointOrigin } from '@/components/points/PointOrigin';
 import { Breadcrumbs } from '@/layouts/Breadcrumbs';
 import { useCapture, useCreateObservationsFromCapture } from '@/services/api/capture';
 import { useEditor } from '@/services/video/hooks';
 import { Selection } from '@alveusgg/census-api/src/services/observations/observations';
+import { FrameUnavailableError } from '@alveusgg/error';
 import * as Media from '@react-av/core';
 import { useMeasure } from '@uidotdev/usehooks';
 import { FC, useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
+import { toast } from 'sonner';
 import { CaptureProps } from './Capture';
 
 const EDITOR_GAP = 24;
+const END_OF_VIDEO_MARGIN_SECONDS = 0.02;
 
 const useEditorViewportHeight = () => {
   const [element, setElement] = useState<HTMLDivElement | null>(null);
@@ -66,6 +70,7 @@ export const Editor: FC<CaptureProps> = ({ id }) => {
   const capture = useCapture(id);
   const navigate = useNavigate();
   const action = usePointAction();
+  const [videoDuration, setVideoDuration] = useState(0);
   const [editorRef, editorHeight] = useEditorViewportHeight();
   const [controlsRef, { height: controlsHeight }] = useMeasure<HTMLDivElement>();
 
@@ -76,7 +81,11 @@ export const Editor: FC<CaptureProps> = ({ id }) => {
     const subjects = new Map<number, Selection[]>();
     Object.entries(selections).forEach(([time, selections]) => {
       selections.forEach(selection => {
-        const timestamp = Number(time);
+        const selectionTimestamp = Number(time);
+        const timestamp =
+          Number.isFinite(videoDuration) && videoDuration > END_OF_VIDEO_MARGIN_SECONDS
+            ? Math.min(selectionTimestamp, videoDuration - END_OF_VIDEO_MARGIN_SECONDS)
+            : selectionTimestamp;
         const existing = subjects.get(selection.subjectId) ?? [];
         const payload = {
           timestamp,
@@ -87,13 +96,27 @@ export const Editor: FC<CaptureProps> = ({ id }) => {
     });
 
     const payloads = Array.from(subjects.values());
-    await Promise.all([
-      action.add(150),
-      createObservationsFromCapture.mutateAsync({
+    if (payloads.length === 0) {
+      toast.error('Draw at least one box before saving.');
+      return;
+    }
+
+    try {
+      await createObservationsFromCapture.mutateAsync({
         captureId: id,
         observations: payloads
-      })
-    ]);
+      });
+    } catch (error) {
+      const customError = handleTRPCError(error);
+      if (customError instanceof FrameUnavailableError) {
+        toast.error(customError.message);
+      } else {
+        toast.error('Couldn’t save your observations. Your boxes are still here, so you can try again.');
+      }
+      return;
+    }
+
+    await action.add(150);
     navigate(`/observations`);
   };
 
@@ -116,7 +139,13 @@ export const Editor: FC<CaptureProps> = ({ id }) => {
               <VideoContainer>
                 <SubjectSelectionInput />
                 {videoUrl && (
-                  <AutoVideo src={videoUrl} className="h-full w-full aspect-video object-cover bg-black" muted loop />
+                  <AutoVideo
+                    src={videoUrl}
+                    className="h-full w-full aspect-video object-cover bg-black"
+                    muted
+                    loop
+                    onDurationChange={event => setVideoDuration(event.currentTarget.duration)}
+                  />
                 )}
                 <SelectedSubjectHighlight />
               </VideoContainer>
@@ -125,7 +154,11 @@ export const Editor: FC<CaptureProps> = ({ id }) => {
               <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <SubjectToggle />
                 <PointOrigin {...action}>
-                  <Button loading={createObservationsFromCapture.isPending} onClick={onSubmit} shortcut="S">
+                  <Button
+                    loading={createObservationsFromCapture.isPending || action.isPending}
+                    onClick={onSubmit}
+                    shortcut="S"
+                  >
                     <Save />
                     Save
                   </Button>
