@@ -4,6 +4,7 @@ import {
   confirmObservationWithoutAccessoryIdentification,
   createObservationsFromCapture,
   deleteObservation,
+  getObservation,
   getObservationCount,
   getObservations,
   getUnconfirmedObservationCount,
@@ -38,6 +39,32 @@ export const Query = z.object({
 });
 
 export type Query = z.infer<typeof Query>;
+
+type ObservationWithFeedback = {
+  identifications: Array<{
+    feedback: Array<{ userId: number }>;
+  }>;
+};
+
+const applyFeedbackFogOfWar = <T extends ObservationWithFeedback>(
+  observation: T,
+  userId: number,
+  canModerate: boolean
+) => {
+  if (canModerate) return observation;
+
+  const hasGivenFeedback = observation.identifications.some(identification =>
+    identification.feedback.some(feedback => feedback.userId === userId)
+  );
+
+  if (!hasGivenFeedback) {
+    for (const identification of observation.identifications) {
+      identification.feedback.length = 0;
+    }
+  }
+
+  return observation;
+};
 
 export const createObservationRouter = () =>
   router({
@@ -125,6 +152,21 @@ export const createObservationRouter = () =>
         return await mergeObservations(input.targetObservationId, input.sourceObservationIds);
       }),
 
+    get: procedure.input(z.object({ id: z.number() })).query(async ({ ctx, input }) => {
+      const user = useUser();
+      const permissions = getPermissions();
+
+      const databaseStartedAt = performance.now();
+      const observation = await getObservation(input.id);
+      ctx.timing('db', performance.now() - databaseStartedAt);
+
+      const fogOfWarStartedAt = performance.now();
+      applyFeedbackFogOfWar(observation, user.id, permissions.moderate);
+      ctx.timing('fogofwar', performance.now() - fogOfWarStartedAt);
+
+      return jsonResponse(observation);
+    }),
+
     list: procedure.input(z.object({ meta: Pagination, query: Query.optional() })).query(async ({ ctx, input }) => {
       const user = useUser();
       const permissions = getPermissions();
@@ -137,18 +179,8 @@ export const createObservationRouter = () =>
       // Fog of war: hide feedback on each observation until the user has
       // given feedback on that observation, avoiding page-wide unlocks.
       const fogOfWarStartedAt = performance.now();
-      if (!permissions.moderate) {
-        for (const observation of data) {
-          const hasGivenFeedback = observation.identifications.some(identification =>
-            identification.feedback.some(feedback => feedback.userId === user.id)
-          );
-
-          if (hasGivenFeedback) continue;
-
-          for (const identification of observation.identifications) {
-            identification.feedback.length = 0;
-          }
-        }
+      for (const observation of data) {
+        applyFeedbackFogOfWar(observation, user.id, permissions.moderate);
       }
       ctx.timing('fogofwar', performance.now() - fogOfWarStartedAt);
 

@@ -90,6 +90,11 @@ const getObservationRecord = async (id: number) => {
           },
           shiny: true
         }
+      },
+      confirmedIdentification: {
+        with: {
+          suggester: true
+        }
       }
     }
   });
@@ -481,6 +486,7 @@ export const getObservations = async (pagination: Pagination, query?: Query) => 
             columns: {
               id: true,
               url: true,
+              timestamp: true,
               width: true,
               height: true,
               boundingBox: true
@@ -495,6 +501,7 @@ export const getObservations = async (pagination: Pagination, query?: Query) => 
           capture: {
             columns: {
               startCaptureAt: true,
+              endCaptureAt: true,
               clipId: true,
               muxPlaybackId: true
             }

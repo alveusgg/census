@@ -18,6 +18,7 @@ import { Home } from './pages/home/Home';
 import { IdentificationPage } from './pages/identifications/Identification';
 import { Identifications } from './pages/identifications/Identifications';
 import { Observations } from './pages/observations/Observations';
+import { ObservationPage } from './pages/observations/ObservationPage';
 import { Overlay } from './pages/overlay/Overlay';
 import { LaunchDay } from './pages/posts/LaunchDay';
 import { MyProfile } from './pages/profile/MyProfile';
@@ -94,7 +95,19 @@ export const useRouter = () => {
                 },
                 {
                   path: 'observations',
-                  element: <Observations />
+                  children: [
+                    {
+                      index: true,
+                      element: <Observations />
+                    },
+                    {
+                      ErrorBoundary: () => (
+                        <NotFoundErrorBoundary>sorry, that observation is not available</NotFoundErrorBoundary>
+                      ),
+                      path: ':id',
+                      element: <ObservationPage />
+                    }
+                  ]
                 },
                 {
                   path: 'identifications',

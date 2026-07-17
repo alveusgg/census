@@ -18,6 +18,14 @@ export type ConfirmedObservation = Observation & {
 type LocationBox = { x1: number; y1: number; x2: number; y2: number };
 export type ObservationDeletionReason = 'no_valid_subject' | 'too_poor_quality';
 
+export const useObservation = (id: number) => {
+  const trpc = useAPI();
+  return queryOptions({
+    queryKey: key('observations', id.toString()),
+    queryFn: () => trpc.observation.get.query({ id })
+  });
+};
+
 export const useUnconfirmedObservations = () => {
   const trpc = useAPI();
   return infiniteQueryOptions({
