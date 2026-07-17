@@ -4,6 +4,7 @@ import { RouteErrorBoundary } from './components/feedback/ErrorBoundary';
 import { NotFoundErrorBoundary } from './components/feedback/NotFoundError';
 import { SelectionProvider } from './components/selection/SelectionProvider';
 import { Main, Scrollable } from './layouts/Main';
+import { RouteMeta } from './lib/meta';
 import { Components } from './pages/admin/Components';
 import { Users } from './pages/admin/Users';
 import { Authenticated } from './pages/authentication/Authenticated';
@@ -29,21 +30,26 @@ import { useCurrentSeason, useShiniesForSeason } from './services/api/seasons';
 
 const auth: RouteObject = {
   path: 'auth',
+  handle: { title: 'Authentication' },
   children: [
     {
       path: 'signin',
+      handle: { title: 'Sign In' },
       element: <SignIn />
     },
     {
       path: 'signout',
+      handle: { title: 'Sign Out' },
       element: <SignOut />
     },
     {
       path: 'redirect',
+      handle: { title: 'Redirecting' },
       element: <Redirect />
     },
     {
       path: 'signout/redirect',
+      handle: { title: 'Signing Out' },
       element: <SignOutRedirect />
     }
   ]
@@ -62,133 +68,156 @@ export const useRouter = () => {
 
   return createBrowserRouter([
     {
-      ErrorBoundary: RouteErrorBoundary,
-      element: <Authenticated />,
+      element: <RouteMeta />,
       children: [
         {
-          element: <Main />,
-          loader: async () => {
-            await Promise.all([
-              client.prefetchQuery(permissions),
-              client.prefetchQuery(season),
-              client.prefetchQuery(points),
-              client.prefetchQuery(pendingAchievements)
-            ]);
-            return null;
-          },
+          ErrorBoundary: RouteErrorBoundary,
+          element: <Authenticated />,
           children: [
             {
-              element: <Scrollable />,
+              element: <Main />,
+              loader: async () => {
+                await Promise.all([
+                  client.prefetchQuery(permissions),
+                  client.prefetchQuery(season),
+                  client.prefetchQuery(points),
+                  client.prefetchQuery(pendingAchievements)
+                ]);
+                return null;
+              },
               children: [
                 {
-                  path: '/',
-                  element: <Home />,
-                  loader: async () => {
-                    await Promise.all([
-                      client.prefetchQuery(leaderboard),
-                      client.prefetchQuery(shinies),
-                      client.prefetchQuery(unconfirmedObservationCount)
-                    ]);
+                  element: <Scrollable />,
+                  children: [
+                    {
+                      path: '/',
+                      handle: { title: 'Home' },
+                      element: <Home />,
+                      loader: async () => {
+                        await Promise.all([
+                          client.prefetchQuery(leaderboard),
+                          client.prefetchQuery(shinies),
+                          client.prefetchQuery(unconfirmedObservationCount)
+                        ]);
 
-                    return null;
-                  }
-                },
-                {
-                  path: 'observations',
-                  children: [
-                    {
-                      index: true,
-                      element: <Observations />
+                        return null;
+                      }
                     },
                     {
-                      ErrorBoundary: () => (
-                        <NotFoundErrorBoundary>sorry, that observation is not available</NotFoundErrorBoundary>
+                      path: 'observations',
+                      handle: { title: 'Observations' },
+                      children: [
+                        {
+                          index: true,
+                          handle: { title: 'Observations' },
+                          element: <Observations />
+                        },
+                        {
+                          ErrorBoundary: () => (
+                            <NotFoundErrorBoundary>sorry, that observation is not available</NotFoundErrorBoundary>
+                          ),
+                          path: ':id',
+                          handle: { title: 'Observation' },
+                          element: <ObservationPage />
+                        }
+                      ]
+                    },
+                    {
+                      path: 'identifications',
+                      handle: { title: 'Identifications' },
+                      element: (
+                        <SelectionProvider>
+                          <Identifications />
+                        </SelectionProvider>
                       ),
-                      path: ':id',
-                      element: <ObservationPage />
-                    }
-                  ]
-                },
-                {
-                  path: 'identifications',
-                  element: (
-                    <SelectionProvider>
-                      <Identifications />
-                    </SelectionProvider>
-                  ),
-                  children: [
-                    {
-                      path: ':id',
-                      element: <IdentificationPage />
-                    }
-                  ]
-                },
-                {
-                  path: 'captures',
-
-                  children: [
-                    {
-                      index: true,
-                      element: <Captures />
+                      children: [
+                        {
+                          path: ':id',
+                          handle: { title: 'Identification' },
+                          element: <IdentificationPage />
+                        }
+                      ]
                     },
                     {
-                      ErrorBoundary: () => (
-                        <NotFoundErrorBoundary>sorry, that capture is not available</NotFoundErrorBoundary>
-                      ),
-                      path: ':id',
-                      element: <Capture />
-                    }
-                  ]
-                },
-                {
-                  path: 'forms',
-                  children: [
-                    {
-                      path: 'onboarding',
-                      element: <Onboarding />
-                    }
-                  ]
-                },
-                {
-                  path: 'posts',
-                  children: [
-                    {
-                      path: 'launch-day',
-                      element: <LaunchDay />
-                    }
-                  ]
-                },
-                {
-                  path: 'users',
-                  element: <Users />
-                },
-                {
-                  path: 'admin/components',
-                  element: <Components />
-                },
-                {
-                  path: 'profile',
-                  children: [
-                    {
-                      path: 'me',
-                      element: <MyProfile />
+                      path: 'captures',
+                      handle: { title: 'Captures' },
+                      children: [
+                        {
+                          index: true,
+                          handle: { title: 'Captures' },
+                          element: <Captures />
+                        },
+                        {
+                          ErrorBoundary: () => (
+                            <NotFoundErrorBoundary>sorry, that capture is not available</NotFoundErrorBoundary>
+                          ),
+                          path: ':id',
+                          handle: { title: 'Capture' },
+                          element: <Capture />
+                        }
+                      ]
                     },
                     {
-                      path: ':id',
-                      element: <UserProfile />
+                      path: 'forms',
+                      handle: { title: 'Forms' },
+                      children: [
+                        {
+                          path: 'onboarding',
+                          handle: { title: 'Onboarding' },
+                          element: <Onboarding />
+                        }
+                      ]
+                    },
+                    {
+                      path: 'posts',
+                      handle: { title: 'Posts' },
+                      children: [
+                        {
+                          path: 'launch-day',
+                          handle: { title: 'Launch Day' },
+                          element: <LaunchDay />
+                        }
+                      ]
+                    },
+                    {
+                      path: 'users',
+                      handle: { title: 'Users' },
+                      element: <Users />
+                    },
+                    {
+                      path: 'admin/components',
+                      handle: { title: 'Component Library' },
+                      element: <Components />
+                    },
+                    {
+                      path: 'profile',
+                      handle: { title: 'Profile' },
+                      children: [
+                        {
+                          path: 'me',
+                          handle: { title: 'My Profile' },
+                          element: <MyProfile />
+                        },
+                        {
+                          path: ':id',
+                          handle: { title: 'User Profile' },
+                          element: <UserProfile />
+                        }
+                      ]
                     }
                   ]
                 }
               ]
             }
           ]
+        },
+        auth,
+        {
+          path: 'overlay',
+          handle: { title: 'Overlay' },
+          element: <Overlay />
         }
       ]
-    },
-    auth,
-    {
-      path: 'overlay',
-      element: <Overlay />
     }
   ]);
 };

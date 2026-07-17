@@ -1,5 +1,6 @@
 import { StickerValueMap } from '@/components/stickers';
 import { Breadcrumbs } from '@/layouts/Breadcrumbs';
+import { PageTitle } from '@/lib/meta';
 import { useMe } from '@/services/api/me';
 import { useUserProfile } from '@/services/api/users';
 import { key, useAPI } from '@/services/query/hooks';
@@ -33,6 +34,7 @@ export const MyProfile: FC = () => {
 
   return (
     <ProfilePageLayout>
+      <PageTitle title={`${me.data.username}'s Profile`} />
       <Breadcrumbs>
         <p>home</p>
         <span>•</span>

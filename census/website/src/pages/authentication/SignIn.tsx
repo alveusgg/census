@@ -1,5 +1,4 @@
 import { Loading } from '@/components/loaders/Loading';
-import { Meta } from '@/lib/meta';
 import { useSignInUp } from '@/services/authentication/hooks';
 import { FC, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
@@ -13,10 +12,5 @@ export const SignIn: FC = () => {
     signIn(from);
   }, [signIn, location]);
 
-  return (
-    <>
-      <Meta title="Sign in" />
-      <Loading className="h-screen" />
-    </>
-  );
+  return <Loading className="h-screen" />;
 };

@@ -1,5 +1,4 @@
 import { Loading } from '@/components/loaders/Loading';
-import { Meta } from '@/lib/meta';
 import { useAuthentication } from '@/services/authentication/hooks';
 import { FC, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
@@ -29,10 +28,5 @@ export const Redirect: FC = () => {
     })();
   }, [navigate, onRedirect]);
 
-  return (
-    <>
-      <Meta title="Redirecting" />
-      <Loading className="h-screen" />
-    </>
-  );
+  return <Loading className="h-screen" />;
 };

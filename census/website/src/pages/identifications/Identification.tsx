@@ -8,6 +8,7 @@ import SiChevronRight from '@/components/icons/SiChevronRight';
 import SiLeaf from '@/components/icons/SiLeaf';
 import SiSearchGlobe from '@/components/icons/SiSearchGlobe';
 import { Loader } from '@/components/loaders/Loader';
+import { PageTitle } from '@/lib/meta';
 import { Spinner } from '@/components/loaders/Spinner';
 import { Modal } from '@/components/modal/Modal';
 import { ModalProps } from '@/components/modal/useModal';
@@ -16,7 +17,7 @@ import { UserLink } from '@/components/users/UserLink';
 import type { RouterOutput } from '@/services/api/helpers';
 import { useIdentification } from '@/services/api/identifications';
 import { cn } from '@/utils/cn';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { formatInTimeZone } from 'date-fns-tz';
 import { FC, ReactNode, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
@@ -545,16 +546,25 @@ export const IdentificationModal: FC<ModalProps<IdentificationProps>> = props =>
 
 export const IdentificationPage: FC = () => {
   const { id } = useParams();
+  const identificationId = Number(id);
+  const identification = useQuery(useIdentification(identificationId));
   const navigate = useNavigate();
   const goToAllIdentifications = () => navigate('/identifications');
+  const selectedIdentification = identification.data?.observation?.identifications.find(
+    item => item.id === identification.data?.id
+  );
+  const title = selectedIdentification?.nickname || selectedIdentification?.name;
 
   return (
-    <IdentificationModal
-      props={{ identificationId: Number(id) }}
-      isOpen={true}
-      open={goToAllIdentifications}
-      close={goToAllIdentifications}
-      toggle={goToAllIdentifications}
-    />
+    <>
+      {title && <PageTitle title={title} />}
+      <IdentificationModal
+        props={{ identificationId }}
+        isOpen={true}
+        open={goToAllIdentifications}
+        close={goToAllIdentifications}
+        toggle={goToAllIdentifications}
+      />
+    </>
   );
 };

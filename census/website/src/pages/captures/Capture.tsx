@@ -1,4 +1,5 @@
 import { useCapture } from '@/services/api/capture';
+import { PageTitle } from '@/lib/meta';
 import { useHasPermission } from '@/services/permissions/hooks';
 import { CaptureEditorProvider } from '@/services/video/CaptureEditorProvider';
 import { FC, useMemo } from 'react';
@@ -21,12 +22,22 @@ export const Capture: FC = () => {
   const id = useMemo(() => Number(params.id), [params.id]);
   const capture = useCapture(id);
 
-  if (capture.data.sightings.length > 0) return <ReadOnly id={id} />;
+  if (capture.data.sightings.length > 0) {
+    return (
+      <>
+        <PageTitle title={`Capture #${capture.data.id}`} />
+        <ReadOnly id={id} />
+      </>
+    );
+  }
   if (!canCreateCapture) throw new Error('Editor permission required');
 
   return (
-    <CaptureEditorProvider>
-      <Editor id={id} />
-    </CaptureEditorProvider>
+    <>
+      <PageTitle title={`Capture #${capture.data.id}`} />
+      <CaptureEditorProvider>
+        <Editor id={id} />
+      </CaptureEditorProvider>
+    </>
   );
 };

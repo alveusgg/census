@@ -1,5 +1,4 @@
 import { Loading } from '@/components/loaders/Loading';
-import { Meta } from '@/lib/meta';
 import { useSignOut } from '@/services/authentication/hooks';
 import { FC, useEffect } from 'react';
 import { useNavigate } from 'react-router';
@@ -20,10 +19,5 @@ export const SignOut: FC = () => {
     })();
   }, [signOut, navigate, forget]);
 
-  return (
-    <>
-      <Meta title="Sign out" />
-      <Loading className="h-screen" />
-    </>
-  );
+  return <Loading className="h-screen" />;
 };

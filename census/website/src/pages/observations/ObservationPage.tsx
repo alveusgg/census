@@ -1,4 +1,5 @@
 import { Note } from '@/components/containers/Note';
+import { PageTitle } from '@/lib/meta';
 import { useObservation } from '@/services/api/observations';
 import { cn } from '@/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -13,11 +14,18 @@ export const ObservationPage = () => {
   const params = useParams<{ id: string }>();
   const observationId = useMemo(() => Number(params.id), [params.id]);
   const { data: observation } = useSuspenseQuery(useObservation(observationId));
+  const confirmedIdentification = observation.identifications.find(item => item.id === observation.confirmedAs);
+  const title = confirmedIdentification
+    ? confirmedIdentification.nickname || confirmedIdentification.name
+    : `Observation #${observation.id}`;
 
   return (
-    <ObservationProvider observation={observation}>
-      <ObservationPageContent />
-    </ObservationProvider>
+    <>
+      <PageTitle title={title} />
+      <ObservationProvider observation={observation}>
+        <ObservationPageContent />
+      </ObservationProvider>
+    </>
   );
 };
 

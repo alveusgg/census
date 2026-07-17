@@ -1,5 +1,6 @@
 import { StickerValueMap } from '@/components/stickers';
 import { Breadcrumbs } from '@/layouts/Breadcrumbs';
+import { PageTitle } from '@/lib/meta';
 import { useUserProfile } from '@/services/api/users';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { FC } from 'react';
@@ -17,6 +18,7 @@ export const UserProfile: FC = () => {
 
   return (
     <ProfilePageLayout>
+      <PageTitle title={`${profile.data.user.username}'s Profile`} />
       <Breadcrumbs>
         <p>home</p>
         <span>•</span>
