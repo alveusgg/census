@@ -44,6 +44,7 @@ import SiPin from '@/components/icons/SiPin';
 import SiTrash from '@/components/icons/SiTrash';
 import SiTwitch from '@/components/icons/SiTwitch';
 import SiVideo from '@/components/icons/SiVideo';
+import { Confirm, useConfirm } from '@/components/modal/Confirm';
 import { DeleteObservationModal, DeleteObservationModalProps } from './DeleteObservationModal';
 import { Controls, SlidePips } from './gallery/Controls';
 import { getMinimizedTree, Node } from './helpers';
@@ -168,6 +169,7 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
   const canSuggest = useHasPermission('suggest');
   const canModerate = useHasPermission('moderate');
   const isMobile = useIsMobile();
+  const confirmWithoutIdentification = useConfirm();
   const deleteObservationModal = useModal<DeleteObservationModalProps>();
   const locationModal = useModal<PanoLocationModalProps>();
   const videoModal = useModal<ObservationVideoModalProps>();
@@ -212,6 +214,7 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
 
   return (
     <div className="@container">
+      <Confirm {...confirmWithoutIdentification} />
       <DeleteObservationModal {...deleteObservationModal} />
       {canModerate && <ObservationVideoModal {...videoModal} />}
       {!isMobile && <PanoLocationModal {...locationModal} />}
@@ -250,12 +253,7 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
             </div>
             <div className="flex gap-2">
               {(() => {
-                const clipIds = Object.keys(
-                  Object.groupBy(
-                    observation.sightings.filter(sighting => Boolean(sighting.capture.clipId)),
-                    sighting => sighting.capture.clipId
-                  )
-                );
+                const clipIds = [...new Set(observation.sightings.flatMap(sighting => sighting.capture.clipId ?? []))];
                 if (clipIds.length === 0) return null;
                 if (clipIds.length === 1) {
                   return (
@@ -370,7 +368,16 @@ export const Observation: FC<ObservationProps> = ({ observation }) => {
                           <Button
                             compact
                             loading={confirmObservationWithoutAccessoryIdentification.isPending}
-                            onClick={() => confirmObservationWithoutAccessoryIdentification.mutateAsync(observation.id)}
+                            onClick={() =>
+                              confirmWithoutIdentification.open({
+                                title: 'Confirm without identification?',
+                                description:
+                                  'This will confirm the observation without an associated plant identification.',
+                                onConfirm: async () => {
+                                  await confirmObservationWithoutAccessoryIdentification.mutateAsync(observation.id);
+                                }
+                              })
+                            }
                             className="gap-1"
                             variant="primary"
                           >
