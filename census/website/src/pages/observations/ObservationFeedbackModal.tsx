@@ -74,6 +74,7 @@ const IdentificationFeedbackForm: FC<ModalProps<IdentificationFeedbackModalProps
 export const IdentificationFeedbackModal: FC<ModalProps<IdentificationFeedbackModalProps>> = props => {
   return (
     <Modal
+      title={`Submit feedback for ${props.props?.identification.name ?? 'identification'}`}
       className="bg-accent-100 text-accent-900 ring-4 ring-accent-300 ring-inset rounded-lg px-8 py-6 w-full max-w-2xl"
       {...props}
     >

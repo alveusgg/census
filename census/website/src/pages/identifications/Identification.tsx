@@ -533,6 +533,7 @@ export const IdentificationModal: FC<ModalProps<IdentificationProps>> = props =>
   return (
     <Modal
       {...props}
+      title="Identification details"
       className="max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-5xl overflow-y-auto rounded-lg bg-accent-100 p-3 text-accent-900 ring-4 ring-inset ring-accent-300 sm:p-4"
     >
       <Suspense fallback={<Loader className="m-24 mx-auto h-6 w-6 text-accent-900" />}>

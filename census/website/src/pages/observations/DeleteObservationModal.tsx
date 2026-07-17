@@ -84,7 +84,7 @@ const DeleteObservationForm: FC<ModalProps<DeleteObservationModalProps>> = props
 
 export const DeleteObservationModal: FC<ModalProps<DeleteObservationModalProps>> = props => {
   return (
-    <Modal className="bg-accent-100" {...props}>
+    <Modal title="Delete submission?" className="bg-accent-100" {...props}>
       <DeleteObservationForm {...props} />
     </Modal>
   );

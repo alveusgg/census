@@ -2,6 +2,7 @@ import SiTrash from '@/components/icons/SiTrash';
 import type { BoundingBox, Selection } from '@/services/video/CaptureEditorProvider';
 import { getColorForId } from '@/services/video/utils';
 import { cn } from '@/utils/cn';
+import { createId } from '@/utils/id';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ComponentProps,
@@ -138,7 +139,7 @@ export const SelectionInput: FC<
     const origin = getNormalizedPoint(event.clientX, event.clientY);
     startDrag({
       subjectId: currentSubjectId,
-      boundingBox: { id: crypto.randomUUID(), x: origin.x, y: origin.y, width: 0, height: 0 },
+      boundingBox: { id: createId(), x: origin.x, y: origin.y, width: 0, height: 0 },
       origin: { canvas: origin },
       mode: 'drawing'
     });

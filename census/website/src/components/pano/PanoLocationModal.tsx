@@ -81,6 +81,7 @@ const PanoLocationForm: FC<ModalProps<PanoLocationModalProps>> = props => {
 export const PanoLocationModal: FC<ModalProps<PanoLocationModalProps>> = props => {
   return (
     <Modal
+      title="Find the observation location"
       className="bg-accent-100 text-accent-900 ring-4 ring-accent-300 ring-inset rounded-lg px-8 py-6 w-full max-w-3xl"
       {...props}
     >

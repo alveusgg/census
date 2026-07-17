@@ -62,25 +62,17 @@ export const APIProvider: FC<PropsWithChildren> = ({ children }) => {
         // next pass through the link chain will see the missing token and
         // refresh via the refresh token before re-sending the request.
         //
-        // This papers over a disagreement between the client's pre-flight
-        // `isTokenExpired` check and the server's `jwtVerify`. Report each
-        // hit to Sentry so we can keep an eye on how often it's happening
-        // and whether the underlying cause (clock skew, suspended tabs,
-        // key rotation, etc.) warrants a more targeted fix.
+        // The server is the authority on token validity, so this is an expected
+        // recovery path for clock skew, suspended tabs, and key rotation.
         retryLink<AppRouter>({
           retry: ({ error, op, attempts }) => {
             if (attempts > 1) return false;
             if (error.data?.code !== 'UNAUTHORIZED') return false;
-            Sentry.captureMessage('tRPC UNAUTHORIZED retry: invalidating access token', {
-              level: 'warning',
-              tags: { subsystem: 'auth', action: 'trpc-unauthorized-retry' },
-              contexts: {
-                trpc: {
-                  path: op.path,
-                  type: op.type,
-                  attempts
-                }
-              }
+            Sentry.addBreadcrumb({
+              category: 'auth',
+              level: 'info',
+              message: 'tRPC UNAUTHORIZED retry: invalidating access token',
+              data: { path: op.path, type: op.type, attempts }
             });
             invalidateRequestToken();
             return true;

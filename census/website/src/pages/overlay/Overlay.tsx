@@ -9,6 +9,7 @@ import SuperJSON from 'superjson';
 import butterfly from '@/assets/adult_butterfly.outlined.png';
 import { loadLevelArtwork } from '@/lib/levels';
 import { Variables } from '@/services/backstage/config';
+import { createId } from '@/utils/id';
 
 const PATH = 'M2.6,112.4c4.78-10.18,6.54-21.75,4.99-32.89-1.66-11.97-7.02-23.38-7.09-35.47C.41,29.07,8.44,14.99,8.68,0';
 
@@ -103,7 +104,7 @@ export const Overlay = () => {
       onData: events => {
         for (const event of events) {
           onEvent({
-            id: crypto.randomUUID(),
+            id: createId(),
             level: event.level,
             username: event.username
           });

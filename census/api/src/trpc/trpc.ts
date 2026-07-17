@@ -14,6 +14,7 @@ import {
 } from '@opentelemetry/semantic-conventions';
 import * as Sentry from '@sentry/node';
 import { initTRPC, TRPCError, TRPCMiddlewareBuilder } from '@trpc/server';
+import { getHTTPStatusCodeFromError } from '@trpc/server/http';
 import { middlewareMarker } from '@trpc/server/unstable-core-do-not-import';
 import { eq } from 'drizzle-orm';
 import { createRemoteJWKSet, errors as joseErrors, jwtVerify } from 'jose';
@@ -278,13 +279,6 @@ const loggedProcedure = t.procedure.use(async opts => {
         if (typeof rawInput === 'object' && (opts.type === 'query' || opts.type === 'subscription')) {
           span.setAttribute('input', JSON.stringify(rawInput));
         }
-        span.setAttributes({
-          ok: result.ok,
-          [SEMATTRS_HTTP_STATUS_CODE]: result.ok ? 200 : 500
-        });
-        // 1 = OK, 2 = ERROR (OpenTelemetry status codes used by Sentry).
-        span.setStatus({ code: result.ok ? 1 : 2, message: result.ok ? 'ok' : 'internal_error' });
-
         if (!result.ok && result.error) {
           if (result.error.cause instanceof CustomError) {
             result.error = new TRPCError({
@@ -294,18 +288,33 @@ const loggedProcedure = t.procedure.use(async opts => {
             });
           }
 
-          Sentry.captureException(result.error, {
-            mechanism: { type: 'trpc', handled: false },
-            captureContext: {
-              contexts: {
-                trpc: {
-                  path: opts.path,
-                  type: opts.type,
-                  code: result.error.code
+          const statusCode = getHTTPStatusCodeFromError(result.error);
+          span.setAttributes({ ok: false, [SEMATTRS_HTTP_STATUS_CODE]: statusCode });
+
+          // A rejected client request (including an expired access token) is
+          // expected application behaviour, not an operational exception.
+          if (statusCode >= 500) {
+            span.setStatus({ code: 2, message: 'server_error' });
+            Sentry.captureException(result.error, {
+              mechanism: { type: 'trpc', handled: true },
+              captureContext: {
+                contexts: {
+                  trpc: {
+                    path: opts.path,
+                    type: opts.type,
+                    code: result.error.code
+                  }
                 }
               }
-            }
-          });
+            });
+          } else {
+            // 1 = OK, 2 = ERROR (OpenTelemetry status codes used by Sentry).
+            // Server spans only become errors for 5xx responses.
+            span.setStatus({ code: 1, message: 'client_error' });
+          }
+        } else {
+          span.setAttributes({ ok: true, [SEMATTRS_HTTP_STATUS_CODE]: 200 });
+          span.setStatus({ code: 1, message: 'ok' });
         }
 
         return result;

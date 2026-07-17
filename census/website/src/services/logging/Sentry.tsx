@@ -23,7 +23,7 @@ export const SentryProvider: FC<PropsWithChildren> = ({ children }) => {
 
       integrations: [
         Sentry.browserTracingIntegration(),
-        Sentry.consoleLoggingIntegration({ levels: ['log', 'warn', 'error'] })
+        Sentry.consoleLoggingIntegration({ levels: ['warn', 'error'] })
       ]
     });
 

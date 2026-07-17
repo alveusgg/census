@@ -2,6 +2,7 @@ import { InfiniteFeedSentinel } from '@/components/feed/InfiniteFeedSentinel';
 import { Loader } from '@/components/loaders/Loader';
 import { useUserIdentifications } from '@/services/api/users';
 import { cn } from '@/utils/cn';
+import { groupBy } from '@/utils/groupBy';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { FC, useMemo } from 'react';
@@ -16,7 +17,7 @@ export const ProfileIdentificationFeed: FC<{ userId: number; className?: string 
     [identifications.data]
   );
   const grouped = useMemo(() => {
-    return Object.groupBy(allIdentifications, identification =>
+    return groupBy(allIdentifications, identification =>
       format(new Date(identification.observation.observedAt), 'do MMM')
     );
   }, [allIdentifications]);

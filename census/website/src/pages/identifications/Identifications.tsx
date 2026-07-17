@@ -14,6 +14,7 @@ import { Breadcrumbs } from '@/layouts/Breadcrumbs';
 import { useConfirmedObservations } from '@/services/api/observations';
 import { useCurrentSeason } from '@/services/api/seasons';
 import { cn } from '@/utils/cn';
+import { groupBy } from '@/utils/groupBy';
 import { useInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { endOfDay, format, startOfDay, subDays } from 'date-fns';
 import { CalendarIcon, ChevronDown } from 'lucide-react';
@@ -48,7 +49,7 @@ const ConfirmedObservationsFeed = ({ filter }: { filter: ReturnType<typeof getCo
 
   const allObservations = useMemo(() => observations.data?.pages.flatMap(page => page.data) ?? [], [observations.data]);
   const grouped = useMemo(() => {
-    return Object.groupBy(allObservations, observation => format(new Date(observation.observedAt), 'do MMM'));
+    return groupBy(allObservations, observation => format(new Date(observation.observedAt), 'do MMM'));
   }, [allObservations]);
 
   if (!observations.data) {

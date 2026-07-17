@@ -61,6 +61,7 @@ const SuggestionCommentForm: FC<ModalProps<SuggestionCommentModalProps>> = props
 export const SuggestionCommentModal: FC<ModalProps<SuggestionCommentModalProps>> = props => {
   return (
     <Modal
+      title={`Add a comment for ${props.props?.identification.name ?? 'identification'}`}
       className="w-full max-w-2xl rounded-lg bg-accent-100 px-8 py-6 text-accent-900 ring-4 ring-inset ring-accent-300"
       {...props}
     >

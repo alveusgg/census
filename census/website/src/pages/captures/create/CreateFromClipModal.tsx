@@ -10,7 +10,6 @@ import { Modal } from '@/components/modal/Modal';
 import { ModalProps } from '@/components/modal/useModal';
 import { useCapture, useCreateCaptureFromClip } from '@/services/api/capture';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { DialogTitle } from '@radix-ui/react-dialog';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ComponentProps, FC, Suspense, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -53,8 +52,11 @@ export const CreateFromClipModal: FC<ModalProps> = props => {
   const navigate = useNavigate();
 
   return (
-    <Modal className="bg-alveus-darker text-white px-5 py-4 w-full max-w-5xl" {...props}>
-      <DialogTitle className="sr-only">Create a capture from a twitch clip</DialogTitle>
+    <Modal
+      title="Create a capture from a Twitch clip"
+      className="bg-alveus-darker text-white px-5 py-4 w-full max-w-5xl"
+      {...props}
+    >
       <AutoAnimatedContainer>
         <div className="flex flex-col gap-4 py-1">
           <Form className="flex gap-4 items-center" methods={methods} onSubmit={onSubmit}>

@@ -4,7 +4,6 @@ import { ModalProps } from '@/components/modal/useModal';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useInfiniteLeaderboard } from '@/services/api/me';
 import { cn } from '@/utils/cn';
-import { DialogTitle } from '@radix-ui/react-dialog';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 import { FC, useMemo } from 'react';
@@ -53,10 +52,9 @@ export const LeaderboardModal: FC<LeaderboardModalProps> = ({
   return (
     <Modal
       {...props}
+      title="Leaderboard"
       className="w-[calc(100vw-2rem)] max-w-5xl gap-0 overflow-hidden rounded-3xl border border-leaderboard-700 bg-leaderboard-500 p-0 text-white sm:w-full"
     >
-      <DialogTitle className="sr-only">Leaderboard</DialogTitle>
-
       <div className="flex max-h-[min(90vh,52rem)] min-h-[32rem] flex-col overflow-hidden">
         <div className="flex items-start gap-3 border-b border-white/10 px-5 pb-4 pt-5 sm:px-6 sm:pb-5 sm:pt-6">
           <div className="flex min-w-0 items-center gap-3">

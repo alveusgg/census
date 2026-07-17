@@ -2,7 +2,7 @@ import { Modal } from '@/components/modal/Modal';
 import { ModalProps } from '@/components/modal/useModal';
 import MuxPlayer from '@mux/mux-player-react';
 import { Cross2Icon } from '@radix-ui/react-icons';
-import { DialogClose, DialogTitle } from '@radix-ui/react-dialog';
+import { DialogClose } from '@radix-ui/react-dialog';
 import { FC, useState } from 'react';
 
 export interface ObservationVideoModalProps {
@@ -50,10 +50,10 @@ export const ObservationVideoModal: FC<ModalProps<ObservationVideoModalProps>> =
 
   return (
     <Modal
+      title={`Observation #${props.props.observationId} video`}
       className="!left-0 !top-0 !h-dvh !w-screen !max-w-none !translate-x-0 !translate-y-0 !gap-0 !rounded-none !p-0"
       {...props}
     >
-      <DialogTitle className="sr-only">Observation #{props.props.observationId} video</DialogTitle>
       <ObservationVideoPlayer {...props.props} />
       <DialogClose className="absolute right-4 top-3.5 z-10 rounded p-1 text-white/70 transition-colors hover:bg-white/15 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
         <Cross2Icon className="h-5 w-5" />

@@ -1,4 +1,5 @@
 import { cn } from '@/utils/cn';
+import { createId } from '@/utils/id';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FC, forwardRef, HTMLAttributes, MouseEventHandler, useCallback, useEffect, useRef } from 'react';
 import { Corner } from '../../assets/icons/Corner';
@@ -235,7 +236,7 @@ export const BoundingBoxInput: FC<InputProps<BoundingBox[]>> = ({ onChange, valu
 
         try {
           pending.current = {
-            id: crypto.randomUUID(),
+            id: createId(),
             x: origin.x,
             y: origin.y,
             width: 0,

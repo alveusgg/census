@@ -72,6 +72,7 @@ const EditCommentForm: FC<ModalProps<EditCommentModalProps>> = props => {
 
 export const EditCommentModal: FC<ModalProps<EditCommentModalProps>> = props => (
   <Modal
+    title="Edit comment"
     className="w-[calc(100vw-2rem)] max-w-2xl rounded-lg bg-accent-100 px-5 py-5 text-accent-900 ring-4 ring-inset ring-accent-300 sm:px-8 sm:py-6"
     {...props}
   >

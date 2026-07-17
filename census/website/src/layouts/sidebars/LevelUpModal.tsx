@@ -46,7 +46,11 @@ export const LevelUpModal: FC<ModalProps<{ level: number }>> = props => {
   const levelLabel = level ? getLevelArtworkLabel(level) : null;
 
   return (
-    <Modal {...props} className="overflow-visible border-none bg-transparent p-0 shadow-none">
+    <Modal
+      {...props}
+      title={level ? `Level ${level.number} unlocked` : 'Level unlocked'}
+      className="overflow-visible border-none bg-transparent p-0 shadow-none"
+    >
       <div className="relative mx-auto pt-28">
         <div className="relative rounded-[2.75rem] bg-[#A760F4] px-16 pb-10 pt-[14rem] text-center text-white shadow-[0_18px_48px_rgba(76,29,149,0.35)]">
           {imageSrc && (

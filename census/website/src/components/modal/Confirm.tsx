@@ -25,7 +25,7 @@ export const Confirm: FC<ModalProps<ConfirmModalProps>> = props => {
   };
 
   return (
-    <Modal className="bg-accent-100" {...props}>
+    <Modal title={props.props?.title ?? 'Confirm action'} className="bg-accent-100" {...props}>
       <div>
         <h1 className="text-2xl font-bold text-accent-900">{props.props?.title}</h1>
         <p className="text-accent-900">{props.props?.description}</p>

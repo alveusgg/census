@@ -138,6 +138,7 @@ const ConfirmIdentificationForm: FC<ModalProps<ConfirmIdentificationModalProps>>
 export const ConfirmIdentificationModal: FC<ModalProps<ConfirmIdentificationModalProps>> = props => {
   return (
     <Modal
+      title={`Confirm identification for ${props.props?.identification.name ?? 'suggestion'}`}
       className="w-[calc(100vw-2rem)] max-w-5xl rounded-lg bg-accent-100 px-6 py-6 text-accent-900 ring-4 ring-inset ring-accent-300 md:px-8"
       {...props}
     >

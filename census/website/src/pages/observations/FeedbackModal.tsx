@@ -317,7 +317,7 @@ const FeedbackList: FC<FeedbackModalProps & Pick<ModalProps<FeedbackModalProps>,
 
 export const FeedbackModal: FC<ModalProps<FeedbackModalProps>> = props => {
   return (
-    <Modal className="w-[calc(100vw-2rem)] max-w-2xl bg-accent-100 p-4 sm:p-5" {...props}>
+    <Modal title="Feedback" className="w-[calc(100vw-2rem)] max-w-2xl bg-accent-100 p-4 sm:p-5" {...props}>
       {props.props?.feedback && <FeedbackList feedback={props.props.feedback} open={props.open} />}
     </Modal>
   );

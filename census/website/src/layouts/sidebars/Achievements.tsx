@@ -227,10 +227,15 @@ const Achievement: FC<PropsWithChildren<AchievementProps & Omit<HTMLMotionProps<
 
   const handleRedeem = async () => {
     if (type === 'shiny' || type === 'identify' || type === 'assist') confetti();
-    if (!containerRef.current) throw new Error('No container ref');
-    await animate(containerRef.current, { opacity: 0.5 }, { duration: 0.2 });
+    const container = containerRef.current;
+    if (container?.isConnected) {
+      await animate(container, { opacity: 0.5 }, { duration: 0.2 });
+    }
     await Promise.all([redeem.mutateAsync(id), action.add(points)]);
-    await animate(redeemedRef.current, { opacity: 1, top: 0, rotate: 2, zIndex: 10 });
+    const redeemed = redeemedRef.current;
+    if (redeemed?.isConnected) {
+      await animate(redeemed, { opacity: 1, top: 0, rotate: 2, zIndex: 10 });
+    }
     await new Promise(resolve => setTimeout(resolve, 1500));
     patch(id);
   };
