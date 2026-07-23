@@ -38,12 +38,13 @@ async function main() {
   try {
     if (!config.manifestOnly) {
       const sourceInfo = await getImageInfo(source);
+      const sourceFit = getAspectFit(sourceInfo, 2);
 
       await mkdir(output, { recursive: true });
-      await renderBase({ source, sourceInfo, config, output });
+      await renderBase({ source, sourceFit, config, output });
 
       for (const level of config.levels) {
-        await renderLevel({ source, sourceInfo, config, output, tempDir, level });
+        await renderLevel({ source, sourceFit, config, output, tempDir, level });
       }
     }
 
@@ -55,12 +56,12 @@ async function main() {
 
 async function renderBase({
   source,
-  sourceInfo,
+  sourceFit,
   config,
   output
 }: {
   source: string;
-  sourceInfo: ImageInfo;
+  sourceFit: AspectFit;
   config: PanoTileConfig;
   output: string;
 }) {
@@ -69,7 +70,7 @@ async function renderBase({
 
   await runOiiotool([
     source,
-    ...getOffsetArgs(config, sourceInfo),
+    ...getSourcePrepArgs(sourceFit, config),
     '--ch',
     'R,G,B',
     '--colorconvert',
@@ -86,14 +87,14 @@ async function renderBase({
 
 async function renderLevel({
   source,
-  sourceInfo,
+  sourceFit,
   config,
   output,
   tempDir,
   level
 }: {
   source: string;
-  sourceInfo: ImageInfo;
+  sourceFit: AspectFit;
   config: PanoTileConfig;
   output: string;
   tempDir: string;
@@ -105,7 +106,7 @@ async function renderLevel({
   await mkdir(levelDir, { recursive: true });
   await runOiiotool([
     source,
-    ...getOffsetArgs(config, sourceInfo),
+    ...getSourcePrepArgs(sourceFit, config),
     '--ch',
     'R,G,B',
     '--colorconvert',
@@ -231,6 +232,14 @@ interface ImageInfo {
   height: number;
 }
 
+/** How to make the source 2:1, anchored to the bottom (trim or pad at the top). */
+interface AspectFit {
+  width: number;
+  height: number;
+  /** oiiotool args applied before color convert / resize */
+  prepArgs: string[];
+}
+
 async function getImageInfo(source: string): Promise<ImageInfo> {
   const output = await runOiiotool(['--info', source]);
   const match = output.match(/:\s+(\d+)\s+x\s+(\d+),/);
@@ -242,12 +251,65 @@ async function getImageInfo(source: string): Promise<ImageInfo> {
   };
 }
 
-function getOffsetArgs(config: PanoTileConfig, sourceInfo: ImageInfo) {
-  const panOffsetPx = Math.round((config.panOffsetDeg / 360) * sourceInfo.width);
-  const tiltOffsetPx = Math.round((config.tiltOffsetDeg / 180) * sourceInfo.height);
+/**
+ * Fit to a target aspect ratio, keeping the bottom of the frame.
+ * - Too tall: crop height (trim from the top).
+ * - Too wide: pad height (black at the top) so full width is preserved.
+ */
+function getAspectFit(source: ImageInfo, aspectRatio: number): AspectFit {
+  const sourceAspect = source.width / source.height;
 
-  if (panOffsetPx === 0 && tiltOffsetPx === 0) return [];
-  return ['--cshift', formatOffset(panOffsetPx, tiltOffsetPx)];
+  if (Math.abs(sourceAspect - aspectRatio) < 1e-6) {
+    return { width: source.width, height: source.height, prepArgs: [] };
+  }
+
+  if (sourceAspect < aspectRatio) {
+    // Too tall → trim from the top, keep bottom.
+    const width = source.width;
+    const height = Math.round(width / aspectRatio);
+    const y = source.height - height;
+    return {
+      width,
+      height,
+      prepArgs: ['--cut', `${width}x${height}+0+${y}`]
+    };
+  }
+
+  // Too wide → keep full width, pad at the top to reach aspectRatio.
+  const width = source.width;
+  const height = Math.round(width / aspectRatio);
+  const topPad = height - source.height;
+  return {
+    width,
+    height,
+    prepArgs: ['--origin', `+0+${topPad}`, '--fullsize', `${width}x${height}`, '--croptofull']
+  };
+}
+
+function getSourcePrepArgs(sourceFit: AspectFit, config: PanoTileConfig) {
+  return [...sourceFit.prepArgs, ...getOffsetArgs(config, { width: sourceFit.width, height: sourceFit.height })];
+}
+
+/**
+ * Pan/tilt are in equirect degrees on the fitted (2:1) canvas.
+ * - pan: circular shift in X (360° wrap)
+ * - tilt: non-circular shift in Y with black fill (avoid wrapping nadir into the padded zenith)
+ * Positive pan moves content right; positive tilt moves content down.
+ */
+function getOffsetArgs(config: PanoTileConfig, size: ImageInfo) {
+  const panOffsetPx = Math.round((config.panOffsetDeg / 360) * size.width);
+  const tiltOffsetPx = Math.round((config.tiltOffsetDeg / 180) * size.height);
+  const args: string[] = [];
+
+  if (panOffsetPx !== 0) {
+    args.push('--cshift', formatOffset(panOffsetPx, 0));
+  }
+
+  if (tiltOffsetPx !== 0) {
+    args.push('--origin', formatOffset(0, tiltOffsetPx), '--fullsize', `${size.width}x${size.height}`, '--croptofull');
+  }
+
+  return args;
 }
 
 function formatOffset(x: number, y: number) {
@@ -291,7 +353,10 @@ function parseArgs(args: string[]): PanoTileConfig {
     index++;
   }
 
-  const highWidth = numberArg(values, 'high-width', 24240);
+  // Source is 44592×19432 (wider than 2:1). Keep full width and pad top → 44592×22296.
+  const ultraWidth = numberArg(values, 'ultra-width', 44592);
+  const ultraHeight = numberArg(values, 'ultra-height', Math.round(ultraWidth / 2));
+  const highWidth = numberArg(values, 'high-width', Math.round(ultraWidth / 2));
   const highHeight = numberArg(values, 'high-height', Math.round(highWidth / 2));
   const mediumWidth = numberArg(values, 'medium-width', Math.round(highWidth / 2));
   const mediumHeight = numberArg(values, 'medium-height', Math.round(mediumWidth / 2));
@@ -303,8 +368,8 @@ function parseArgs(args: string[]): PanoTileConfig {
     manifest: values.get('manifest') ?? DEFAULT_MANIFEST,
     baseWidth: numberArg(values, 'base-width', 4096),
     tileFormat: values.get('format') ?? 'webp',
-    panOffsetDeg: numberArg(values, 'pan-offset-deg', 0),
-    tiltOffsetDeg: numberArg(values, 'tilt-offset-deg', 0),
+    panOffsetDeg: numberArg(values, 'pan-offset-deg', -8.96),
+    tiltOffsetDeg: numberArg(values, 'tilt-offset-deg', -13.01),
     manifestOnly: booleanArg(values, 'manifest-only', false),
     levels: [
       {
@@ -322,6 +387,14 @@ function parseArgs(args: string[]): PanoTileConfig {
         tileWidth: tileSize,
         tileHeight: tileSize,
         showBelowFov: numberArg(values, 'high-fov', 16)
+      },
+      {
+        id: 'ultra',
+        width: ultraWidth,
+        height: ultraHeight,
+        tileWidth: tileSize,
+        tileHeight: tileSize,
+        showBelowFov: numberArg(values, 'ultra-fov', 8)
       }
     ]
   };

@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import type { View } from './lib/controls';
 import type { Simulation } from './lib/simulation';
 
-export const FOV_BOUNDS: { min: number; max: number; sensitivity?: number } = { min: 4, max: 60 };
+export const FOV_BOUNDS: { min: number; max: number; sensitivity?: number } = { min: 2, max: 60 };
 
 const INTRO_DELAY_FRAMES = 0;
 const INTRO_DURATION_FRAMES = 120;
@@ -11,7 +11,7 @@ const INTRO_FRAME_RATE = 60;
 const INTRO_TILT_OFFSET = THREE.MathUtils.degToRad(24);
 const INTRO_FOV_OFFSET = 2;
 const INTRO_START_EXPOSURE = 20;
-const INTRO_END_EXPOSURE = 1;
+const INTRO_END_EXPOSURE = 2;
 
 export function createIntroSimulation(): Simulation<View> {
   let hasStarted = false;
