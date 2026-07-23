@@ -4,6 +4,7 @@ import {
   achievements,
   feedback,
   feedbackCommentEdits,
+  feedbackCommentModerations,
   identifications,
   observations,
   shinies,
@@ -519,30 +520,71 @@ export const addJustificationToIdentification = async (identificationId: number,
   );
 };
 
-export const removeFeedbackComment = async (feedbackId: number) => {
+type FeedbackCommentModerator =
+  | { source: 'census'; moderatorUserId: number }
+  | { source: 'discord'; discordUserId: string };
+
+const removeFeedbackCommentAfterAuthorization = async (feedbackId: number, moderator: FeedbackCommentModerator) => {
   const db = useDB();
+
+  return await db.transaction(async tx =>
+    withTransaction(tx, async () => {
+      const [existingFeedback] = await tx
+        .select()
+        .from(feedback)
+        .where(and(eq(feedback.id, feedbackId), activeFeedback()))
+        .limit(1)
+        .for('update');
+
+      if (!existingFeedback) throw new NotFoundError('Feedback not found');
+      if (existingFeedback.type !== 'agree' && existingFeedback.type !== 'disagree') {
+        throw new BadRequestError('Only agree or disagree feedback comments can be removed with this action');
+      }
+      if (!existingFeedback.comment) return { removed: false as const };
+
+      await revokeCommentAchievements(existingFeedback);
+      await tx.update(feedback).set({ comment: null, commentDeletedAt: new Date() }).where(eq(feedback.id, feedbackId));
+      await tx.insert(feedbackCommentModerations).values({
+        feedbackId,
+        source: moderator.source,
+        moderatorUserId: moderator.source === 'census' ? moderator.moderatorUserId : null,
+        discordUserId: moderator.source === 'discord' ? moderator.discordUserId : null
+      });
+
+      return { removed: true as const };
+    })
+  );
+};
+
+export const removeFeedbackComment = async (feedbackId: number) => {
+  const user = useUser();
   const permissions = getPermissions();
 
   if (!permissions.moderate) {
     throw new ForbiddenError('You are not authorized to remove feedback comments.');
   }
 
-  return await db.transaction(async tx =>
-    withTransaction(tx, async () => {
-      const existingFeedback = await tx.query.feedback.findFirst({
-        where: and(eq(feedback.id, feedbackId), activeFeedback())
-      });
+  return await removeFeedbackCommentAfterAuthorization(feedbackId, {
+    source: 'census',
+    moderatorUserId: user.id
+  });
+};
 
-      if (!existingFeedback) throw new NotFoundError('Feedback not found');
-      if (existingFeedback.type !== 'agree' && existingFeedback.type !== 'disagree') {
-        throw new BadRequestError('Only agree or disagree feedback comments can be removed with this action');
-      }
-      if (!existingFeedback.comment) throw new BadRequestError('Feedback does not have a comment to remove');
+export const removeFeedbackCommentFromDiscord = async (feedbackId: number, discordUserId: string) =>
+  await removeFeedbackCommentAfterAuthorization(feedbackId, { source: 'discord', discordUserId });
 
-      await revokeCommentAchievements(existingFeedback);
-      await tx.update(feedback).set({ comment: null, commentDeletedAt: new Date() }).where(eq(feedback.id, feedbackId));
-    })
-  );
+export const removeFeedbackCommentFromDiscordMessage = async (discordMessageId: string, discordUserId: string) => {
+  const db = useDB();
+  const entry = await db.query.feedback.findFirst({
+    where: eq(feedback.discordModerationMessageId, discordMessageId),
+    columns: { id: true }
+  });
+  if (!entry) return { found: false as const };
+
+  return {
+    found: true as const,
+    ...(await removeFeedbackCommentAfterAuthorization(entry.id, { source: 'discord', discordUserId }))
+  };
 };
 
 const COMMENT_EDIT_WINDOW_MS = 60 * 60 * 1000;

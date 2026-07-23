@@ -197,6 +197,20 @@
       "when": 1783896502280,
       "tag": "0027_dapper_demogoblin",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1784805583532,
+      "tag": "0028_aberrant_ma_gnuci",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1784806824505,
+      "tag": "0029_colorful_living_tribunal",
+      "breakpoints": true
     }
   ]
 }

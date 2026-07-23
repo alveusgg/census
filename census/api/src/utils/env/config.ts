@@ -49,7 +49,14 @@ export const config = z.object({
 
   DISCORD_WEBHOOK_URL: z.string().optional(),
   DISCORD_MODERATION_WEBHOOK_URL: z.string().url().optional(),
-  DISCORD_SERVER_ID: z.string().optional(),
+  DISCORD_APPLICATION_ID: z.string().regex(/^\d+$/).optional(),
+  DISCORD_APPLICATION_PUBLIC_KEY: z
+    .string()
+    .regex(/^[\da-f]{64}$/i)
+    .optional(),
+  DISCORD_BOT_TOKEN: z.string().min(1).optional(),
+  DISCORD_SERVER_ID: z.string().regex(/^\d+$/).optional(),
+  DISCORD_MODERATION_CHANNEL_ID: z.string().regex(/^\d+$/).optional(),
   DISCORD_IS_FORUM: z.coerce.boolean().optional().default(false),
 
   DEV_FLAG_USE_TWITCH_CLIP_DIRECTLY: z.coerce.boolean().optional().default(false),

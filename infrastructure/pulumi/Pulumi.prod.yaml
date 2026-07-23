@@ -23,3 +23,9 @@ config:
     secure: AAABAMIdsVNssTOl+sgOvUvziT84Ih1jSxlaagUNOX0F8LLQldRC3jA0B+xykC2z9SUhFJ2b76DrgvOgWfqsY3Rei0DDtJ5GOun2ZDbZHPV15YJobGzVJYfiW9GR+0t2ZkxcBnTEdgG48G6NTQJD5C03vYX90Euaj7h8pI1Mlw==
   census:discord-moderation-webhook-url:
     secure: AAABAERa9uJqf0Ywfv9aCgP5f/F8LBSey2zKBKOffJcH+zvygpUA8XzveUv3Xco6BLCSy3Df0oNwsgcfJGEpl1lb5vTSdGgNpqXzCZpodiegNP2KRDhrXS8hapFH6nlmxuP4sfPyqLwd7x7sSmJmWiVAxiKteh5JFFz7tn9cEuR6r5ul2MA+N4KoYKsEqFIfXGe57bGFq0fH
+  census:discord-application-id: '1529809187452747927'
+  census:discord-application-public-key: c457bd79ec6b3f0dce103487b2c2b0561945ca9d99eb563543732ca5269b1338
+  census:discord-bot-token:
+    secure: AAABAHTypY4+auaFk3uhTmf1P5b+Xqv6aqYLsTMrEglU6oCtTrYO0b4JWzUdorZXgXBq63gvEqBACGx+VPl5dKN/2sGi1gGfyX6n/rOMYUGjNEy+oH2R6zjqRln/bhAoPfWpaiKvpnM=
+  census:discord-server-id: '943622444852330518'
+  census:discord-moderation-channel-id: '1526253178239193230'

@@ -1,5 +1,16 @@
 import { relations, sql } from 'drizzle-orm';
-import { boolean, index, integer, json, pgEnum, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  index,
+  integer,
+  json,
+  pgEnum,
+  pgTable,
+  serial,
+  text,
+  timestamp,
+  uniqueIndex
+} from 'drizzle-orm/pg-core';
 import { observations } from './observations.js';
 import { shinies } from './seasons.js';
 import { tagAssignments } from './tags.js';
@@ -80,12 +91,16 @@ export const feedback = pgTable(
     annotations: json('annotations').$type<ConfirmationAnnotation[]>().default([]).notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     deletedAt: timestamp('deleted_at'),
-    commentDeletedAt: timestamp('comment_deleted_at')
+    commentDeletedAt: timestamp('comment_deleted_at'),
+    discordModerationMessageId: text('discord_moderation_message_id')
   },
   table => {
     return {
       identificationIdx: index('identification_idx').on(table.identificationId),
-      userIdIdx: index('user_idx').on(table.userId)
+      userIdIdx: index('user_idx').on(table.userId),
+      discordModerationMessageIdIdx: uniqueIndex('feedback_discord_moderation_message_id_idx').on(
+        table.discordModerationMessageId
+      )
     };
   }
 );
@@ -102,6 +117,23 @@ export const feedbackCommentEdits = pgTable(
   },
   table => ({
     feedbackIdIdx: index('feedback_comment_edits_feedback_id_idx').on(table.feedbackId)
+  })
+);
+
+export const feedbackCommentModerations = pgTable(
+  'feedback_comment_moderations',
+  {
+    id: serial('id').primaryKey(),
+    feedbackId: integer('feedback_id')
+      .references(() => feedback.id, { onDelete: 'cascade' })
+      .notNull(),
+    source: text('source').$type<'census' | 'discord'>().notNull(),
+    moderatorUserId: integer('moderator_user_id').references(() => users.id, { onDelete: 'set null' }),
+    discordUserId: text('discord_user_id'),
+    createdAt: timestamp('created_at').defaultNow().notNull()
+  },
+  table => ({
+    feedbackIdIdx: index('feedback_comment_moderations_feedback_id_idx').on(table.feedbackId)
   })
 );
 

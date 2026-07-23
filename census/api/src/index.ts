@@ -9,9 +9,11 @@ import { fastifyTRPCPlugin, type FastifyTRPCPluginOptions } from '@trpc/server/a
 import fastify from 'fastify';
 import { createRouter } from './api/index.js';
 import { checkDatabaseHealth, tearDownDatabase } from './db/db.js';
+import discordInteractionsRouter from './rest/discord.js';
 import profileRestRouter from './rest/profile.js';
 import authRouter from './services/auth/router.js';
 import { createCaptureQueueWorker } from './services/capture/worker.js';
+import { registerDiscordModerationCommand } from './services/discord/index.js';
 import { createContext } from './trpc/context.js';
 import { createEnvironment, withEnvironment } from './utils/env/env.js';
 import { tearDown, waitForLongOperations } from './utils/teardown.js';
@@ -86,6 +88,7 @@ await withEnvironment(environment, async () => {
 
   await server.register(websocket);
   await server.register(authRouter, { prefix: '/auth' });
+  await server.register(discordInteractionsRouter, { prefix: '/discord' });
   await server.register(profileRestRouter, { prefix: '/rest' });
   await server.register(fastifyTRPCPlugin, {
     trpcOptions: {
@@ -94,6 +97,7 @@ await withEnvironment(environment, async () => {
       onError() {}
     } satisfies FastifyTRPCPluginOptions<AppRouter>['trpcOptions']
   });
+  await registerDiscordModerationCommand();
 
   let address: string;
   try {

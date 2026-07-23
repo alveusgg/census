@@ -1,0 +1,2 @@
+ALTER TABLE "feedback" ADD COLUMN "discord_moderation_message_id" text;--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "feedback_discord_moderation_message_id_idx" ON "feedback" USING btree ("discord_moderation_message_id");

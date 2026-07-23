@@ -111,7 +111,7 @@ export class TemporaryFile {
   }
 }
 
-setInterval(() => {
+const cleanupTimer = setInterval(() => {
   Cache.forEach(promise => {
     promise
       .then(file => {
@@ -125,3 +125,4 @@ setInterval(() => {
       });
   });
 }, 30 * 1000);
+cleanupTimer.unref();

@@ -80,6 +80,11 @@ export = async () => {
       ALVEUS_AUTH_CLIENT_SECRET: config.requireSecret('alveus-client-secret'),
 
       SENTRY_DSN: config.require('sentry-dsn'),
+      DISCORD_APPLICATION_ID: config.require('discord-application-id'),
+      DISCORD_APPLICATION_PUBLIC_KEY: config.require('discord-application-public-key'),
+      DISCORD_BOT_TOKEN: config.requireSecret('discord-bot-token'),
+      DISCORD_SERVER_ID: config.require('discord-server-id'),
+      DISCORD_MODERATION_CHANNEL_ID: config.require('discord-moderation-channel-id'),
       DISCORD_MODERATION_WEBHOOK_URL: config.requireSecret('discord-moderation-webhook-url')
     },
     image: config.require('image'),

@@ -25,8 +25,8 @@ const IdentificationFeedbackFields = z.object({
 type IdentificationFeedbackFields = z.infer<typeof IdentificationFeedbackFields>;
 
 const label: Record<IdentificationFeedbackModalProps['feedback'], string> = {
-  agree: 'why do you agree? this may help other people understand your reasoning and learn from your observation.',
-  disagree: 'why do you disagree? this may help other people understand your reasoning and learn from your observation.'
+  agree: 'What makes you agree?',
+  disagree: 'What makes you disagree?'
 };
 
 const IdentificationFeedbackForm: FC<ModalProps<IdentificationFeedbackModalProps>> = props => {
@@ -60,8 +60,16 @@ const IdentificationFeedbackForm: FC<ModalProps<IdentificationFeedbackModalProps
         <p className="leading-tight">{label[feedback]}</p>
       </div>
       <Field name="comment">
-        <TextAreaField placeholder="please explain your reasoning" />
+        <TextAreaField
+          aria-describedby="feedback-comment-guidance"
+          aria-label="Comment"
+          placeholder="Please explain your reasoning"
+        />
       </Field>
+      <p id="feedback-comment-guidance" className="rounded-md border border-accent-300 bg-accent-50 px-3 py-2 text-sm">
+        <strong>Make it useful:</strong> mention a visible feature or comparison that supports your view. Avoid vague
+        comments like “correct” or “could be”, or citing someone else.
+      </p>
       <PointOrigin className="place-self-end" {...action}>
         <Button loading={addFeedback.isPending || action.isPending} type="submit">
           {comment ? 'submit' : `${feedback} without comment`}
