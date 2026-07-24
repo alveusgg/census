@@ -8,7 +8,7 @@ import discordInteractionsRouter from './discord.js';
 void test('accepts a signed Discord endpoint verification ping', async () => {
   const { privateKey, publicKey } = generateKeyPairSync('ed25519');
   const rawPublicKey = publicKey.export({ format: 'der', type: 'spki' }).subarray(-32).toString('hex');
-  const timestamp = '1784800000';
+  const timestamp = Math.floor(Date.now() / 1000).toString();
   const body = JSON.stringify({ application_id: '1', type: 1 });
   const signature = sign(null, Buffer.from(timestamp + body), privateKey).toString('hex');
   const environment = {

@@ -11,16 +11,35 @@ import {
   verifyDiscordInteractionSignature
 } from './interactions.js';
 
-void test('verifies Discord Ed25519 request signatures', () => {
+void test('verifies current Discord Ed25519 request signatures', () => {
   const { privateKey, publicKey } = generateKeyPairSync('ed25519');
   const rawPublicKey = publicKey.export({ format: 'der', type: 'spki' }).subarray(-32).toString('hex');
-  const timestamp = '1784800000';
+  const timestamp = Math.floor(Date.now() / 1000).toString();
   const body = Buffer.from('{"type":1}');
   const signature = sign(null, Buffer.concat([Buffer.from(timestamp), body]), privateKey).toString('hex');
 
   assert.equal(verifyDiscordInteractionSignature(body, signature, timestamp, rawPublicKey), true);
   assert.equal(verifyDiscordInteractionSignature(Buffer.from('{"type":2}'), signature, timestamp, rawPublicKey), false);
   assert.equal(verifyDiscordInteractionSignature(body, 'invalid', timestamp, rawPublicKey), false);
+});
+
+void test('rejects signed Discord requests outside the timestamp freshness window', context => {
+  const { privateKey, publicKey } = generateKeyPairSync('ed25519');
+  const rawPublicKey = publicKey.export({ format: 'der', type: 'spki' }).subarray(-32).toString('hex');
+  const body = Buffer.from('{"type":1}');
+  const nowSeconds = 1_784_800_000;
+  context.mock.method(Date, 'now', () => nowSeconds * 1000);
+
+  const verifyTimestamp = (timestampSeconds: number) => {
+    const timestamp = timestampSeconds.toString();
+    const signature = sign(null, Buffer.concat([Buffer.from(timestamp), body]), privateKey).toString('hex');
+    return verifyDiscordInteractionSignature(body, signature, timestamp, rawPublicKey);
+  };
+
+  assert.equal(verifyTimestamp(nowSeconds - 300), true);
+  assert.equal(verifyTimestamp(nowSeconds + 300), true);
+  assert.equal(verifyTimestamp(nowSeconds - 301), false);
+  assert.equal(verifyTimestamp(nowSeconds + 301), false);
 });
 
 void test('creates and parses feedback comment removal custom IDs', () => {

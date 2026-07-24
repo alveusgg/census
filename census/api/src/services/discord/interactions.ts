@@ -2,6 +2,7 @@ import { createPublicKey, verify } from 'node:crypto';
 import { z } from 'zod';
 
 const ED25519_PUBLIC_KEY_PREFIX = Buffer.from('302a300506032b6570032100', 'hex');
+const DISCORD_INTERACTION_TIMESTAMP_TOLERANCE_SECONDS = 5 * 60;
 const REMOVE_FEEDBACK_COMMENT_PREFIX = 'census:feedback:remove:';
 export const REMOVE_FEEDBACK_COMMENT_COMMAND_NAME = 'Remove Census comment';
 export const REMOVE_FEEDBACK_COMMENT_COMMAND = {
@@ -66,7 +67,22 @@ export const verifyDiscordInteractionSignature = (
   timestamp: string | undefined,
   publicKey: string
 ) => {
-  if (!signature || !timestamp || !/^[\da-f]{128}$/i.test(signature) || !/^[\da-f]{64}$/i.test(publicKey)) {
+  if (
+    !signature ||
+    !timestamp ||
+    !/^[\da-f]{128}$/i.test(signature) ||
+    !/^[\da-f]{64}$/i.test(publicKey) ||
+    !/^\d+$/.test(timestamp)
+  ) {
+    return false;
+  }
+
+  const timestampSeconds = Number(timestamp);
+  const currentTimestampSeconds = Math.floor(Date.now() / 1000);
+  if (
+    !Number.isSafeInteger(timestampSeconds) ||
+    Math.abs(currentTimestampSeconds - timestampSeconds) > DISCORD_INTERACTION_TIMESTAMP_TOLERANCE_SECONDS
+  ) {
     return false;
   }
 
