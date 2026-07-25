@@ -32,6 +32,11 @@ const manager = new PanoMapManager(
   defaultPanoMapManagerOptions
 );
 
+export async function preload() {
+  await manager.init();
+  return manager;
+}
+
 import { motion } from 'framer-motion';
 const sphere: [number, number, number] = [10, 64, 64];
 export const PANO_RADIUS = sphere[0];
@@ -45,10 +50,7 @@ export const Pano: FC<PropsWithChildren<PanoViewProps>> = ({ state, onClick, onI
 
   const result = useSuspenseQuery({
     queryKey: ['panoMapManager'],
-    queryFn: async () => {
-      await manager.startup;
-      return manager;
-    }
+    queryFn: preload
   });
 
   const sphereRef = useRef<THREE.Mesh>(null);

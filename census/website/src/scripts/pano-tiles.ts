@@ -17,6 +17,7 @@ interface PanoTileConfig {
   output: string;
   manifest: string;
   baseWidth: number;
+  baseQuality: number;
   tileFormat: string;
   panOffsetDeg: number;
   tiltOffsetDeg: number;
@@ -80,6 +81,7 @@ async function renderBase({
     `${config.baseWidth}x${baseHeight}`,
     '-d',
     'uint8',
+    ...(config.tileFormat === 'webp' ? ['--compression', `webp:${config.baseQuality}`] : []),
     '-o',
     destination
   ]);
@@ -367,6 +369,7 @@ function parseArgs(args: string[]): PanoTileConfig {
     output: values.get('output') ?? DEFAULT_OUTPUT,
     manifest: values.get('manifest') ?? DEFAULT_MANIFEST,
     baseWidth: numberArg(values, 'base-width', 4096),
+    baseQuality: numberArg(values, 'base-quality', 80),
     tileFormat: values.get('format') ?? 'webp',
     panOffsetDeg: numberArg(values, 'pan-offset-deg', -8.96),
     tiltOffsetDeg: numberArg(values, 'tilt-offset-deg', -13.01),

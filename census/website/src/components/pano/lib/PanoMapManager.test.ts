@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import * as THREE from 'three';
-import { defaultPanoMapManagerOptions, getVisibleTiles, type PanoTileLevel } from './PanoMapManager';
+import { defaultPanoMapManagerOptions, getVisibleTiles, PanoMapManager, type PanoTileLevel } from './PanoMapManager';
 
 const LEVEL: PanoTileLevel = {
   id: 'test',
@@ -27,6 +27,69 @@ function createCamera({ fov, aspect, pan = 0 }: { fov: number; aspect: number; p
 function getColumns(camera: THREE.PerspectiveCamera) {
   return new Set(getVisibleTiles(camera, LEVEL, 0).map(tile => tile.column));
 }
+
+test('does not load the base panorama until initialized', () => {
+  const offscreenCanvasDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'OffscreenCanvas');
+  const imageDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'Image');
+  let imagesCreated = 0;
+
+  class MockOffscreenCanvas {
+    constructor(
+      public width: number,
+      public height: number
+    ) {}
+
+    getContext() {
+      return {};
+    }
+  }
+
+  class MockImage {
+    constructor() {
+      imagesCreated += 1;
+    }
+  }
+
+  Object.defineProperty(globalThis, 'OffscreenCanvas', {
+    configurable: true,
+    value: MockOffscreenCanvas
+  });
+  Object.defineProperty(globalThis, 'Image', {
+    configurable: true,
+    value: MockImage
+  });
+
+  try {
+    new PanoMapManager(
+      {
+        manifest: {
+          projection: 'equirectangular',
+          base: {
+            src: '/base.webp',
+            width: 4096,
+            height: 2048
+          },
+          levels: []
+        }
+      },
+      defaultPanoMapManagerOptions
+    );
+
+    assert.equal(imagesCreated, 0);
+  } finally {
+    if (offscreenCanvasDescriptor) {
+      Object.defineProperty(globalThis, 'OffscreenCanvas', offscreenCanvasDescriptor);
+    } else {
+      Reflect.deleteProperty(globalThis, 'OffscreenCanvas');
+    }
+
+    if (imageDescriptor) {
+      Object.defineProperty(globalThis, 'Image', imageDescriptor);
+    } else {
+      Reflect.deleteProperty(globalThis, 'Image');
+    }
+  }
+});
 
 test('uses the camera aspect ratio when resolving visible tiles', () => {
   const squareColumns = getColumns(createCamera({ fov: 16, aspect: 1 }));

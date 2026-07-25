@@ -70,11 +70,10 @@ export class PanoMapManager {
   tileRoot: THREE.Group;
   params: PanoMapManagerParams;
 
-  startup: Promise<void>;
-
   private readonly options: PanoMapManagerOptions;
   private readonly context: OffscreenCanvasRenderingContext2D;
   private readonly tiles = new Map<string, TileRecord>();
+  private startup?: Promise<void>;
 
   constructor(params: PanoMapManagerParams, options: PanoMapManagerOptions) {
     this.params = params;
@@ -102,11 +101,19 @@ export class PanoMapManager {
     this.camera = new THREE.PerspectiveCamera(45, 2 / 1, 0.1, 1000);
     this.camera.position.set(0, 0, 0);
     this.camera.fov = 60;
-
-    this.startup = this.init();
   }
 
-  public async init() {
+  public init() {
+    if (this.startup) return this.startup;
+    this.startup = this.loadBaseImage().catch(error => {
+      this.startup = undefined;
+      throw error;
+    });
+
+    return this.startup;
+  }
+
+  private async loadBaseImage() {
     const image = await loadImage(this.params.manifest.base.src);
     this.context.drawImage(image, 0, 0, this.canvas.width, this.canvas.height);
     this.texture.needsUpdate = true;
@@ -437,16 +444,11 @@ function normalize01(value: number) {
 async function loadImage(src: string) {
   const image = new Image();
   image.decoding = 'async';
-  image.src = src;
-
-  if (image.decode) {
-    await image.decode();
-    return image;
-  }
 
   await new Promise<void>((resolve, reject) => {
     image.onload = () => resolve();
     image.onerror = () => reject(new Error(`Failed to load image: ${src}`));
+    image.src = src;
   });
 
   return image;

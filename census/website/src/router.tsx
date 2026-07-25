@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { createBrowserRouter, RouteObject } from 'react-router-dom';
 import { RouteErrorBoundary } from './components/feedback/ErrorBoundary';
 import { NotFoundErrorBoundary } from './components/feedback/NotFoundError';
+import { preload } from './components/pano/Pano';
 import { SelectionProvider } from './components/selection/SelectionProvider';
 import { Main, Scrollable } from './layouts/Main';
 import { RouteMeta } from './lib/meta';
@@ -18,8 +19,8 @@ import { Onboarding } from './pages/forms/Onboarding';
 import { Home } from './pages/home/Home';
 import { IdentificationPage } from './pages/identifications/Identification';
 import { Identifications } from './pages/identifications/Identifications';
-import { Observations } from './pages/observations/Observations';
 import { ObservationPage } from './pages/observations/ObservationPage';
+import { Observations } from './pages/observations/Observations';
 import { Overlay } from './pages/overlay/Overlay';
 import { LaunchDay } from './pages/posts/LaunchDay';
 import { MyProfile } from './pages/profile/MyProfile';
@@ -125,6 +126,11 @@ export const useRouter = () => {
                     {
                       path: 'identifications',
                       handle: { title: 'Identifications' },
+                      loader: () => {
+                        // Start loading early without blocking navigation. The Pano query awaits the same initialization.
+                        void preload().catch(() => undefined);
+                        return null;
+                      },
                       element: (
                         <SelectionProvider>
                           <Identifications />
