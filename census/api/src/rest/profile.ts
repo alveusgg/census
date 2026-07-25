@@ -3,6 +3,8 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { getUserProfileSummary, UserProfileSummary } from '../services/users/profile.js';
 
+const CENSUS_URL = 'https://alveus.gg/census';
+
 const ProfileQuery = z.object({
   username: z
     .string()
@@ -15,7 +17,8 @@ const ProfileQuery = z.object({
 export const formatUserProfileSummary = (profile: UserProfileSummary) => {
   const points = new Intl.NumberFormat('en-US').format(profile.pointsLast7Days);
   const rank = profile.rankLast7Days === null ? 'unranked' : formatOrdinal(profile.rankLast7Days);
-  return `${profile.username} [lvl ${profile.level.toString()}] [${points} pts (${rank}) ∙ last 7 days] [${profile.additional}]`;
+  const profileUrl = `${CENSUS_URL}/profile/${encodeURIComponent(profile.username)}`;
+  return `${profile.username} [lvl ${profile.level.toString()}] [${points} pts (${rank}) ∙ last 7 days] [${profile.additional}] [profile: ${profileUrl}]`;
 };
 
 export const formatOrdinal = (value: number) => {
@@ -49,7 +52,10 @@ export const createProfileRestRouter = () => async (router: FastifyInstance) => 
         .send(formatUserProfileSummary(profile));
     } catch (error) {
       if (error instanceof NotFoundError) {
-        return reply.status(404).type('text/plain; charset=utf-8').send("You haven't signed up yet!");
+        return reply
+          .status(404)
+          .type('text/plain; charset=utf-8')
+          .send(`You haven't signed up yet! Sign up: ${CENSUS_URL}`);
       }
       throw error;
     }
