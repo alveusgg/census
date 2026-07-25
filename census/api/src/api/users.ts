@@ -103,10 +103,19 @@ export const createUsersRouter = () => {
       }),
 
     profile: procedure
-      .input(z.object({ id: z.number().int().positive() }))
-      .use(cache.query({ key: ({ input }) => ['users', 'profile', input.id], ttl: 60 }))
+      .input(
+        z.object({
+          username: z
+            .string()
+            .trim()
+            .min(1)
+            .max(25)
+            .regex(/^[a-zA-Z0-9_]+$/)
+        })
+      )
+      .use(cache.query({ key: ({ input }) => ['users', 'profile', input.username.toLowerCase()], ttl: 60 }))
       .query(async ({ input }) => {
-        return getUserPublicProfile(input.id);
+        return getUserPublicProfile(input.username);
       }),
 
     identifications: procedure
@@ -126,7 +135,7 @@ export const createUsersRouter = () => {
       const result = await updateStickerPositionsForUser(user.id, input.positions);
       cache.invalidate([
         ['users', 'list'],
-        ['users', 'profile', user.id]
+        ['users', 'profile', user.username.toLowerCase()]
       ]);
       return result;
     }),

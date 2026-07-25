@@ -13,7 +13,7 @@ import { useProfileStickers } from './useProfileStickers';
 
 export const MyProfile: FC = () => {
   const me = useSuspenseQuery(useMe());
-  const profile = useSuspenseQuery(useUserProfile(me.data.id));
+  const profile = useSuspenseQuery(useUserProfile(me.data.username));
 
   const api = useAPI();
   const queryClient = useQueryClient();

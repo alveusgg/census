@@ -1,4 +1,4 @@
-import { and, count, desc, eq, isNotNull, isNull, or } from 'drizzle-orm';
+import { and, count, desc, eq, isNotNull, isNull, or, sql } from 'drizzle-orm';
 
 import { OnboardingFormSchema } from '@alveusgg/census-forms';
 import { NotAuthenticatedError, NotFoundError } from '@alveusgg/error';
@@ -55,16 +55,18 @@ export const updateStickerPositionsForUser = async (id: number, positions: unkno
   await db.update(users).set({ stickers: positions }).where(eq(users.id, id));
 };
 
-export const getUserPublicProfile = async (id: number) => {
+export const getUserPublicProfile = async (username: string) => {
   const db = useDB();
   const [user] = await db
     .select({ id: users.id, username: users.username, createdAt: users.createdAt, stickers: users.stickers })
     .from(users)
-    .where(eq(users.id, id));
+    .where(sql`lower(${users.username}) = lower(${username})`)
+    .limit(1);
 
-  const points = await getPointsForUser(id);
+  if (!user) throw new NotFoundError(`User not found: ${username}`);
+
+  const points = await getPointsForUser(user.id);
   const levels = getAllReachedLevelsForPoints(points);
-  if (!user) throw new NotFoundError(`User not found: ${id}`);
   return { user, points, levels };
 };
 

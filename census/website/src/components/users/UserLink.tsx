@@ -13,7 +13,7 @@ interface UserLinkProps extends Omit<ComponentProps<typeof Link>, 'to'> {
 export const UserLink: FC<UserLinkProps> = ({ user, children, className, ...props }) => {
   return (
     <Link
-      to={`/profile/${user.id}`}
+      to={`/profile/${user.username.toLowerCase()}`}
       className={cn('underline-offset-2 hover:underline', className)}
       title={user.username}
       {...props}

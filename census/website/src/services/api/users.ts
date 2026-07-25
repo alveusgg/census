@@ -11,11 +11,11 @@ export const useUsers = () => {
   });
 };
 
-export const useUserProfile = (id: number) => {
+export const useUserProfile = (username: string) => {
   const api = useAPI();
   return queryOptions({
-    queryKey: key('users', 'profile', id.toString()),
-    queryFn: () => api.users.profile.query({ id })
+    queryKey: key('users', 'profile', username.toLowerCase()),
+    queryFn: () => api.users.profile.query({ username })
   });
 };
 

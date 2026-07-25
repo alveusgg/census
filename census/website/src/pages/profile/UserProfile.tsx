@@ -11,9 +11,9 @@ import { ProfileStickerStage } from './ProfileStickerStage';
 import { useProfileStickers } from './useProfileStickers';
 
 export const UserProfile: FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { username } = useParams<{ username: string }>();
 
-  const profile = useSuspenseQuery(useUserProfile(Number(id)));
+  const profile = useSuspenseQuery(useUserProfile(username!));
   const stickers = useProfileStickers(profile.data, profile.data.user.id);
 
   return (

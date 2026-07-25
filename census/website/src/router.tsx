@@ -205,7 +205,7 @@ export const useRouter = () => {
                           element: <MyProfile />
                         },
                         {
-                          path: ':id',
+                          path: ':username',
                           handle: { title: 'User Profile' },
                           element: <UserProfile />
                         }
