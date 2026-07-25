@@ -3,7 +3,7 @@ import { Button } from '@/components/controls/button/juicy';
 import { CustomSelectionColor } from '@/components/editor/CustomSelectionColor';
 import { SelectedSubjectHighlight } from '@/components/editor/SelectedSubjectHighlight';
 import { SubjectSelectionInput } from '@/components/editor/SubjectSelectionInput';
-import { SubjectToggle } from '@/components/editor/SubjectToggle';
+import { MobileSubjectButtons, SubjectToggle } from '@/components/editor/SubjectToggle';
 import { AutoVideo } from '@/components/editor/video/AutoVideo';
 import { PlaybackBar } from '@/components/editor/video/PlaybackBar';
 import { VideoContainer } from '@/components/editor/VideoContainer';
@@ -17,13 +17,38 @@ import { Selection } from '@alveusgg/census-api/src/services/observations/observ
 import { FrameUnavailableError } from '@alveusgg/error';
 import * as Media from '@react-av/core';
 import { useMeasure } from '@uidotdev/usehooks';
+import { X } from 'lucide-react';
 import { FC, useCallback, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { CaptureProps } from './Capture';
 
 const EDITOR_GAP = 24;
+const IMMERSIVE_EDITOR_GAP = 12;
 const END_OF_VIDEO_MARGIN_SECONDS = 0.02;
+const PHONE_EDITOR_QUERY =
+  '(hover: none) and (pointer: coarse) and (max-width: 600px), ' +
+  '(hover: none) and (pointer: coarse) and (max-height: 600px)';
+
+const usePrefersImmersiveEditor = () => {
+  const [prefersImmersiveEditor, setPrefersImmersiveEditor] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia(PHONE_EDITOR_QUERY).matches;
+  });
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(PHONE_EDITOR_QUERY);
+    const updatePreference = () => setPrefersImmersiveEditor(mediaQuery.matches);
+
+    mediaQuery.addEventListener('change', updatePreference);
+    updatePreference();
+
+    return () => mediaQuery.removeEventListener('change', updatePreference);
+  }, []);
+
+  return prefersImmersiveEditor;
+};
 
 const useEditorViewportHeight = () => {
   const [element, setElement] = useState<HTMLDivElement | null>(null);
@@ -73,9 +98,22 @@ export const Editor: FC<CaptureProps> = ({ id }) => {
   const [videoDuration, setVideoDuration] = useState(0);
   const [editorRef, editorHeight] = useEditorViewportHeight();
   const [controlsRef, { height: controlsHeight }] = useMeasure<HTMLDivElement>();
+  const prefersImmersiveEditor = usePrefersImmersiveEditor();
 
   const createObservationsFromCapture = useCreateObservationsFromCapture();
   const { selectedSubjectId, selections } = useEditor(state => state);
+
+  useEffect(() => {
+    if (!prefersImmersiveEditor) return;
+
+    const previousOverflow = document.body.style.overflow;
+
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [prefersImmersiveEditor]);
 
   const onSubmit = async () => {
     const subjects = new Map<number, Selection[]>();
@@ -123,52 +161,103 @@ export const Editor: FC<CaptureProps> = ({ id }) => {
   const videoUrl = capture.data.muxPlaybackId
     ? `https://stream.mux.com/${capture.data.muxPlaybackId}.m3u8?max_resolution=720p`
     : (capture.data.lowQualityVideoUrl ?? capture.data.videoUrl);
-  const videoSlotHeight = Math.max((editorHeight ?? 0) - (controlsHeight ?? 0) - EDITOR_GAP, 0);
+  const editorGap = prefersImmersiveEditor ? IMMERSIVE_EDITOR_GAP : EDITOR_GAP;
+  const videoSlotHeight = Math.max((editorHeight ?? 0) - (controlsHeight ?? 0) - editorGap, 0);
 
-  return (
-    <div className="flex min-h-0 flex-1 flex-col" ref={editorRef} style={{ height: editorHeight || undefined }}>
-      <CustomSelectionColor id={selectedSubjectId}>
-        <Breadcrumbs>
-          <p>home</p>
-          <span>•</span>
-          <p className="text-lg">choose subjects</p>
-        </Breadcrumbs>
-        <Media.Root>
-          <div className="flex min-h-0 flex-1 flex-col gap-6">
-            <div className="min-h-0 shrink-0" style={{ height: videoSlotHeight }}>
-              <VideoContainer>
-                <SubjectSelectionInput />
-                {videoUrl && (
-                  <AutoVideo
-                    src={videoUrl}
-                    className="h-full w-full aspect-video object-cover bg-black"
-                    muted
-                    loop
-                    onDurationChange={event => setVideoDuration(event.currentTarget.duration)}
-                  />
-                )}
-                <SelectedSubjectHighlight />
-              </VideoContainer>
-            </div>
-            <div className="min-w-0 shrink-0" ref={controlsRef}>
+  const saveButton = (immersive = false) => (
+    <PointOrigin {...action}>
+      <Button
+        className={immersive ? 'min-h-11 px-4 text-base' : undefined}
+        loading={createObservationsFromCapture.isPending || action.isPending}
+        onClick={onSubmit}
+        shortcut={immersive ? undefined : 'S'}
+      >
+        <Save />
+        Save
+      </Button>
+    </PointOrigin>
+  );
+
+  const editorWorkspace = (immersive = false) => (
+    <div
+      className={immersive ? 'flex min-h-0 flex-1 flex-col px-3 pb-3' : 'flex min-h-0 flex-1 flex-col'}
+      ref={editorRef}
+      style={{ height: editorHeight || undefined }}
+    >
+      <Media.Root>
+        <div className={immersive ? 'flex min-h-0 flex-1 flex-col gap-3' : 'flex min-h-0 flex-1 flex-col gap-6'}>
+          <div className="min-h-0 shrink-0" style={{ height: videoSlotHeight }}>
+            <VideoContainer>
+              <SubjectSelectionInput />
+              {videoUrl && (
+                <AutoVideo
+                  src={videoUrl}
+                  className="aspect-video h-full w-full bg-black object-cover"
+                  muted
+                  loop
+                  onDurationChange={event => setVideoDuration(event.currentTarget.duration)}
+                />
+              )}
+              <SelectedSubjectHighlight />
+            </VideoContainer>
+          </div>
+          <div className="min-w-0 shrink-0" ref={controlsRef}>
+            {!immersive && (
               <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <SubjectToggle />
-                <PointOrigin {...action}>
-                  <Button
-                    loading={createObservationsFromCapture.isPending || action.isPending}
-                    onClick={onSubmit}
-                    shortcut="S"
-                  >
-                    <Save />
-                    Save
-                  </Button>
-                </PointOrigin>
+                {saveButton()}
               </div>
-              <PlaybackBar />
-            </div>
+            )}
+            <PlaybackBar />
           </div>
-        </Media.Root>
-      </CustomSelectionColor>
+        </div>
+      </Media.Root>
     </div>
+  );
+
+  const immersiveEditor =
+    prefersImmersiveEditor &&
+    createPortal(
+      <CustomSelectionColor id={selectedSubjectId}>
+        <section
+          aria-label="Full screen capture editor"
+          className="fixed inset-0 z-[2100] flex h-dvh flex-col overflow-hidden overscroll-none bg-accent-100 text-accent-950"
+          style={{
+            paddingTop: 'env(safe-area-inset-top)',
+            paddingRight: 'env(safe-area-inset-right)',
+            paddingBottom: 'env(safe-area-inset-bottom)',
+            paddingLeft: 'env(safe-area-inset-left)'
+          }}
+        >
+          <header className="flex shrink-0 items-center gap-3 px-3 py-2">
+            <button
+              type="button"
+              aria-label="Exit editor"
+              className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent-300 text-accent-950 transition hover:bg-accent-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-700"
+              onClick={() => navigate('/captures')}
+            >
+              <X className="size-6" />
+            </button>
+            <MobileSubjectButtons />
+            {saveButton(true)}
+          </header>
+          {editorWorkspace(true)}
+        </section>
+      </CustomSelectionColor>,
+      document.body
+    );
+
+  return (
+    <>
+      <Breadcrumbs>
+        <p>home</p>
+        <span>•</span>
+        <p className="text-lg">choose subjects</p>
+      </Breadcrumbs>
+      {!prefersImmersiveEditor && (
+        <CustomSelectionColor id={selectedSubjectId}>{editorWorkspace()}</CustomSelectionColor>
+      )}
+      {immersiveEditor}
+    </>
   );
 };

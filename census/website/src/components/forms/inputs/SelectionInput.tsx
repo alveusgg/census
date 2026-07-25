@@ -10,6 +10,7 @@ import {
   forwardRef,
   HTMLAttributes,
   MouseEvent as ReactMouseEvent,
+  PointerEvent as ReactPointerEvent,
   useEffect,
   useRef
 } from 'react';
@@ -49,10 +50,11 @@ export const SelectionInput: FC<
   const containerRef = useRef<HTMLDivElement | null>(null);
   const pendingBoxRef = useRef<HTMLDivElement | null>(null);
   const pendingRef = useRef<PendingSelection | null>(null);
+  const cleanupDragRef = useRef<(() => void) | null>(null);
 
   // Mirror the latest value/onChange in refs so drag handlers (registered on
-  // mousedown and kept alive on `document` until mouseup) never act on a stale
-  // snapshot if the component re-renders mid-drag.
+  // pointerdown and kept alive on `document` until pointerup) never act on a
+  // stale snapshot if the component re-renders mid-drag.
   const valueRef = useRef(value);
   const onChangeRef = useRef(onChange);
   useEffect(() => {
@@ -83,17 +85,25 @@ export const SelectionInput: FC<
   };
 
   const cancelPending = () => {
+    cleanupDragRef.current?.();
+    cleanupDragRef.current = null;
     pendingRef.current = null;
     hidePendingBox();
   };
 
-  const startDrag = (initial: PendingSelection, onRelease?: () => void) => {
+  useEffect(() => {
+    return () => cleanupDragRef.current?.();
+  }, []);
+
+  const startDrag = (initial: PendingSelection, pointerId: number, onRelease?: () => void) => {
     pendingRef.current = initial;
     showPendingBox(initial.boundingBox);
 
-    const handleMove = (event: MouseEvent) => {
+    const handleMove = (event: PointerEvent) => {
+      if (event.pointerId !== pointerId) return;
       const current = pendingRef.current;
       if (!current) return;
+      event.preventDefault();
       const point = getNormalizedPoint(event.clientX, event.clientY);
       const next =
         current.mode === 'editing' && current.origin.inner
@@ -103,14 +113,28 @@ export const SelectionInput: FC<
       if (pendingBoxRef.current) applyBoundingBoxToElement(pendingBoxRef.current, next.boundingBox);
     };
 
-    const handleUp = () => {
-      document.removeEventListener('mousemove', handleMove);
-      document.removeEventListener('mouseup', handleUp);
+    const cleanup = () => {
+      document.removeEventListener('pointermove', handleMove);
+      document.removeEventListener('pointerup', handleUp);
+      document.removeEventListener('pointercancel', handleCancel);
+      onRelease?.();
+    };
 
+    const handleCancel = (event: PointerEvent) => {
+      if (event.pointerId !== pointerId) return;
+      cleanup();
+      cleanupDragRef.current = null;
+      pendingRef.current = null;
+      hidePendingBox();
+    };
+
+    const handleUp = (event: PointerEvent) => {
+      if (event.pointerId !== pointerId) return;
+      cleanup();
+      cleanupDragRef.current = null;
       const finished = pendingRef.current;
       pendingRef.current = null;
       hidePendingBox();
-      onRelease?.();
 
       if (!finished) return;
       const { boundingBox } = finished;
@@ -128,12 +152,14 @@ export const SelectionInput: FC<
       onChangeRef.current(next);
     };
 
-    document.addEventListener('mousemove', handleMove);
-    document.addEventListener('mouseup', handleUp);
+    cleanupDragRef.current = cleanup;
+    document.addEventListener('pointermove', handleMove, { passive: false });
+    document.addEventListener('pointerup', handleUp);
+    document.addEventListener('pointercancel', handleCancel);
   };
 
-  const handleCanvasMouseDown = (event: ReactMouseEvent<HTMLDivElement>) => {
-    if (event.button !== 0) return;
+  const handleCanvasPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!event.isPrimary || event.button !== 0) return;
     if (pendingRef.current) return;
 
     const origin = getNormalizedPoint(event.clientX, event.clientY);
@@ -142,12 +168,12 @@ export const SelectionInput: FC<
       boundingBox: { id: createId(), x: origin.x, y: origin.y, width: 0, height: 0 },
       origin: { canvas: origin },
       mode: 'drawing'
-    });
+    }, event.pointerId);
     event.preventDefault();
   };
 
-  const handleBoxMouseDown = (selection: Selection) => (event: ReactMouseEvent<HTMLDivElement>) => {
-    if (event.button !== 0) return;
+  const handleBoxPointerDown = (selection: Selection) => (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!event.isPrimary || event.button !== 0) return;
     if (pendingRef.current) return;
 
     const origin = getNormalizedPoint(event.clientX, event.clientY);
@@ -163,6 +189,7 @@ export const SelectionInput: FC<
         origin: { canvas: origin, inner },
         mode: 'editing'
       },
+      event.pointerId,
       () => {
         boxEl.style.opacity = '1';
       }
@@ -187,7 +214,7 @@ export const SelectionInput: FC<
 
   return (
     <>
-      <div className="absolute inset-0 z-40 pointer-events-none">
+      <div className="pointer-events-none absolute inset-0 z-40 touch-none select-none">
         {value.map(selection => (
           <BoundingBox
             key={selection.boundingBox.id}
@@ -197,14 +224,15 @@ export const SelectionInput: FC<
               '--custom-color': getColorForId(selection.subjectId),
               ...getStyleForBox(selection.boundingBox)
             }}
-            onMouseDown={handleBoxMouseDown(selection)}
+            onPointerDown={handleBoxPointerDown(selection)}
           >
             <motion.button
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               type="button"
-              className="bg-black bg-opacity-60 text-white flex justify-center items-center p-2 rounded-lg absolute -top-12 right-0 pointer-events-auto"
-              onMouseDown={event => event.stopPropagation()}
+              aria-label="Remove box"
+              className="pointer-events-auto absolute -top-12 right-0 flex size-11 items-center justify-center rounded-lg bg-black bg-opacity-60 text-white sm:size-auto sm:p-2"
+              onPointerDown={event => event.stopPropagation()}
               onClick={handleRemove(selection)}
             >
               <SiTrash />
@@ -214,8 +242,12 @@ export const SelectionInput: FC<
       </div>
       <div
         ref={containerRef}
-        className={cn('absolute inset-0 z-30', `cursor-editor-${getColorForId(currentSubjectId)}`, className)}
-        onMouseDown={handleCanvasMouseDown}
+        className={cn(
+          'absolute inset-0 z-30 touch-none select-none',
+          `cursor-editor-${getColorForId(currentSubjectId)}`,
+          className
+        )}
+        onPointerDown={handleCanvasPointerDown}
         onContextMenu={handleContextMenu}
         {...props}
       >
