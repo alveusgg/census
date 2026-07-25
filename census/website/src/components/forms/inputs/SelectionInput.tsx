@@ -163,12 +163,15 @@ export const SelectionInput: FC<
     if (pendingRef.current) return;
 
     const origin = getNormalizedPoint(event.clientX, event.clientY);
-    startDrag({
-      subjectId: currentSubjectId,
-      boundingBox: { id: createId(), x: origin.x, y: origin.y, width: 0, height: 0 },
-      origin: { canvas: origin },
-      mode: 'drawing'
-    }, event.pointerId);
+    startDrag(
+      {
+        subjectId: currentSubjectId,
+        boundingBox: { id: createId(), x: origin.x, y: origin.y, width: 0, height: 0 },
+        origin: { canvas: origin },
+        mode: 'drawing'
+      },
+      event.pointerId
+    );
     event.preventDefault();
   };
 
