@@ -17,7 +17,7 @@ export const Main = () => {
         <LayoutProvider>
           <div className="flex h-svh w-full bg-accent-200 overflow-clip sm:pl-0.5 sm:pr-2 sm:pt-2 sm:pb-2">
             <Menu />
-            <main className="flex-1 flex flex-col rounded-md bg-accent-50 border border-accent-300">
+            <main className="isolate flex flex-1 flex-col rounded-md border border-accent-300 bg-accent-50">
               <Outlet />
             </main>
             <AnimatePresence initial={false}>
