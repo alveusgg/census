@@ -234,7 +234,7 @@ export const Editor: FC<CaptureProps> = ({ id }) => {
               type="button"
               aria-label="Exit editor"
               className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent-300 text-accent-950 transition hover:bg-accent-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-700"
-              onClick={() => navigate('/captures')}
+              onClick={() => navigate('/')}
             >
               <X className="size-6" />
             </button>
