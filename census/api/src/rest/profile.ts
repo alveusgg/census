@@ -18,7 +18,7 @@ export const formatUserProfileSummary = (profile: UserProfileSummary) => {
   const points = new Intl.NumberFormat('en-US').format(profile.pointsLast7Days);
   const rank = profile.rankLast7Days === null ? 'unranked' : formatOrdinal(profile.rankLast7Days);
   const profileUrl = `${CENSUS_URL}/profile/${encodeURIComponent(profile.username)}`;
-  return `${profile.username} [lvl ${profile.level.toString()}] [${points} pts (${rank}) ∙ last 7 days] [${profile.additional}] [profile: ${profileUrl}]`;
+  return `${profile.username} [lvl ${profile.level.toString()}] [${points} pts (${rank}) ∙ last 7 days] [${profile.additional}] ${profileUrl}`;
 };
 
 export const formatOrdinal = (value: number) => {
