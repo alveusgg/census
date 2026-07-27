@@ -1,5 +1,4 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
-import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import postgres from 'postgres';
 
 import { context, SpanKind, trace } from '@opentelemetry/api';
@@ -7,6 +6,7 @@ import { SEMATTRS_DB_STATEMENT, SEMATTRS_DB_SYSTEM } from '@opentelemetry/semant
 import * as Sentry from '@sentry/node';
 import { useEnvironment } from '../utils/env/env.js';
 import { listen } from './listen.js';
+import { runMigrations } from './migrate.js';
 import * as schema from './schema/index.js';
 
 let shuttingDownAfterPostgresError = false;
@@ -86,7 +86,7 @@ export const initialise = async (
       }
     }
   });
-  await migrate(db, { migrationsFolder: 'drizzle' });
+  await runMigrations(db, 'drizzle');
   await client.subscribe(
     '*',
     listen,
