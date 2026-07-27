@@ -10,6 +10,7 @@ const createFilters = (overrides: Partial<IdentificationFilters> = {}): Identifi
   view: { pan: 0, tilt: 0, fov: 40 },
   dirty: true,
   active: true,
+  name: '',
   dateRange: undefined,
   type: 'all',
   ...overrides
@@ -22,6 +23,11 @@ test('does not send a location box until the view filter is active', () => {
   const filter = getConfirmedObservationFilter(createFilters({ dirty: false, active: false }), ASPECT_RATIO);
 
   assert.equal(filter.within, undefined);
+});
+
+test('trims a name before sending it and omits an empty name', () => {
+  assert.equal(getConfirmedObservationFilter(createFilters({ name: '  red panda  ' }), ASPECT_RATIO).name, 'red panda');
+  assert.equal(getConfirmedObservationFilter(createFilters({ name: '   ' }), ASPECT_RATIO).name, undefined);
 });
 
 test('sends a within box that matches a picked observation location', () => {

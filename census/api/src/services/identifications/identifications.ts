@@ -6,6 +6,7 @@ import {
   feedbackCommentEdits,
   feedbackCommentModerations,
   identifications,
+  observationMerges,
   observations,
   shinies,
   type ConfirmationAnnotation
@@ -294,36 +295,62 @@ export const createIdentification = async (
 ) => {
   const db = useDB();
   const user = useUser();
-  const existingIdentification = await db.query.identifications.findFirst({
-    where: and(
-      eq(identifications.observationId, observationId),
-      eq(identifications.sourceId, iNatId.toString()),
-      activeIdentification()
-    ),
-    columns: {
-      id: true
-    }
-  });
+  return await db.transaction(async tx =>
+    withTransaction(tx, async () => {
+      const [observation] = await tx
+        .select({ id: observations.id, removed: observations.removed })
+        .from(observations)
+        .where(eq(observations.id, observationId))
+        .for('key share');
 
-  if (existingIdentification) {
-    throw new BadRequestError('This taxon has already been suggested for this observation');
-  }
+      if (!observation) {
+        const mergedObservation = await tx.query.observationMerges.findFirst({
+          where: eq(observationMerges.sourceObservationId, observationId),
+          columns: { sourceObservationId: true }
+        });
 
-  const [identification] = await db
-    .insert(identifications)
-    .values({
-      name,
-      nickname: name,
-      sourceId: iNatId.toString(),
-      sourceAncestorIds,
-      observationId,
-      suggestedBy: user.id,
-      alternateForId: options.parentIdentificationId,
-      isAccessory: options.isAccessory
+        if (mergedObservation) {
+          throw new BadRequestError('That observation was merged with another.');
+        }
+        throw new BadRequestError('That observation has been removed.');
+      }
+
+      if (observation.removed) {
+        throw new BadRequestError('That observation has been removed.');
+      }
+
+      const existingIdentification = await tx.query.identifications.findFirst({
+        where: and(
+          eq(identifications.observationId, observationId),
+          eq(identifications.sourceId, iNatId.toString()),
+          activeIdentification()
+        ),
+        columns: {
+          id: true
+        }
+      });
+
+      if (existingIdentification) {
+        throw new BadRequestError('This taxon has already been suggested for this observation');
+      }
+
+      const [identification] = await tx
+        .insert(identifications)
+        .values({
+          name,
+          nickname: name,
+          sourceId: iNatId.toString(),
+          sourceAncestorIds,
+          observationId,
+          suggestedBy: user.id,
+          alternateForId: options.parentIdentificationId,
+          isAccessory: options.isAccessory
+        })
+        .returning();
+
+      return identification;
     })
-    .returning();
-
-  return identification;
+  );
 };
 
 export const addFeedbackToIdentification = async (

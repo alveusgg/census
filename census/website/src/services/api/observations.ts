@@ -54,6 +54,7 @@ export const useUnconfirmedObservationCount = () => {
 export const useConfirmedObservations = (filter: {
   start?: Date;
   end?: Date;
+  name?: string;
   within?: LocationBox | LocationBox[];
 }) => {
   const trpc = useAPI();

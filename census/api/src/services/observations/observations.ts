@@ -18,6 +18,7 @@ import {
   feedback,
   identifications,
   images,
+  observationMerges,
   observations,
   shinies,
   sightings
@@ -181,9 +182,11 @@ export const deleteObservation = async (observationId: number, reason: Observati
 
   return await db.transaction(async tx =>
     withTransaction(tx, async () => {
-      const observation = await tx.query.observations.findFirst({
-        where: eq(observations.id, observationId)
-      });
+      const [observation] = await tx
+        .select()
+        .from(observations)
+        .where(eq(observations.id, observationId))
+        .for('update');
       if (!observation) throw new NotFoundError('Observation not found');
       if (observation.removed) throw new BadRequestError('Observation has already been removed');
 
@@ -409,6 +412,22 @@ const getObservationConditions = (query?: Query) => {
   if (query?.start) conditions.push(gte(observations.observedAt, query.start));
   if (query?.end) conditions.push(lte(observations.observedAt, query.end));
 
+  if (query?.name) {
+    const escapedName = query.name.replaceAll('\\', '\\\\').replaceAll('%', '\\%').replaceAll('_', '\\_');
+    const pattern = `%${escapedName}%`;
+    conditions.push(sql`
+      exists (
+        select 1
+        from identifications as confirmed_identification
+        where confirmed_identification.id = ${observations.confirmedAs}
+          and (
+            confirmed_identification.nickname ilike ${pattern} escape '\'
+            or confirmed_identification.name ilike ${pattern} escape '\'
+          )
+      )
+    `);
+  }
+
   return conditions;
 };
 
@@ -609,15 +628,18 @@ export const mergeObservations = async (targetObservationId: number, sourceObser
   const db = useDB();
   return await db.transaction(async tx =>
     withTransaction(tx, async () => {
-      const target = await tx.query.observations.findFirst({
-        where: eq(observations.id, targetObservationId)
-      });
+      const mergedObservationIds = [targetObservationId, ...ids];
+      const lockedObservations = await tx
+        .select()
+        .from(observations)
+        .where(inArray(observations.id, mergedObservationIds))
+        .orderBy(observations.id)
+        .for('update');
+      const target = lockedObservations.find(observation => observation.id === targetObservationId);
 
       if (!target) throw new NotFoundError('Target observation not found');
 
-      const sources = await tx.query.observations.findMany({
-        where: inArray(observations.id, ids)
-      });
+      const sources = lockedObservations.filter(observation => ids.includes(observation.id));
 
       if (sources.length !== ids.length) throw new NotFoundError('One or more source observations were not found');
 
@@ -706,6 +728,19 @@ export const mergeObservations = async (targetObservationId: number, sourceObser
             target.discordThreadId ?? sources.map(source => source.discordThreadId).find(value => value != null) ?? null
         })
         .where(eq(observations.id, targetObservationId));
+
+      await tx
+        .update(observationMerges)
+        .set({ targetObservationId })
+        .where(inArray(observationMerges.targetObservationId, ids));
+
+      await tx
+        .insert(observationMerges)
+        .values(ids.map(sourceObservationId => ({ sourceObservationId, targetObservationId })))
+        .onConflictDoUpdate({
+          target: observationMerges.sourceObservationId,
+          set: { targetObservationId }
+        });
 
       await tx.delete(observations).where(inArray(observations.id, ids));
 

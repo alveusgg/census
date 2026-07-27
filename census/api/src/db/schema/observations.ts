@@ -22,6 +22,13 @@ export const observations = pgTable(
   }
 );
 
+export const observationMerges = pgTable('observation_merges', {
+  sourceObservationId: integer('source_observation_id').primaryKey(),
+  targetObservationId: integer('target_observation_id')
+    .references(() => observations.id, { onDelete: 'cascade' })
+    .notNull()
+});
+
 export const observationsRelations = relations(observations, ({ one, many }) => ({
   identifications: many(identifications),
   sightings: many(sightings),

@@ -1,4 +1,5 @@
 import { Button } from '@/components/controls/button/paper';
+import { handleTRPCError } from '@/components/feedback/ErrorBoundary';
 import { INatTaxaInput } from '@/components/forms/inputs/INatTaxaInput';
 import SiCheckmark from '@/components/icons/SiCheckmark';
 import SiChevronDown from '@/components/icons/SiChevronDown';
@@ -29,6 +30,13 @@ import { IdentificationSuggestion } from './IdentificationSuggestion';
 import { useCurrentObservation } from './ObservationContext';
 
 const PLANT_TAXON_ID = 47126;
+
+const showSuggestionError = (error: unknown) => {
+  const customError = handleTRPCError(error);
+  toast.error('Suggestion wasn’t added.', {
+    description: customError?.message ?? 'Please try again.'
+  });
+};
 
 const findClosestAncestor = (node: Node<IdentificationType>, nodes: Node<IdentificationType>[]) => {
   const ancestors = node.data.sourceAncestorIds.map(id => id.toString());
@@ -192,10 +200,14 @@ export const ObservationDetails: FC<{ className?: string }> = ({ className }) =>
                 return;
               }
 
-              await suggestAccessoryIdentification.mutateAsync({
-                observationId: observation.id,
-                iNatId: taxon.id
-              });
+              try {
+                await suggestAccessoryIdentification.mutateAsync({
+                  observationId: observation.id,
+                  iNatId: taxon.id
+                });
+              } catch (error) {
+                showSuggestionError(error);
+              }
             }}
           />
           {suggestAccessoryIdentification.isPending && <Loader className="absolute right-3 top-1/2 -translate-y-1/2" />}
@@ -225,10 +237,14 @@ export const ObservationDetails: FC<{ className?: string }> = ({ className }) =>
                 return;
               }
 
-              await suggestIdentification.mutateAsync({
-                observationId: observation.id,
-                iNatId: taxon.id
-              });
+              try {
+                await suggestIdentification.mutateAsync({
+                  observationId: observation.id,
+                  iNatId: taxon.id
+                });
+              } catch (error) {
+                showSuggestionError(error);
+              }
             }}
           />
           {suggestIdentification.isPending && <Loader className="absolute right-3 top-1/2 -translate-y-1/2" />}

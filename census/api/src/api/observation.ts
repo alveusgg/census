@@ -33,6 +33,7 @@ const LocationBox = z.object({
 export const Query = z.object({
   start: z.coerce.date().optional(),
   end: z.coerce.date().optional(),
+  name: z.string().trim().min(1).max(100).optional(),
   confirmed: z.boolean().default(false),
 
   within: z.union([LocationBox, z.array(LocationBox).min(1)]).optional()

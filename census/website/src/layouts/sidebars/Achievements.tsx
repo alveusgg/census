@@ -1,5 +1,6 @@
 import { Counter } from '@/components/animation/Counter';
 import { Button } from '@/components/controls/button/juicy';
+import SiArrowUpRight from '@/components/icons/SiArrowUpRight';
 import { useConfetti } from '@/components/layout/ConfettiProvider';
 import { useAchievements } from '@/components/layout/LayoutProvider';
 import { useModal } from '@/components/modal/useModal';
@@ -20,6 +21,7 @@ import { levels } from '@alveusgg/census-levels';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { AnimatePresence, HTMLMotionProps, motion, useAnimate } from 'framer-motion';
 import { FC, PropsWithChildren, useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { LevelUpModal } from './LevelUpModal';
 
 const getLevelForPoints = (points: number) => {
@@ -133,6 +135,7 @@ export const Achievements = () => {
                       key={achievement.id}
                       id={achievement.id}
                       points={achievement.points}
+                      identificationId={achievement.identification?.id}
                     >
                       {achievement.payload.type === 'onboard' && (
                         <>
@@ -205,12 +208,14 @@ export const Achievements = () => {
 
 interface AchievementProps {
   id: number;
+  identificationId?: number;
   points: number;
   type: 'identify' | 'shiny' | string;
 }
 
-const Achievement: FC<PropsWithChildren<AchievementProps & Omit<HTMLMotionProps<'button'>, 'id' | 'type'>>> = ({
+const Achievement: FC<PropsWithChildren<AchievementProps & Omit<HTMLMotionProps<'div'>, 'id'>>> = ({
   id,
+  identificationId,
   points,
   children,
   className,
@@ -222,6 +227,7 @@ const Achievement: FC<PropsWithChildren<AchievementProps & Omit<HTMLMotionProps<
   const patch = usePatchAchievement();
   const [redeemedRef, animate] = useAnimate();
   const containerRef = useRef<HTMLDivElement>(null);
+  const [, setAchievementsOpen] = useAchievements();
 
   const confetti = useConfetti();
 
@@ -241,12 +247,11 @@ const Achievement: FC<PropsWithChildren<AchievementProps & Omit<HTMLMotionProps<
   };
 
   return (
-    <motion.button
+    <motion.div
       layout="position"
       exit={{ opacity: 0, y: -5 }}
       transition={{ ease: 'backInOut', duration: 0.4 }}
-      onClick={handleRedeem}
-      className={cn(className, 'relative')}
+      className={cn(className, 'relative flex-col')}
       {...props}
     >
       <motion.span
@@ -257,9 +262,21 @@ const Achievement: FC<PropsWithChildren<AchievementProps & Omit<HTMLMotionProps<
       >
         redeemed
       </motion.span>
-      <PointOrigin {...action}>
-        <div ref={containerRef}>{children}</div>
-      </PointOrigin>
-    </motion.button>
+      <button type="button" onClick={handleRedeem} className="w-full text-left">
+        <PointOrigin {...action}>
+          <div ref={containerRef}>{children}</div>
+        </PointOrigin>
+      </button>
+      {identificationId && (
+        <Link
+          to={`/identifications/${identificationId}`}
+          onClick={() => setAchievementsOpen(false)}
+          className="mt-2 inline-flex self-end items-center gap-0.5 rounded py-0.5 pl-1 pr-0.5 text-xs font-semibold underline-offset-2 opacity-80 hover:bg-leaderboard-600 hover:opacity-100 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+        >
+          view identification
+          <SiArrowUpRight aria-hidden="true" className="size-4 shrink-0" />
+        </Link>
+      )}
+    </motion.div>
   );
 };

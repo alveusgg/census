@@ -7,6 +7,7 @@ import { SelectionActionBar, SelectionCount } from '@/components/selection/Selec
 import { useSelection } from '@/components/selection/SelectionProvider';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
+import { Input } from '@/components/ui/input';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -16,8 +17,9 @@ import { useCurrentSeason } from '@/services/api/seasons';
 import { cn } from '@/utils/cn';
 import { groupBy } from '@/utils/groupBy';
 import { useInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { useDebounce } from '@uidotdev/usehooks';
 import { endOfDay, format, startOfDay, subDays } from 'date-fns';
-import { CalendarIcon, ChevronDown } from 'lucide-react';
+import { CalendarIcon, ChevronDown, Search, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { Outlet } from 'react-router';
@@ -56,6 +58,14 @@ const ConfirmedObservationsFeed = ({ filter }: { filter: ReturnType<typeof getCo
     return (
       <div className="flex min-h-24 items-center justify-center pt-12">
         <Loader className="size-6 text-accent-900" />
+      </div>
+    );
+  }
+
+  if (allObservations.length === 0) {
+    return (
+      <div className="flex min-h-40 items-center justify-center pt-12">
+        <p className="text-sm font-medium text-accent-800/70">No identifications match these filters.</p>
       </div>
     );
   }
@@ -99,10 +109,12 @@ export const Identifications = () => {
     view: DEFAULT_VIEW,
     dirty: false,
     active: false,
+    name: '',
     dateRange: seasonDateRange,
     type: 'all'
   }));
-  const confirmedObservationFilter = getConfirmedObservationFilter(filters, 3 / 1);
+  const debouncedName = useDebounce(filters.name, 300);
+  const confirmedObservationFilter = getConfirmedObservationFilter({ ...filters, name: debouncedName }, 3 / 1);
 
   const { clearSelection } = useSelection();
   const viewFilterLabel = !filters.dirty
@@ -149,7 +161,34 @@ export const Identifications = () => {
               className="w-full h-full aspect-[3/1]"
             />
           )}
-          <div className="mt-4 flex items-center justify-end gap-2">
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+            <div className="relative w-full sm:mr-auto sm:max-w-xs">
+              <Search
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-accent-800/60"
+              />
+              <Input
+                aria-label="Filter identifications by name"
+                name="identification-name"
+                type="text"
+                enterKeyHint="search"
+                maxLength={100}
+                value={filters.name}
+                onChange={event => setFilters(current => ({ ...current, name: event.target.value }))}
+                placeholder="Filter by name…"
+                className="border-0 bg-accent-700/5 pl-9 pr-9 text-accent-900 shadow-none ring-1 ring-accent-700/10 placeholder:text-accent-800/60 focus-visible:ring-2 focus-visible:ring-accent-700"
+              />
+              {filters.name && (
+                <button
+                  type="button"
+                  aria-label="Clear name filter"
+                  onClick={() => setFilters(current => ({ ...current, name: '' }))}
+                  className="absolute right-1 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-sm text-accent-800/60 hover:bg-accent-700/10 hover:text-accent-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-700"
+                >
+                  <X aria-hidden="true" className="size-4" />
+                </button>
+              )}
+            </div>
             {!isMobile && (
               <PaperButton
                 compact
