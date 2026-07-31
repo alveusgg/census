@@ -114,7 +114,7 @@
     "eslint-plugin-react-refresh": "^0.4.26",
     "globals": "^15.14.0",
     "ipx": "^3.0.1",
-    "postcss": "^8.4.41",
+    "postcss": "^8.5.18",
     "potrace": "^2.1.8",
     "sharp": "^0.33.5",
     "tailwind-scrollbar": "^3.1.0",
