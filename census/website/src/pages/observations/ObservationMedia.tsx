@@ -2,6 +2,7 @@ import { Square } from '@/components/assets/images/Square';
 import { Preloader } from '@/components/feed/Preloader';
 import SiChevronLeft from '@/components/icons/SiChevronLeft';
 import SiChevronRight from '@/components/icons/SiChevronRight';
+import SiFullscreen from '@/components/icons/SiFullscreen';
 import { Spinner } from '@/components/loaders/Spinner';
 import { cn } from '@/utils/cn';
 import MuxPlayer from '@mux/mux-player-react';
@@ -10,6 +11,7 @@ import { Controls, SlidePips } from './gallery/Controls';
 import { Slide } from './gallery/GalleryProvider';
 import { Polaroid } from './gallery/Polaroid';
 import { useCurrentObservation } from './ObservationContext';
+import { ObservationImageGallery } from './ObservationImageGallery';
 import { getObservationVideoClips, type ObservationVideoClip } from './videoClips';
 
 type ObservationImageData = ReturnType<typeof useCurrentObservation>['sightings'][number]['images'][number];
@@ -84,6 +86,7 @@ export const ObservationPageMedia: FC<{ className?: string }> = ({ className }) 
   const images = observation.sightings.flatMap(sighting => sighting.images);
   const videoClips = useMemo(() => getObservationVideoClips(observation.sightings), [observation.sightings]);
   const [selectedPlaybackId, setSelectedPlaybackId] = useState(videoClips[0]?.playbackId);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const selectedClip = videoClips.find(clip => clip.playbackId === selectedPlaybackId) ?? videoClips[0];
   const selectedClipIndex = selectedClip ? videoClips.indexOf(selectedClip) : 0;
 
@@ -100,6 +103,13 @@ export const ObservationPageMedia: FC<{ className?: string }> = ({ className }) 
 
   return (
     <section className={cn('min-w-0', className)}>
+      <ObservationImageGallery
+        images={images}
+        observationId={observation.id}
+        selectedIndex={selectedImageIndex}
+        onSelect={setSelectedImageIndex}
+        onClose={() => setSelectedImageIndex(null)}
+      />
       <div className="aspect-video overflow-hidden rounded-md border border-accent/50 bg-black shadow-sm">
         {selectedClip ? (
           <MuxPlayer
@@ -154,9 +164,18 @@ export const ObservationPageMedia: FC<{ className?: string }> = ({ className }) 
               index % 3 === 2 && '-rotate-[0.15deg]'
             )}
           >
-            <div className="aspect-square overflow-hidden bg-accent-100">
+            <button
+              type="button"
+              onClick={() => setSelectedImageIndex(index)}
+              aria-label={`Open observation image ${index + 1} in full screen`}
+              aria-haspopup="dialog"
+              className="group relative block aspect-square w-full cursor-zoom-in overflow-hidden bg-accent-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+            >
               <ObservationImage image={image} alt={`Observation #${observation.id} image ${index + 1}`} />
-            </div>
+              <span className="absolute bottom-2 right-2 z-10 flex size-9 items-center justify-center rounded-full bg-black/55 text-xl text-white opacity-75 shadow-sm transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+                <SiFullscreen />
+              </span>
+            </button>
           </div>
         ))}
       </div>
