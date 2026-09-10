@@ -12,7 +12,7 @@ export const Captures = () => {
           return (
             <div key={capture.id}>
               <pre>{capture.startCaptureAt.toISOString()}</pre>
-              <img src={capture.clipMetadata?.thumbnail?.replace(regex, '')} />
+              {capture.clipMetadata?.thumbnail && <img src={capture.clipMetadata.thumbnail.replace(regex, '')} />}
             </div>
           );
         });

@@ -1,3 +1,4 @@
+import { decodeCaptureTimestamp } from '@alveusgg/census-forms';
 import { AutoAnimatedContainer } from '@/components/animation/AnimateHeight';
 import { Button } from '@/components/controls/button/paper';
 import { Field } from '@/components/forms/Field';
@@ -19,8 +20,12 @@ import { z } from 'zod';
 const CreateFromClipFormFields = z.object({
   url: z
     .string()
-    .url({ message: 'Please enter a valid twitch clip link' })
-    .includes('twitch.tv', { message: 'Please enter a valid twitch clip link' })
+    .trim()
+    .refine(
+      value =>
+        z.string().url().includes('twitch.tv').safeParse(value).success || decodeCaptureTimestamp(value) !== null,
+      { message: 'Please enter a valid twitch clip link' }
+    )
 });
 
 type CreateFromClipFormFields = z.infer<typeof CreateFromClipFormFields>;
@@ -32,6 +37,11 @@ export const CreateFromClipModal: FC<ModalProps> = props => {
 
   const createClip = useCreateCaptureFromClip();
   const onSubmit = async (data: CreateFromClipFormFields) => {
+    const range = decodeCaptureTimestamp(data.url);
+    if (range) {
+      await createClip.mutateAsync({ range });
+      return;
+    }
     const url = new URL(data.url);
     const id = url.pathname.split('/').pop();
     if (!id) throw new Error('Invalid clip URL');
@@ -77,10 +87,12 @@ export const CreateFromClipModal: FC<ModalProps> = props => {
 
           {createClip.data && createClip.data.result === 'success' && (
             <div className="flex flex-col gap-4">
-              <iframe
-                className="w-full aspect-video rounded-md"
-                src={`https://clips.twitch.tv/embed?clip=${createClip.data.capture.clipId}&parent=${window.location.hostname}`}
-              />
+              {createClip.data.capture.clipId && (
+                <iframe
+                  className="w-full aspect-video rounded-md"
+                  src={`https://clips.twitch.tv/embed?clip=${createClip.data.capture.clipId}&parent=${window.location.hostname}`}
+                />
+              )}
 
               <Suspense>
                 <ClipCreationProgress id={createClip.data.capture.id} onComplete={onComplete} />
@@ -176,29 +188,30 @@ const progressMessages = [
   'Waiting for the video to process'
 ];
 
-const ProgressMessageRotator: FC = () => {
+const ProgressMessageRotator: FC<{ hasTwitchClip: boolean }> = ({ hasTwitchClip }) => {
+  const messages = hasTwitchClip ? progressMessages : progressMessages.slice(2);
   const [messageIndex, setMessageIndex] = useState(0);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
-      setMessageIndex(current => (current + 1) % progressMessages.length);
+      setMessageIndex(current => (current + 1) % messages.length);
     }, 15000);
 
     return () => window.clearInterval(interval);
-  }, []);
+  }, [messages.length]);
 
   return (
     <div className="relative h-6 min-w-0 flex-1 overflow-hidden">
       <AnimatePresence mode="wait" initial={false}>
         <motion.p
-          key={progressMessages[messageIndex]}
+          key={messages[messageIndex]}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.28, ease: 'easeOut' }}
           className="absolute inset-x-0 top-0 truncate font-medium"
         >
-          {progressMessages[messageIndex]}
+          {messages[messageIndex]}
         </motion.p>
       </AnimatePresence>
     </div>
@@ -239,7 +252,7 @@ export const ClipCreationProgress: FC<ClipCreationProgressProps> = ({ id, onComp
 
   return (
     <div className="flex justify-between items-center gap-3 bg-alveus p-4 rounded-md w-full">
-      <ProgressMessageRotator />
+      <ProgressMessageRotator hasTwitchClip={Boolean(capture.data.clipId)} />
       <Loader />
     </div>
   );

@@ -1,3 +1,4 @@
+import { CaptureTimestampRangeSchema } from '@alveusgg/census-forms';
 import { DownstreamError, NotFoundError } from '@alveusgg/error';
 import { Mux } from '@mux/mux-node';
 import { isBefore } from 'date-fns';
@@ -107,9 +108,17 @@ type CreateFromClipResult =
   | ClipRequestSuccessResult
   | NewClipCaptureResult;
 
-export const createFromClip = async (
-  id: string,
-  userIsVerySureItIsNeeded: boolean = false
+export const createFromClip = (id: string, userIsVerySureItIsNeeded = false) =>
+  createCapture({ id }, userIsVerySureItIsNeeded);
+
+export const createFromTimestamp = (range: { start: string; end: string }, userIsVerySureItIsNeeded = false) => {
+  const { start, end } = CaptureTimestampRangeSchema.parse(range);
+  return createCapture({ startDate: new Date(start), endDate: new Date(end) }, userIsVerySureItIsNeeded);
+};
+
+const createCapture = async (
+  source: { id: string } | { startDate: Date; endDate: Date },
+  userIsVerySureItIsNeeded: boolean
 ): Promise<CreateFromClipResult> => {
   const db = useDB();
 
@@ -118,8 +127,18 @@ export const createFromClip = async (
     return { result: 'error', type: 'submission_not_open' };
   }
 
-  const existing = await getCaptureByClipId(id);
   const feed = await getFeed('pollinator');
+  const existing =
+    'id' in source
+      ? await getCaptureByClipId(source.id)
+      : await db.query.captures.findFirst({
+          where: and(
+            isNull(captures.clipId),
+            eq(captures.feedId, feed.id),
+            eq(captures.startCaptureAt, source.startDate),
+            eq(captures.endCaptureAt, source.endDate)
+          )
+        });
 
   // The clip has already been used in a capture, so we can't use it again
   // The website redirects to the capture included in the error
@@ -155,7 +174,19 @@ export const createFromClip = async (
   }
 
   // This can fail if the clip is deleted from twitch or the vod isn't available
-  const result = await getClip(id, feed.latencyFromCamToRecorderInSeconds ?? 0);
+  // Direct UTC ranges already use recorder time; never apply Twitch latency.
+  const result = await (async () => {
+    if (!('id' in source)) return { result: 'success' as const, clip: { ...source, metadata: null } };
+    const result = await getClip(source.id, feed.latencyFromCamToRecorderInSeconds ?? 0);
+    if (result.result === 'error') return result;
+    return {
+      result: 'success' as const,
+      clip: {
+        ...result.clip,
+        metadata: { views: result.clip.views, thumbnail: result.clip.thumbnailUrl }
+      }
+    };
+  })();
   if (result.result === 'error') {
     // error could be clip_not_found, clip_not_right_channel, clip_not_processed, vod_not_found, or timestamp_not_found
     return result;
@@ -208,13 +239,13 @@ export const createFromClip = async (
   const [capture] = await db
     .insert(captures)
     .values({
-      clipId: id,
+      clipId: 'id' in source ? source.id : null,
       startCaptureAt: clip.startDate,
       endCaptureAt: clip.endDate,
       capturedAt: new Date(),
       capturedBy: user.id,
       feedId: feed.id,
-      clipMetadata: { views: clip.views, thumbnail: clip.thumbnailUrl }
+      clipMetadata: clip.metadata
     })
     .returning();
 

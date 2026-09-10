@@ -63,17 +63,18 @@ export const useUnconvertedCaptures = (enabled = true) => {
   return result;
 };
 
-interface CreateCaptureFromClipInput {
-  id: string;
+type CreateCaptureFromClipInput = ({ id: string } | { range: { start: string; end: string } }) & {
   userIsVerySureItIsNeeded?: boolean;
-}
+};
 
 export const useCreateCaptureFromClip = () => {
   const trpc = useAPI();
   const client = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, userIsVerySureItIsNeeded }: CreateCaptureFromClipInput) => {
-      return trpc.capture.createFromClip.mutate({ id, userIsVerySureItIsNeeded });
+    mutationFn: (input: CreateCaptureFromClipInput) => {
+      return 'range' in input
+        ? trpc.capture.createFromTimestamp.mutate(input)
+        : trpc.capture.createFromClip.mutate(input);
     },
     onSuccess: () => {
       client.invalidateQueries({ queryKey: key('captures') });

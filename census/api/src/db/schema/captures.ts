@@ -37,8 +37,8 @@ export const captures = pgTable(
     muxPlaybackId: text('mux_playback_id'),
     upgradeAttemptCount: integer('upgrade_attempt_count').default(1).notNull(),
     retryUpgradeFrom: timestamp('retry_upgrade_from'),
-    clipId: text('clip_id').unique().notNull(),
-    clipMetadata: json('clip_metadata').$type<{ views: number; thumbnail: string }>().notNull()
+    clipId: text('clip_id').unique(),
+    clipMetadata: json('clip_metadata').$type<{ views: number; thumbnail: string }>()
   },
   table => ({
     clipIdIdx: index('clip_id_idx').on(table.clipId),

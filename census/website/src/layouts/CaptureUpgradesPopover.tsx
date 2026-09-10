@@ -11,7 +11,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const thumbnailSizeRegex = /-\d+x\d+(?=\.\w+$)/;
-const getThumbnailUrl = (url: string) => {
+const getThumbnailUrl = (url?: string) => {
+  if (!url) return undefined;
   if (thumbnailSizeRegex.test(url)) {
     return url.replace(thumbnailSizeRegex, '-1920x1080');
   }
@@ -77,7 +78,7 @@ export const CaptureUpgradesPopover = () => {
             </p>
           )}
           {captures.map(capture => {
-            const thumbnail = getThumbnailUrl(capture.clipMetadata.thumbnail);
+            const thumbnail = getThumbnailUrl(capture.clipMetadata?.thumbnail);
 
             return (
               <div key={capture.id} className="relative">

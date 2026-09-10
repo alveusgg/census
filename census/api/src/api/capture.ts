@@ -1,7 +1,9 @@
+import { CaptureTimestampRangeSchema } from '@alveusgg/census-forms';
 import { z } from 'zod';
 import { defineListener, defineParameterizedListener } from '../db/defineListener.js';
 import {
   createFromClip,
+  createFromTimestamp,
   getCapture,
   getCaptureCount,
   getCaptures,
@@ -80,6 +82,11 @@ export const createCaptureRouter = () => {
         const user = useUser();
         return await killCaptureForUser(input.id, user.id);
       }),
+
+    createFromTimestamp: procedureWithPermissions('capture')
+      .input(z.object({ range: CaptureTimestampRangeSchema, userIsVerySureItIsNeeded: z.boolean().optional() }))
+      .use(cache.mutation({ key: ['captures'] }))
+      .mutation(({ input }) => createFromTimestamp(input.range, input.userIsVerySureItIsNeeded)),
 
     createFromClip: procedureWithPermissions('capture')
       .input(z.object({ id: z.string(), userIsVerySureItIsNeeded: z.boolean().optional() }))
