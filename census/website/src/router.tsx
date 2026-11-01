@@ -13,6 +13,7 @@ import { Redirect } from './pages/authentication/Redirect';
 import { SignIn } from './pages/authentication/SignIn';
 import { SignOut } from './pages/authentication/SignOut';
 import { SignOutRedirect } from './pages/authentication/SignOutRedirect';
+import { WrappedPage } from './pages/wrapped/WrappedPage';
 import { Capture } from './pages/captures/Capture';
 import { Captures } from './pages/captures/Captures';
 import { Onboarding } from './pages/forms/Onboarding';
@@ -71,6 +72,11 @@ export const useRouter = () => {
     {
       element: <RouteMeta />,
       children: [
+        {
+          path: 'wrapped',
+          handle: { title: 'Season wrapped' },
+          element: <WrappedPage />
+        },
         {
           ErrorBoundary: RouteErrorBoundary,
           element: <Authenticated />,

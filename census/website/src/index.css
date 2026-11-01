@@ -133,3 +133,16 @@ html {
     @apply text-foreground;
   }
 }
+
+/* Gloss sweep for shiny stickers: the band crosses in the first quarter, then rests until the next pass. */
+@keyframes wrapped-sheen {
+  0% {
+    -webkit-mask-position: 100% 0%;
+    mask-position: 100% 0%;
+  }
+  26%,
+  100% {
+    -webkit-mask-position: 0% 0%;
+    mask-position: 0% 0%;
+  }
+}
