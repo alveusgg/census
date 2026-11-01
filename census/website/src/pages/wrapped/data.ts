@@ -1,4 +1,4 @@
-// Season data is exported by the queries in ./data (see data/README.md).
+// Static season exports used by the slides; see data/.
 import onboarding from './data/onboarding.json';
 import stats from './data/stats.json';
 import wrapped from './data/wrapped.json';
@@ -33,23 +33,12 @@ export interface Comment {
   nickname: string;
 }
 
-export interface Species {
-  nickname: string;
-  name: string;
-  observations: number;
-}
-
 export interface FoundShiny {
   id: number;
   nickname: string;
   name: string;
   artwork: string;
   usernames: string[];
-}
-
-export interface Leader {
-  username: string;
-  points: number;
 }
 
 export interface SeasonData {
@@ -70,14 +59,10 @@ export interface SeasonData {
   speciesConfirmed: number;
   shiniesFound: number;
   points: number;
-  achievements: number;
-  votes: number;
-  top: Leader[];
   selections: {
     captures: CaptureImage[];
     comments: Comment[];
     suggestions: Suggestion[];
-    species: Species[];
     shinies: FoundShiny[];
   };
 }
@@ -99,14 +84,10 @@ export const season: SeasonData = {
   speciesConfirmed: stats.species_confirmed,
   shiniesFound: stats.shinies_found,
   points: stats.points,
-  achievements: stats.achievements,
-  votes: stats.votes,
-  top: stats.top,
   selections: {
     captures: wrapped.captures ?? [],
     comments: wrapped.comments ?? [],
     suggestions: wrapped.suggestions ?? [],
-    species: wrapped.species ?? [],
     shinies: wrapped.shinies ?? []
   }
 };
