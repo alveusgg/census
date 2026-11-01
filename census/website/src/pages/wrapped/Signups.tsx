@@ -150,9 +150,7 @@ const Crowd: FC = () => {
 
   return (
     <div ref={ref} className="min-h-0 w-full flex-1 wide:h-full wide:self-stretch">
-      {width && height ? (
-        <canvas ref={canvas} aria-hidden style={{ width, height }} className="block" />
-      ) : null}
+      {width && height ? <canvas ref={canvas} aria-hidden style={{ width, height }} className="block" /> : null}
     </div>
   );
 };
@@ -207,7 +205,10 @@ const SkillBars: FC = () => {
         const share = level / total;
         const delay = 0.4 + index * 0.15;
         return (
-          <div key={index} className="grid grid-cols-[7.5rem_1fr] items-center gap-3 wide:grid-cols-[16rem_1fr] wide:gap-4">
+          <div
+            key={index}
+            className="grid grid-cols-[7.5rem_1fr] items-center gap-3 wide:grid-cols-[16rem_1fr] wide:gap-4"
+          >
             <Reveal delay={delay} className="text-right text-sm font-bold leading-tight wide:text-lg">
               {skillLabels[index]}
             </Reveal>

@@ -4,7 +4,15 @@ import { cn } from '@/utils/cn';
 import { useMeasure } from '@uidotdev/usehooks';
 import { motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Maximize2, Minimize2, Pause, Play, RotateCcw } from 'lucide-react';
-import { FC, KeyboardEvent as ReactKeyboardEvent, PropsWithChildren, RefObject, useEffect, useRef, useState } from 'react';
+import {
+  FC,
+  KeyboardEvent as ReactKeyboardEvent,
+  PropsWithChildren,
+  RefObject,
+  useEffect,
+  useRef,
+  useState
+} from 'react';
 import { CapturesSection } from './Captures';
 import { CommentsSection, SuggestionsSection } from './Conversation';
 import { CoverSection } from './Cover';
@@ -61,7 +69,10 @@ export const SeasonWrapped: FC = () => {
         <Preload />
 
         <Frame fullscreen={fullscreen.active} width={design.width * scale}>
-          <WrappedProgress className="h-2.5 gap-2 text-accent-400 wide:h-3 wide:gap-2.5" segmentClassName="rounded-md" />
+          <WrappedProgress
+            className="h-2.5 gap-2 text-accent-400 wide:h-3 wide:gap-2.5"
+            segmentClassName="rounded-md"
+          />
         </Frame>
 
         {/* Measures the room available for the stage: width always, height too when filling the screen. */}

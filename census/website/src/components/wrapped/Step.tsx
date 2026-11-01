@@ -44,7 +44,13 @@ const variants: Variants = {
  * of travel. Registration lives on the Step itself, so unmounting children
  * never affects the progress bar or navigation.
  */
-export const Step: FC<PropsWithChildren<StepProps>> = ({ children, wait, id: explicitId, animate = true, className }) => {
+export const Step: FC<PropsWithChildren<StepProps>> = ({
+  children,
+  wait,
+  id: explicitId,
+  animate = true,
+  className
+}) => {
   const section = useContext(SectionContext);
   if (!section) {
     throw new Error('<Step> must be rendered inside a <Section>');

@@ -13,12 +13,7 @@ export const formatNumber = (value: number) => Math.round(value).toLocaleString(
  * side in landscape. The enclosing Step handles the slide in/out.
  */
 export const Slide: FC<PropsWithChildren<{ className?: string }>> = ({ children, className }) => (
-  <div
-    className={cn(
-      'flex size-full flex-col items-center justify-center gap-5 wide:flex-row wide:gap-12',
-      className
-    )}
-  >
+  <div className={cn('flex size-full flex-col items-center justify-center gap-5 wide:flex-row wide:gap-12', className)}>
     {children}
   </div>
 );
@@ -40,9 +35,7 @@ export const Reveal: FC<PropsWithChildren<{ delay?: number; className?: string }
 );
 
 export const Eyebrow: FC<PropsWithChildren<{ className?: string }>> = ({ children, className }) => (
-  <p className={cn('text-sm font-bold text-accent-700 wide:text-base', className)}>
-    {children}
-  </p>
+  <p className={cn('text-sm font-bold text-accent-700 wide:text-base', className)}>{children}</p>
 );
 
 interface StatProps {
