@@ -1,4 +1,5 @@
 import theme from 'tailwindcss/defaultTheme';
+import plugin from 'tailwindcss/plugin';
 import { cursors } from './tailwind.cursors.mjs';
 import textStroke from './tailwind.text-stroke.mjs';
 
@@ -137,6 +138,12 @@ export default {
     require('tailwind-scrollbar'),
     require('@tailwindcss/typography'),
     require('tailwindcss-animate'),
-    require('@tailwindcss/container-queries')
+    require('@tailwindcss/container-queries'),
+    // Layout variants for presentations that pick their own layout from measured size rather than the viewport.
+    // An ancestor sets `data-layout="landscape"` or `data-layout="portrait"`.
+    plugin(({ addVariant }) => {
+      addVariant('wide', '[data-layout="landscape"] &');
+      addVariant('tall', '[data-layout="portrait"] &');
+    })
   ]
 };
