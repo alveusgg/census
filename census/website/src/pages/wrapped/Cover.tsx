@@ -39,6 +39,9 @@ export const CoverSection: FC = () => (
               </motion.span>
             </h2>
           </Reveal>
+          <Reveal delay={1} className="mt-2 text-base font-bold text-accent-700 wide:text-lg">
+            season ending end of November!
+          </Reveal>
         </div>
       </Slide>
     </Step>

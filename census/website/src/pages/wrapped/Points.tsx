@@ -2,7 +2,7 @@ import { Section, Step } from '@/components/wrapped';
 import { motion } from 'framer-motion';
 import { FC } from 'react';
 import { season } from './data';
-import { Confetti, CountUp, Headline, Slide, Stat } from './primitives';
+import { Confetti, CountUp, Headline, Reveal, Slide, Stat } from './primitives';
 
 import anthill from '@/assets/anthill.outlined.png';
 
@@ -36,9 +36,16 @@ export const ThanksSection: FC = () => (
         />
         <Stat
           value={<Headline>thank you!</Headline>}
-          caption="none of this happens without every spotter, commenter and voter. see you next season."
+          caption="none of this happens without every spotter, commenter and voter."
           className="relative z-10 shrink-0 wide:w-[22rem]"
-        />
+        >
+          <Reveal
+            delay={0.7}
+            className="mt-2 max-w-xs text-balance text-base font-bold text-accent-700 wide:max-w-sm wide:text-lg"
+          >
+            and it's not over yet: there's still time to take part until the end of November!
+          </Reveal>
+        </Stat>
       </Slide>
     </Step>
   </Section>
