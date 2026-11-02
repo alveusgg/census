@@ -21,12 +21,11 @@ export const createEnvironment = async (): Promise<Env> => {
 };
 
 export const getHost = (variables: z.infer<typeof config>): string => {
-  // An explicit public URL wins, including in development (e.g. when reached through a tunnel or tailnet proxy).
-  if (variables.API_URL) {
-    return variables.API_URL;
-  }
   if (variables.NODE_ENV === 'development') {
     return `http://${variables.HOST}:${variables.PORT}`;
+  }
+  if (variables.API_URL) {
+    return variables.API_URL;
   }
   if (variables.CONTAINER_APP_NAME && variables.CONTAINER_APP_ENV_DNS_SUFFIX) {
     return `https://${variables.CONTAINER_APP_NAME}.${variables.CONTAINER_APP_ENV_DNS_SUFFIX}`;
